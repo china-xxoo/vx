@@ -23,9 +23,18 @@
     })();
   </script>
 
-  <link rel="icon" href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Crect width="512" height="512" rx="96" fill="white"/%3E%3Cpath d="M151 88v96M103 136h96" stroke="%2322c55e" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M313 136h116" stroke="%233b82f6" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M101 333l96 96M197 333l-96 96" stroke="%23f97316" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="323" r="24" fill="%238b5cf6"/%3E%3Cpath d="M313 384h116" stroke="%238b5cf6" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="445" r="24" fill="%238b5cf6"/%3E%3C/svg%3E' />
+  <link
+    id="dynamicFavicon"
+    rel="icon"
+    type="image/svg+xml"
+    href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Crect width="512" height="512" rx="96" fill="white"/%3E%3Cpath d="M151 88v96M103 136h96" stroke="%2322c55e" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M313 136h116" stroke="%233b82f6" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M101 333l96 96M197 333l-96 96" stroke="%23f97316" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="323" r="24" fill="%238b5cf6"/%3E%3Cpath d="M313 384h116" stroke="%238b5cf6" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="445" r="24" fill="%238b5cf6"/%3E%3C/svg%3E'
+  />
 
-  <link rel="apple-touch-icon" href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Crect width="512" height="512" rx="96" fill="white"/%3E%3Cpath d="M151 88v96M103 136h96" stroke="%2322c55e" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M313 136h116" stroke="%233b82f6" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M101 333l96 96M197 333l-96 96" stroke="%23f97316" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="323" r="24" fill="%238b5cf6"/%3E%3Cpath d="M313 384h116" stroke="%238b5cf6" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="445" r="24" fill="%238b5cf6"/%3E%3C/svg%3E' />
+  <link
+    id="dynamicAppleIcon"
+    rel="apple-touch-icon"
+    href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Crect width="512" height="512" rx="96" fill="white"/%3E%3Cpath d="M151 88v96M103 136h96" stroke="%2322c55e" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M313 136h116" stroke="%233b82f6" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M101 333l96 96M197 333l-96 96" stroke="%23f97316" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="323" r="24" fill="%238b5cf6"/%3E%3Cpath d="M313 384h116" stroke="%238b5cf6" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="445" r="24" fill="%238b5cf6"/%3E%3C/svg%3E'
+  />
 
   <meta name="theme-color" content="#111827" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -474,8 +483,8 @@
 
     <div class="card">
       <h3>进入密码</h3>
-      <p>永久备用密码是 123456×。你也可以设置自己的进入密码；忘记后仍然可以用 123456× 进入。</p>
-      <input class="input" id="newUnlockCode" placeholder="输入新的进入密码，例如 2580×" />
+      <p>永久备用密码是 123456✖️。你也可以设置自己的进入密码；忘记后仍然可以用 123456✖️ 进入。</p>
+      <input class="input" id="newUnlockCode" placeholder="输入新的进入密码，例如 2580✖️" />
       <input class="input" id="confirmUnlockCode" placeholder="再次输入新的进入密码" />
       <button class="main-btn" onclick="changeUnlockCode()">修改进入密码</button>
     </div>
@@ -537,6 +546,30 @@
 </div>
 
 <script>
+  function installBuiltInIcon() {
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+        <rect width="512" height="512" rx="96" fill="white"/>
+        <path d="M151 88v96M103 136h96" stroke="#22c55e" stroke-width="46" stroke-linecap="round"/>
+        <path d="M313 136h116" stroke="#3b82f6" stroke-width="46" stroke-linecap="round"/>
+        <path d="M101 333l96 96M197 333l-96 96" stroke="#f97316" stroke-width="46" stroke-linecap="round"/>
+        <circle cx="371" cy="323" r="24" fill="#8b5cf6"/>
+        <path d="M313 384h116" stroke="#8b5cf6" stroke-width="46" stroke-linecap="round"/>
+        <circle cx="371" cy="445" r="24" fill="#8b5cf6"/>
+      </svg>
+    `;
+
+    const encoded = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+
+    const favicon = document.getElementById("dynamicFavicon");
+    if (favicon) favicon.href = encoded;
+
+    const appleIcon = document.getElementById("dynamicAppleIcon");
+    if (appleIcon) appleIcon.href = encoded;
+  }
+
+  installBuiltInIcon();
+
   const DEFAULT_ENCRYPTED_CONFIG = {
     "salt": "XHAbsrSblfGS/vYVydrltA==",
     "iv": "oa/ZXZyCsRe7T1HG",
@@ -590,7 +623,11 @@
   const statusEl = document.getElementById("status");
 
   function updateDisplay() {
-    display.textContent = calcExpression || "0";
+    const showText = (calcExpression || "0")
+      .replaceAll("*", "×")
+      .replaceAll("/", "÷");
+
+    display.textContent = showText;
   }
 
   function showRandomFakeCalculation() {
@@ -611,7 +648,10 @@
       "870-239=631"
     ];
 
-    calcExpression = examples[Math.floor(Math.random() * examples.length)];
+    calcExpression = examples[Math.floor(Math.random() * examples.length)]
+      .replaceAll("×", "*")
+      .replaceAll("÷", "/");
+
     unlockInput = "";
     isFakeResult = true;
     updateDisplay();
@@ -635,7 +675,15 @@
   }
 
   function appendOperator(op) {
-    const secretOp = op === "*" ? "×" : op === "/" ? "÷" : op;
+    let secretOp = op;
+
+    if (op === "*") {
+      secretOp = "✖️";
+    }
+
+    if (op === "/") {
+      secretOp = "÷";
+    }
 
     if (isFakeResult) {
       calcExpression = "";
@@ -924,19 +972,36 @@
     };
   }
 
+  function getUnlockCodeCandidates(input) {
+    const variants = new Set();
+
+    variants.add(input);
+    variants.add(input.replace(/(\*|×|✖️|✖)/g, "✖️"));
+    variants.add(input.replace(/(\*|×|✖️|✖)/g, "×"));
+    variants.add(input.replace(/(\*|×|✖️|✖)/g, "*"));
+    variants.add(input.replace(/(\*|×|✖️|✖)/g, "✖"));
+
+    return Array.from(variants);
+  }
+
   async function tryUnlock() {
-    try {
-      const result = await decryptConfig(unlockInput);
+    const candidates = getUnlockCodeCandidates(unlockInput);
 
-      appConfig = result.config;
-      activeUnlockCode = unlockInput;
+    for (const code of candidates) {
+      try {
+        const result = await decryptConfig(code);
 
-      openApp();
+        appConfig = result.config;
+        activeUnlockCode = code;
 
-    } catch (e) {
-      if (unlockInput.length > 30) {
-        unlockInput = "";
-      }
+        openApp();
+        return;
+
+      } catch (e) {}
+    }
+
+    if (unlockInput.length > 40) {
+      unlockInput = "";
     }
   }
 
@@ -1011,8 +1076,8 @@
       return;
     }
 
-    if (!/^[0-9+\-*/×÷.%]{4,30}$/.test(newCode)) {
-      alert("进入密码只能使用数字和基础运算符，例如 123456×");
+    if (!/^[0-9+\-*/×÷.%✖️✖]{4,40}$/.test(newCode)) {
+      alert("进入密码只能使用数字和基础运算符，例如 123456✖️");
       return;
     }
 
@@ -1034,7 +1099,7 @@
       document.getElementById("newUnlockCode").value = "";
       document.getElementById("confirmUnlockCode").value = "";
 
-      alert("进入密码已修改。下次可以使用新密码，也可以继续使用永久备用密码 123456×。");
+      alert("进入密码已修改。下次可以使用新密码，也可以继续使用永久备用密码 123456✖️。");
 
     } catch (e) {
       alert("修改失败：" + e.message);
