@@ -10,9 +10,22 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=20260509-002" />
-  <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=20260509-002" />
-  <link rel="manifest" href="./manifest.json?v=20260509-002" />
+  <script>
+    (function () {
+      const url = new URL(location.href);
+      const fresh = url.searchParams.get("_fresh");
+      const now = Date.now();
+
+      if (!fresh || now - Number(fresh) > 60000) {
+        url.searchParams.set("_fresh", String(now));
+        location.replace(url.toString());
+      }
+    })();
+  </script>
+
+  <link rel="icon" href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Crect width="512" height="512" rx="96" fill="white"/%3E%3Cpath d="M151 88v96M103 136h96" stroke="%2322c55e" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M313 136h116" stroke="%233b82f6" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M101 333l96 96M197 333l-96 96" stroke="%23f97316" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="323" r="24" fill="%238b5cf6"/%3E%3Cpath d="M313 384h116" stroke="%238b5cf6" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="445" r="24" fill="%238b5cf6"/%3E%3C/svg%3E' />
+
+  <link rel="apple-touch-icon" href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Crect width="512" height="512" rx="96" fill="white"/%3E%3Cpath d="M151 88v96M103 136h96" stroke="%2322c55e" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M313 136h116" stroke="%233b82f6" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M101 333l96 96M197 333l-96 96" stroke="%23f97316" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="323" r="24" fill="%238b5cf6"/%3E%3Cpath d="M313 384h116" stroke="%238b5cf6" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="445" r="24" fill="%238b5cf6"/%3E%3C/svg%3E' />
 
   <meta name="theme-color" content="#111827" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -524,41 +537,6 @@
 </div>
 
 <script>
-  const APP_VERSION = "2026-05-09-002";
-
-  async function forceReloadLatestIndex() {
-    try {
-      const flag = "vx_fresh_loaded";
-
-      if (sessionStorage.getItem(flag) === "1") {
-        sessionStorage.removeItem(flag);
-        return;
-      }
-
-      sessionStorage.setItem(flag, "1");
-
-      const cleanUrl = location.origin + location.pathname;
-      const freshUrl = cleanUrl + "?_fresh=" + Date.now();
-
-      const res = await fetch(freshUrl, {
-        cache: "no-store"
-      });
-
-      if (!res.ok) return;
-
-      const latestHtml = await res.text();
-
-      document.open();
-      document.write(latestHtml);
-      document.close();
-
-    } catch (e) {
-      console.log("强制拉取最新代码失败", e);
-    }
-  }
-
-  forceReloadLatestIndex();
-
   const DEFAULT_ENCRYPTED_CONFIG = {
     "salt": "XHAbsrSblfGS/vYVydrltA==",
     "iv": "oa/ZXZyCsRe7T1HG",
