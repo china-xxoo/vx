@@ -23,16 +23,9 @@
     })();
   </script>
 
-  <link
-    rel="icon"
-    type="image/svg+xml"
-    href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Crect width="512" height="512" rx="96" fill="white"/%3E%3Cfilter id="s" x="-50%25" y="-50%25" width="200%25" height="200%25"%3E%3CfeDropShadow dx="0" dy="14" stdDeviation="12" flood-color="%23000000" flood-opacity="0.24"/%3E%3C/filter%3E%3Ctext x="150" y="180" font-size="138" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%23007AFF" filter="url(%23s)"%3E%2B%3C/text%3E%3Ctext x="362" y="180" font-size="150" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%2334C759" filter="url(%23s)"%3E%E2%88%92%3C/text%3E%3Ctext x="150" y="385" font-size="150" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%23FF9500" filter="url(%23s)"%3E%C3%97%3C/text%3E%3Ctext x="362" y="385" font-size="150" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%23AF52DE" filter="url(%23s)"%3E%C3%B7%3C/text%3E%3C/svg%3E'
-  />
-
-  <link
-    rel="apple-touch-icon"
-    href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Crect width="512" height="512" rx="96" fill="white"/%3E%3Cfilter id="s" x="-50%25" y="-50%25" width="200%25" height="200%25"%3E%3CfeDropShadow dx="0" dy="14" stdDeviation="12" flood-color="%23000000" flood-opacity="0.24"/%3E%3C/filter%3E%3Ctext x="150" y="180" font-size="138" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%23007AFF" filter="url(%23s)"%3E%2B%3C/text%3E%3Ctext x="362" y="180" font-size="150" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%2334C759" filter="url(%23s)"%3E%E2%88%92%3C/text%3E%3Ctext x="150" y="385" font-size="150" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%23FF9500" filter="url(%23s)"%3E%C3%97%3C/text%3E%3Ctext x="362" y="385" font-size="150" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%23AF52DE" filter="url(%23s)"%3E%C3%B7%3C/text%3E%3C/svg%3E'
-  />
+  <link rel="icon" type="image/png" href="./apple-touch-icon.png.png?v=iconfix-004" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png.png?v=iconfix-004" />
+  <link rel="apple-touch-icon-precomposed" href="./apple-touch-icon.png.png?v=iconfix-004" />
 
   <meta name="theme-color" content="#111827" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -633,13 +626,14 @@
 
 <script>
   const DEFAULT_ENCRYPTED_CONFIG = {
-    "salt": "XHAbsrSblfGS/vYVydrltA==",
-    "iv": "oa/ZXZyCsRe7T1HG",
-    "data": "34kR5da63kBfi89wLPDw+/Y4h36M8f1ijgcP+LmaWm/zb0PrLdhbWRDndbUze/pqRN6tJXKce0IsEUsr4+wWlS4NwSOUuofh87PnDMiINSsc5YqBxLqR2r6xtP2e6odprjD54JsvwVlnLH5Ye9VvDkyENKAhGqDprAeMt5mGxnpP5FnNYRvVipvpbRaVRv0e+YOwqOpGqM1ZwLK2+lsxfAOZthf7b62et32yM4Wg9x8q+LxL9w2J4cTQYWODDRcAJH6fzFa0mHu2"
+    "salt": "mD+MSNlz/wdZ1ejc4CrW0w==",
+    "iv": "gA1+MMbI4ovNM9sN",
+    "data": "YzgAikVHoyepAKdvPOJUjKK34pbo4Fxhg75u4GkiYr2J7v+sqI3Tduwx7+X1HyAop3CcwGsA/u+hehcnx5OnnCR18t0RnLljxkCyBktDEmseCbOpOVItrSSHTbo7zAg4KlynHXcaSDXj2k3z8/4gTKkL5Fzwjwleou7kvUg8yausUinUG3GFc6bLEH5s9kARmFhj6jXGU6nzxt6E6Tb8w+1y7DCBB/dVnQpO8cWHY7XphV/WBdrY"
   };
 
+  const ADMIN_PASSWORD_HASH = "21bc5b04f12d8ba253d1ff68ad358622606c8034be1fdeb99f8d31a0691a1b8e";
+
   const API = "https://api.github.com";
-  const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131edda6730f5845";
 
   const ROOM_PREFIX = "ENC_ROOM_META_V1:";
   const MSG_PREFIX = "ENC_ROOM_MSG_V1:";
