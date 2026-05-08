@@ -3,7 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
   <title>Calculator</title>
+
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+  <link rel="manifest" href="./manifest.json" />
+
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Calculator" />
 
   <style>
     * {
@@ -11,18 +21,22 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    html,
     body {
       margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #111827;
-      height: 100vh;
       overflow: hidden;
     }
 
     .calculator {
       width: 100%;
       height: 100vh;
-      background: #111827;
+      background:
+        radial-gradient(circle at top, #1f2937 0%, #111827 48%, #060b15 100%);
       color: white;
       display: flex;
       flex-direction: column;
@@ -37,9 +51,12 @@
       justify-content: flex-end;
       font-size: 54px;
       font-weight: 300;
-      padding: 20px 4px;
+      padding: 28px 8px 26px;
       word-break: break-all;
       text-align: right;
+      color: #f9fafb;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+      line-height: 1.1;
     }
 
     .grid {
@@ -50,33 +67,35 @@
     }
 
     .btn {
-      height: 74px;
-      border-radius: 50%;
+      height: 72px;
       border: none;
-      font-size: 26px;
-      color: white;
-      background: #374151;
+      border-radius: 22px;
+      font-size: 28px;
+      color: #f9fafb;
+      background: linear-gradient(180deg, #374151 0%, #1f2937 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        0 8px 18px rgba(0,0,0,0.28);
+      cursor: pointer;
     }
 
     .btn:active {
-      transform: scale(0.95);
-      opacity: 0.85;
+      transform: scale(0.96);
+      opacity: 0.92;
     }
 
     .operator {
-      background: #f59e0b;
+      background: linear-gradient(180deg, #f59e0b 0%, #ea580c 100%);
+      color: white;
     }
 
     .function {
-      background: #9ca3af;
+      background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
       color: #111827;
     }
 
     .zero {
       grid-column: span 2;
-      border-radius: 999px;
-      text-align: left;
-      padding-left: 30px;
     }
 
     .chat-app {
@@ -87,6 +106,7 @@
       flex-direction: column;
     }
 
+    .top-header,
     .chat-header {
       height: 54px;
       background: #ffffff;
@@ -97,22 +117,146 @@
       font-weight: 700;
       font-size: 16px;
       position: relative;
+      color: #111827;
+      flex-shrink: 0;
     }
 
-    .back-btn {
+    .header-left {
       position: absolute;
       left: 12px;
       border: none;
       background: #f3f4f6;
+      color: #111827;
       border-radius: 999px;
       padding: 7px 12px;
       font-size: 13px;
+      cursor: pointer;
+    }
+
+    .panic-btn {
+      position: absolute;
+      right: 12px;
+      border: none;
+      background: #111827;
+      color: white;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .admin-btn {
+      position: absolute;
+      right: 70px;
+      border: none;
+      background: #f3f4f6;
+      color: #111827;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .screen {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px;
+      background: #f7f7f8;
+    }
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+
+    .card h2,
+    .card h3 {
+      margin: 0 0 10px;
+      color: #111827;
+    }
+
+    .card p {
+      margin: 6px 0 12px;
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .input {
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 13px 14px;
+      font-size: 15px;
+      outline: none;
+      margin-bottom: 10px;
+      background: white;
+    }
+
+    .main-btn {
+      width: 100%;
+      border: none;
+      background: #111827;
+      color: white;
+      border-radius: 12px;
+      padding: 13px 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .small-btn {
+      border: none;
+      background: #f3f4f6;
+      color: #111827;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .room-item {
+      background: white;
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    }
+
+    .room-name {
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .room-meta {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .empty {
+      background: #fff7ed;
+      color: #c2410c;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
     }
 
     .chat-box {
       flex: 1;
       overflow-y: auto;
       padding: 14px;
+      background: #f7f7f8;
     }
 
     .msg-wrap {
@@ -158,12 +302,22 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
 
+    .status {
+      display: none;
+      background: #fff7ed;
+      color: #c2410c;
+      padding: 8px 12px;
+      font-size: 12px;
+      border-top: 1px solid #fed7aa;
+    }
+
     .send-area {
       display: flex;
       gap: 8px;
       padding: 10px;
       background: white;
       border-top: 1px solid #e5e7eb;
+      flex-shrink: 0;
     }
 
     .send-area input {
@@ -182,15 +336,61 @@
       color: white;
       padding: 0 18px;
       font-size: 15px;
+      cursor: pointer;
     }
 
-    .status {
+    .modal-mask {
       display: none;
-      background: #fff7ed;
-      color: #c2410c;
-      padding: 8px 12px;
-      font-size: 12px;
-      border-top: 1px solid #fed7aa;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 99;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 380px;
+      background: white;
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .modal h3 {
+      margin: 0 0 8px;
+      color: #111827;
+    }
+
+    .modal p {
+      margin: 0 0 12px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .cancel-btn {
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .confirm-btn {
+      background: #111827;
+      color: white;
     }
   </style>
 </head>
@@ -206,9 +406,9 @@
     <button class="btn function" onclick="appendOperator('%')">%</button>
     <button class="btn operator" onclick="appendOperator('/')">÷</button>
 
-    <button class="btn" onclick="appendNumber('7')">7</button>
-    <button class="btn" onclick="appendNumber('8')">8</button>
-    <button class="btn" onclick="appendNumber('9')">9</button>
+    <button class="btn" onclick="appendNumber('1')">1</button>
+    <button class="btn" onclick="appendNumber('2')">2</button>
+    <button class="btn" onclick="appendNumber('3')">3</button>
     <button class="btn operator" onclick="appendOperator('*')">×</button>
 
     <button class="btn" onclick="appendNumber('4')">4</button>
@@ -216,9 +416,9 @@
     <button class="btn" onclick="appendNumber('6')">6</button>
     <button class="btn operator" onclick="appendOperator('-')">−</button>
 
-    <button class="btn" onclick="appendNumber('1')">1</button>
-    <button class="btn" onclick="appendNumber('2')">2</button>
-    <button class="btn" onclick="appendNumber('3')">3</button>
+    <button class="btn" onclick="appendNumber('7')">7</button>
+    <button class="btn" onclick="appendNumber('8')">8</button>
+    <button class="btn" onclick="appendNumber('9')">9</button>
     <button class="btn operator" onclick="appendOperator('+')">+</button>
 
     <button class="btn zero" onclick="appendNumber('0')">0</button>
@@ -228,41 +428,128 @@
 </div>
 
 <div class="chat-app" id="chatApp">
-  <div class="chat-header">
-    <button class="back-btn" onclick="lockChat()">返回</button>
-    Private Chat
+
+  <div class="top-header" id="nameHeader">
+    设置名字
+    <button class="panic-btn" onclick="lockChat()">退出</button>
   </div>
 
-  <div class="chat-box" id="chatBox"></div>
+  <div class="screen" id="nameScreen">
+    <div class="card">
+      <h2>第一次进入</h2>
+      <p>先设置你的聊天名字。这个名字只保存在当前手机浏览器里。</p>
+      <input class="input" id="nameInput" placeholder="输入你的名字" />
+      <button class="main-btn" onclick="saveName()">保存并继续</button>
+    </div>
+  </div>
+
+  <div class="top-header" id="lobbyHeader" style="display:none;">
+    房间大厅
+    <button class="panic-btn" onclick="lockChat()">退出</button>
+  </div>
+
+  <div class="screen" id="lobbyScreen">
+    <div class="card">
+      <h3>我的名字</h3>
+      <p id="myNameText"></p>
+      <button class="small-btn" onclick="resetName()">修改名字</button>
+    </div>
+
+    <div class="card">
+      <h3>进入密码</h3>
+      <p>永久备用密码是 123456×。你也可以设置自己的进入密码；忘记后仍然可以用 123456× 进入。</p>
+      <input class="input" id="newUnlockCode" placeholder="输入新的进入密码，例如 2580×" />
+      <input class="input" id="confirmUnlockCode" placeholder="再次输入新的进入密码" />
+      <button class="main-btn" onclick="changeUnlockCode()">修改进入密码</button>
+    </div>
+
+    <div class="card">
+      <h3>新建房间</h3>
+      <input class="input" id="newRoomName" placeholder="房间名称，例如：A" />
+      <input class="input" id="newRoomPassword" placeholder="房间密码" type="password" />
+      <button class="main-btn" onclick="createRoom()">新建并进入房间</button>
+    </div>
+
+    <div class="card">
+      <h3>已有房间</h3>
+      <p>可以看到房间名字，但必须输入对应房间密码才能进入。</p>
+      <div id="roomList"></div>
+    </div>
+  </div>
+
+  <div class="chat-header" id="roomHeader" style="display:none;">
+    <button class="header-left" onclick="backToLobby()">房间</button>
+    <span id="roomTitle">Private Chat</span>
+    <button class="admin-btn" onclick="openAdminModal()">房间设置</button>
+    <button class="panic-btn" onclick="panicExit()">退出</button>
+  </div>
+
+  <div class="chat-box" id="chatBox" style="display:none;"></div>
 
   <div class="status" id="status"></div>
 
-  <div class="send-area">
+  <div class="send-area" id="sendArea" style="display:none;">
     <input id="messageInput" placeholder="输入消息..." />
     <button onclick="sendMessage()">发送</button>
+  </div>
+
+</div>
+
+<div class="modal-mask" id="joinModal">
+  <div class="modal">
+    <h3>进入房间</h3>
+    <p id="joinRoomText"></p>
+    <input class="input" id="joinRoomPassword" placeholder="输入房间密码" type="password" />
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeJoinModal()">取消</button>
+      <button class="confirm-btn" onclick="confirmJoinRoom()">进入</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="adminModal">
+  <div class="modal">
+    <h3>房间设置</h3>
+    <p>输入管理员密码后，可以删除当前房间和该房间聊天记录。</p>
+    <input class="input" id="adminPassword" placeholder="管理员密码" type="password" />
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeAdminModal()">取消</button>
+      <button class="confirm-btn" onclick="deleteCurrentRoomWithAdmin()">删除房间</button>
+    </div>
   </div>
 </div>
 
 <script>
-const DEFAULT_ENCRYPTED_CONFIG = {
-  "salt": "XHAbsrSblfGS/vYVydrltA==",
-  "iv": "oa/ZXZyCsRe7T1HG",
-  "data": "34kR5da63kBfi89wLPDw+/Y4h36M8f1ijgcP+LmaWm/zb0PrLdhbWRDndbUze/pqRN6tJXKce0IsEUsr4+wWlS4NwSOUuofh87PnDMiINSsc5YqBxLqR2r6xtP2e6odprjD54JsvwVlnLH5Ye9VvDkyENKAhGqDprAeMt5mGxnpP5FnNYRvVipvpbRaVRv0e+YOwqOpGqM1ZwLK2+lsxfAOZthf7b62et32yM4Wg9x8q+LxL9w2J4cTQYWODDRcAJH6fzFa0mHu2"
-};						
-
+  const DEFAULT_ENCRYPTED_CONFIG = {
+    "salt": "XHAbsrSblfGS/vYVydrltA==",
+    "iv": "oa/ZXZyCsRe7T1HG",
+    "data": "34kR5da63kBfi89wLPDw+/Y4h36M8f1ijgcP+LmaWm/zb0PrLdhbWRDndbUze/pqRN6tJXKce0IsEUsr4+wWlS4NwSOUuofh87PnDMiINSsc5YqBxLqR2r6xtP2e6odprjD54JsvwVlnLH5Ye9VvDkyENKAhGqDprAeMt5mGxnpP5FnNYRvVipvpbRaVRv0e+YOwqOpGqM1ZwLK2+lsxfAOZthf7b62et32yM4Wg9x8q+LxL9w2J4cTQYWODDRcAJH6fzFa0mHu2n"
+  };
 
   const API = "https://api.github.com";
-  const PREFIX = "ENC_CHAT_VX:";
+  const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131edda6730f5845";
+
+  const ROOM_PREFIX = "ENC_ROOM_META_V1:";
+  const MSG_PREFIX = "ENC_ROOM_MSG_V1:";
 
   let calcExpression = "";
   let unlockInput = "";
+  let isFakeResult = false;
 
   let appConfig = null;
+  let activeUnlockCode = "";
+  let pendingRoom = null;
 
   let state = {
     senderId: localStorage.getItem("vx_sender_id") || crypto.randomUUID(),
+    displayName: localStorage.getItem("vx_display_name") || "",
+    currentRoom: null,
     timer: null,
-    lastRenderHash: ""
+    lobbyTimer: null,
+    idleTimer: null,
+    lastRenderHash: "",
+    lastRoomsHash: "",
+    rooms: []
   };
 
   localStorage.setItem("vx_sender_id", state.senderId);
@@ -270,7 +557,18 @@ const DEFAULT_ENCRYPTED_CONFIG = {
   const calculator = document.getElementById("calculator");
   const chatApp = document.getElementById("chatApp");
   const display = document.getElementById("display");
+
+  const nameHeader = document.getElementById("nameHeader");
+  const nameScreen = document.getElementById("nameScreen");
+  const lobbyHeader = document.getElementById("lobbyHeader");
+  const lobbyScreen = document.getElementById("lobbyScreen");
+  const roomHeader = document.getElementById("roomHeader");
+  const roomTitle = document.getElementById("roomTitle");
+  const roomList = document.getElementById("roomList");
+  const myNameText = document.getElementById("myNameText");
+
   const chatBox = document.getElementById("chatBox");
+  const sendArea = document.getElementById("sendArea");
   const messageInput = document.getElementById("messageInput");
   const statusEl = document.getElementById("status");
 
@@ -278,7 +576,36 @@ const DEFAULT_ENCRYPTED_CONFIG = {
     display.textContent = calcExpression || "0";
   }
 
+  function showRandomFakeCalculation() {
+    const examples = [
+      "128+256=384",
+      "96÷3=32",
+      "45×7=315",
+      "980-275=705",
+      "36×12=432",
+      "720÷8=90",
+      "58+349=407",
+      "1500-680=820",
+      "24×19=456",
+      "999÷9=111",
+      "375+425=800",
+      "64×8=512",
+      "144÷12=12",
+      "870-239=631"
+    ];
+
+    calcExpression = examples[Math.floor(Math.random() * examples.length)];
+    unlockInput = "";
+    isFakeResult = true;
+    updateDisplay();
+  }
+
   function appendNumber(num) {
+    if (isFakeResult) {
+      calcExpression = "";
+      isFakeResult = false;
+    }
+
     if (calcExpression === "0" || calcExpression === "Error") {
       calcExpression = num;
     } else {
@@ -291,7 +618,20 @@ const DEFAULT_ENCRYPTED_CONFIG = {
   }
 
   function appendOperator(op) {
-    if (!calcExpression || calcExpression === "Error") return;
+    const secretOp = op === "*" ? "×" : op === "/" ? "÷" : op;
+
+    if (isFakeResult) {
+      calcExpression = "";
+      isFakeResult = false;
+    }
+
+    unlockInput += secretOp;
+    tryUnlock();
+
+    if (!calcExpression || calcExpression === "Error") {
+      updateDisplay();
+      return;
+    }
 
     const last = calcExpression.slice(-1);
 
@@ -301,24 +641,39 @@ const DEFAULT_ENCRYPTED_CONFIG = {
       calcExpression += op;
     }
 
-    unlockInput = "";
     updateDisplay();
   }
 
   function appendDot() {
+    if (isFakeResult) {
+      calcExpression = "";
+      isFakeResult = false;
+    }
+
     if (calcExpression === "Error") calcExpression = "";
+
     calcExpression += ".";
-    unlockInput = "";
+    unlockInput += ".";
+    tryUnlock();
     updateDisplay();
   }
 
   function clearCalc() {
     calcExpression = "";
     unlockInput = "";
+    isFakeResult = false;
     updateDisplay();
   }
 
   function backspaceCalc() {
+    if (isFakeResult) {
+      calcExpression = "";
+      unlockInput = "";
+      isFakeResult = false;
+      updateDisplay();
+      return;
+    }
+
     calcExpression = calcExpression.slice(0, -1);
     unlockInput = unlockInput.slice(0, -1);
     updateDisplay();
@@ -326,10 +681,19 @@ const DEFAULT_ENCRYPTED_CONFIG = {
 
   function calculateResult() {
     try {
+      if (isFakeResult) {
+        calcExpression = "";
+        unlockInput = "";
+        isFakeResult = false;
+        updateDisplay();
+        return;
+      }
+
       if (!calcExpression) return;
 
       if (!/^[0-9+\-*/%. ]+$/.test(calcExpression)) {
         calcExpression = "Error";
+        unlockInput = "";
         updateDisplay();
         return;
       }
@@ -402,12 +766,87 @@ const DEFAULT_ENCRYPTED_CONFIG = {
     );
   }
 
-  async function decryptConfig(unlockCode) {
+  async function deriveKeyFromText(password, saltText) {
+    const salt = new TextEncoder().encode(saltText);
+    return deriveKey(password, salt);
+  }
+
+  async function encryptPayload(obj, password, saltText) {
+    const encoder = new TextEncoder();
+    const key = await deriveKeyFromText(password, saltText);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const encrypted = await crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      encoder.encode(JSON.stringify(obj))
+    );
+
+    return {
+      iv: toBase64(iv),
+      data: toBase64(encrypted)
+    };
+  }
+
+  async function decryptPayload(payload, password, saltText) {
+    const decoder = new TextDecoder();
+    const key = await deriveKeyFromText(password, saltText);
+
+    const iv = fromBase64(payload.iv);
+    const data = fromBase64(payload.data);
+
+    const decrypted = await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      data
+    );
+
+    return JSON.parse(decoder.decode(decrypted));
+  }
+
+  function getEncryptedConfigCandidates() {
+    const list = [];
+
+    const saved = localStorage.getItem("vx_custom_encrypted_config");
+
+    if (saved) {
+      try {
+        const customConfig = JSON.parse(saved);
+
+        if (
+          customConfig &&
+          customConfig.salt &&
+          customConfig.iv &&
+          customConfig.data
+        ) {
+          list.push({
+            type: "custom",
+            config: customConfig
+          });
+        }
+      } catch (e) {}
+    }
+
+    list.push({
+      type: "default",
+      config: DEFAULT_ENCRYPTED_CONFIG
+    });
+
+    return list;
+  }
+
+  async function decryptOneConfig(encryptedConfig, unlockCode) {
     const decoder = new TextDecoder();
 
-    const salt = fromBase64(DEFAULT_ENCRYPTED_CONFIG.salt);
-    const iv = fromBase64(DEFAULT_ENCRYPTED_CONFIG.iv);
-    const data = fromBase64(DEFAULT_ENCRYPTED_CONFIG.data);
+    const salt = fromBase64(encryptedConfig.salt);
+    const iv = fromBase64(encryptedConfig.iv);
+    const data = fromBase64(encryptedConfig.data);
 
     const key = await deriveKey(unlockCode, salt);
 
@@ -423,33 +862,226 @@ const DEFAULT_ENCRYPTED_CONFIG = {
     return JSON.parse(decoder.decode(decrypted));
   }
 
+  async function decryptConfig(unlockCode) {
+    const candidates = getEncryptedConfigCandidates();
+
+    let lastError = null;
+
+    for (const item of candidates) {
+      try {
+        const config = await decryptOneConfig(item.config, unlockCode);
+
+        return {
+          config: config,
+          type: item.type
+        };
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    throw lastError || new Error("密码错误");
+  }
+
+  async function encryptConfigWithUnlockCode(config, unlockCode) {
+    const encoder = new TextEncoder();
+
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const key = await deriveKey(unlockCode, salt);
+
+    const encrypted = await crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      encoder.encode(JSON.stringify(config))
+    );
+
+    return {
+      salt: toBase64(salt),
+      iv: toBase64(iv),
+      data: toBase64(encrypted)
+    };
+  }
+
   async function tryUnlock() {
     try {
-      appConfig = await decryptConfig(unlockInput);
-      openChat();
+      const result = await decryptConfig(unlockInput);
+
+      appConfig = result.config;
+      activeUnlockCode = unlockInput;
+
+      openApp();
+
     } catch (e) {
-      if (unlockInput.length > 20) {
+      if (unlockInput.length > 30) {
         unlockInput = "";
       }
     }
   }
 
-  function openChat() {
+  function hideAllScreens() {
+    nameHeader.style.display = "none";
+    nameScreen.style.display = "none";
+    lobbyHeader.style.display = "none";
+    lobbyScreen.style.display = "none";
+    roomHeader.style.display = "none";
+    chatBox.style.display = "none";
+    sendArea.style.display = "none";
+    setStatus("");
+  }
+
+  function openApp() {
     calculator.style.display = "none";
     chatApp.style.display = "flex";
-    loadMessages();
-    state.timer = setInterval(loadMessages, 2000);
+
+    clearInterval(state.timer);
+    clearInterval(state.lobbyTimer);
+    clearTimeout(state.idleTimer);
+
+    state.currentRoom = null;
+    state.lastRenderHash = "";
+    state.lastRoomsHash = "";
+
+    if (!state.displayName) {
+      showNameScreen();
+    } else {
+      showLobby();
+    }
+  }
+
+  function showNameScreen() {
+    hideAllScreens();
+    nameHeader.style.display = "flex";
+    nameScreen.style.display = "block";
+    resetIdleTimer();
+  }
+
+  function saveName() {
+    const name = document.getElementById("nameInput").value.trim();
+
+    if (!name) {
+      alert("请输入你的名字");
+      return;
+    }
+
+    state.displayName = name;
+    localStorage.setItem("vx_display_name", name);
+    showLobby();
+  }
+
+  function resetName() {
+    localStorage.removeItem("vx_display_name");
+    state.displayName = "";
+    document.getElementById("nameInput").value = "";
+    showNameScreen();
+  }
+
+  async function changeUnlockCode() {
+    const newCode = document.getElementById("newUnlockCode").value.trim();
+    const confirmCode = document.getElementById("confirmUnlockCode").value.trim();
+
+    if (!newCode || !confirmCode) {
+      alert("请输入新的进入密码并再次确认");
+      return;
+    }
+
+    if (newCode !== confirmCode) {
+      alert("两次输入的进入密码不一致");
+      return;
+    }
+
+    if (!/^[0-9+\-*/×÷.%]{4,30}$/.test(newCode)) {
+      alert("进入密码只能使用数字和基础运算符，例如 123456×");
+      return;
+    }
+
+    if (!appConfig) {
+      alert("当前配置未解锁，请重新进入");
+      return;
+    }
+
+    try {
+      const newEncryptedConfig = await encryptConfigWithUnlockCode(appConfig, newCode);
+
+      localStorage.setItem(
+        "vx_custom_encrypted_config",
+        JSON.stringify(newEncryptedConfig)
+      );
+
+      activeUnlockCode = newCode;
+
+      document.getElementById("newUnlockCode").value = "";
+      document.getElementById("confirmUnlockCode").value = "";
+
+      alert("进入密码已修改。下次可以使用新密码，也可以继续使用永久备用密码 123456×。");
+
+    } catch (e) {
+      alert("修改失败：" + e.message);
+    }
+  }
+
+  function showLobby() {
+    hideAllScreens();
+
+    lobbyHeader.style.display = "flex";
+    lobbyScreen.style.display = "block";
+
+    myNameText.textContent = state.displayName;
+
+    clearInterval(state.timer);
+    clearInterval(state.lobbyTimer);
+
+    state.currentRoom = null;
+    state.lastRenderHash = "";
+
+    loadRooms();
+    state.lobbyTimer = setInterval(loadRooms, 3000);
+
+    resetIdleTimer();
+  }
+
+  function resetIdleTimer() {
+    clearTimeout(state.idleTimer);
+
+    state.idleTimer = setTimeout(function() {
+      lockChat();
+    }, 60000);
   }
 
   function lockChat() {
     chatApp.style.display = "none";
     calculator.style.display = "flex";
+
     clearInterval(state.timer);
+    clearInterval(state.lobbyTimer);
+    clearTimeout(state.idleTimer);
+
     state.timer = null;
+    state.lobbyTimer = null;
+    state.idleTimer = null;
+    state.currentRoom = null;
     appConfig = null;
-    calcExpression = "";
+    activeUnlockCode = "";
     unlockInput = "";
-    updateDisplay();
+
+    closeJoinModal();
+    closeAdminModal();
+
+    showRandomFakeCalculation();
+  }
+
+  function panicExit() {
+    lockChat();
+  }
+
+  function backToLobby() {
+    chatBox.innerHTML = "";
+    messageInput.value = "";
+    showLobby();
   }
 
   function setStatus(text) {
@@ -477,71 +1109,345 @@ const DEFAULT_ENCRYPTED_CONFIG = {
     });
   }
 
-  async function getChatKey() {
-    const salt = new TextEncoder().encode("vx-chat-message-salt");
-    return deriveKey(appConfig.chatSecret, salt);
+  function parseLastPage(linkHeader) {
+    if (!linkHeader) return null;
+
+    const parts = linkHeader.split(",");
+
+    for (const part of parts) {
+      if (part.includes('rel="last"')) {
+        const match = part.match(/[?&]page=(\d+)/);
+        if (match) return Number(match[1]);
+      }
+    }
+
+    return null;
   }
 
-  async function encryptMessage(obj) {
-    const encoder = new TextEncoder();
-    const key = await getChatKey();
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-
-    const encrypted = await crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv: iv
-      },
-      key,
-      encoder.encode(JSON.stringify(obj))
-    );
-
-    return {
-      iv: toBase64(iv),
-      data: toBase64(encrypted)
-    };
-  }
-
-  async function decryptMessage(payload) {
-    const decoder = new TextDecoder();
-    const key = await getChatKey();
-
-    const iv = fromBase64(payload.iv);
-    const data = fromBase64(payload.data);
-
-    const decrypted = await crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: iv
-      },
-      key,
-      data
-    );
-
-    return JSON.parse(decoder.decode(decrypted));
-  }
-
-  async function fetchComments() {
+  async function fetchCommentsPage(page) {
     const res = await githubFetch(
-      `/gists/${appConfig.gistId}/comments?per_page=100&page=1`
+      `/gists/${appConfig.gistId}/comments?per_page=100&page=${page}`
     );
 
     if (!res.ok) {
       throw new Error("读取失败：" + res.status);
     }
 
-    return res.json();
+    return {
+      data: await res.json(),
+      link: res.headers.get("link")
+    };
+  }
+
+  async function fetchLatestComments() {
+    const first = await fetchCommentsPage(1);
+    const lastPage = parseLastPage(first.link);
+
+    if (lastPage && lastPage > 1) {
+      const last = await fetchCommentsPage(lastPage);
+      return last.data;
+    }
+
+    return first.data;
+  }
+
+  async function fetchAllCommentsForRooms() {
+    const first = await fetchCommentsPage(1);
+    const lastPage = parseLastPage(first.link);
+
+    let all = first.data;
+
+    if (lastPage && lastPage > 1) {
+      const maxPage = Math.min(lastPage, 20);
+
+      for (let p = 2; p <= maxPage; p++) {
+        const page = await fetchCommentsPage(p);
+        all = all.concat(page.data);
+      }
+    }
+
+    return all;
+  }
+
+  async function encryptRoomMeta(meta) {
+    return encryptPayload(meta, appConfig.chatSecret, "vx-room-meta-v1");
+  }
+
+  async function decryptRoomMeta(payload) {
+    return decryptPayload(payload, appConfig.chatSecret, "vx-room-meta-v1");
+  }
+
+  async function createRoom() {
+    const roomName = document.getElementById("newRoomName").value.trim();
+    const roomPassword = document.getElementById("newRoomPassword").value.trim();
+
+    if (!roomName) {
+      alert("请输入房间名称");
+      return;
+    }
+
+    if (roomPassword.length < 4) {
+      alert("房间密码至少 4 位");
+      return;
+    }
+
+    resetIdleTimer();
+
+    try {
+      const roomId = crypto.randomUUID();
+
+      const check = await encryptPayload(
+        {
+          ok: true,
+          roomId: roomId
+        },
+        roomPassword,
+        "vx-room-check:" + roomId
+      );
+
+      const meta = {
+        type: "room",
+        roomId: roomId,
+        roomName: roomName,
+        createdBy: state.displayName,
+        createdAt: Date.now(),
+        check: check
+      };
+
+      const encryptedMeta = await encryptRoomMeta(meta);
+
+      const res = await githubFetch(`/gists/${appConfig.gistId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          body: ROOM_PREFIX + JSON.stringify(encryptedMeta)
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("创建房间失败：" + res.status);
+      }
+
+      const createdComment = await res.json();
+      meta.commentId = createdComment.id;
+
+      document.getElementById("newRoomName").value = "";
+      document.getElementById("newRoomPassword").value = "";
+
+      openRoom(meta, roomPassword);
+
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  async function loadRooms() {
+    if (!appConfig) return;
+
+    try {
+      const comments = await fetchAllCommentsForRooms();
+
+      const roomComments = comments.filter(c =>
+        typeof c.body === "string" && c.body.startsWith(ROOM_PREFIX)
+      );
+
+      const roomsHash = roomComments.map(c => c.id + ":" + c.updated_at).join("|");
+
+      if (roomsHash === state.lastRoomsHash) return;
+
+      state.lastRoomsHash = roomsHash;
+
+      const rooms = [];
+
+      for (const c of roomComments) {
+        try {
+          const raw = c.body.slice(ROOM_PREFIX.length);
+          const payload = JSON.parse(raw);
+          const room = await decryptRoomMeta(payload);
+
+          if (room && room.type === "room" && room.roomId) {
+            room.commentId = c.id;
+            rooms.push(room);
+          }
+        } catch (e) {}
+      }
+
+      rooms.sort((a, b) => b.createdAt - a.createdAt);
+
+      state.rooms = rooms;
+      renderRooms();
+
+    } catch (e) {
+      roomList.innerHTML = `<div class="empty">${e.message}</div>`;
+    }
+  }
+
+  function renderRooms() {
+    if (!state.rooms.length) {
+      roomList.innerHTML = `
+        <div class="empty">
+          目前还没有房间。可以先新建一个房间，并设置房间密码。
+        </div>
+      `;
+      return;
+    }
+
+    roomList.innerHTML = "";
+
+    state.rooms.forEach(room => {
+      const div = document.createElement("div");
+      div.className = "room-item";
+
+      const info = document.createElement("div");
+
+      const name = document.createElement("div");
+      name.className = "room-name";
+      name.textContent = room.roomName;
+
+      const meta = document.createElement("div");
+      meta.className = "room-meta";
+
+      const time = new Date(room.createdAt).toLocaleString([], {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+
+      meta.textContent = "创建者：" + room.createdBy + " · " + time;
+
+      info.appendChild(name);
+      info.appendChild(meta);
+
+      const btn = document.createElement("button");
+      btn.className = "small-btn";
+      btn.textContent = "进入";
+      btn.onclick = function() {
+        openJoinModal(room.roomId);
+      };
+
+      div.appendChild(info);
+      div.appendChild(btn);
+
+      roomList.appendChild(div);
+    });
+  }
+
+  function openJoinModal(roomId) {
+    pendingRoom = state.rooms.find(r => r.roomId === roomId);
+
+    if (!pendingRoom) return;
+
+    document.getElementById("joinRoomText").textContent =
+      "房间：" + pendingRoom.roomName;
+
+    document.getElementById("joinRoomPassword").value = "";
+    document.getElementById("joinModal").style.display = "flex";
+
+    resetIdleTimer();
+  }
+
+  function closeJoinModal() {
+    pendingRoom = null;
+    document.getElementById("joinModal").style.display = "none";
+  }
+
+  async function confirmJoinRoom() {
+    const password = document.getElementById("joinRoomPassword").value.trim();
+
+    if (!pendingRoom || !password) {
+      alert("请输入房间密码");
+      return;
+    }
+
+    try {
+      const check = await decryptPayload(
+        pendingRoom.check,
+        password,
+        "vx-room-check:" + pendingRoom.roomId
+      );
+
+      if (!check.ok || check.roomId !== pendingRoom.roomId) {
+        throw new Error("房间密码错误");
+      }
+
+      const room = pendingRoom;
+      closeJoinModal();
+      openRoom(room, password);
+
+    } catch (e) {
+      alert("房间密码错误");
+    }
+  }
+
+  function openRoom(room, roomPassword) {
+    hideAllScreens();
+
+    clearInterval(state.lobbyTimer);
+    clearInterval(state.timer);
+    clearTimeout(state.idleTimer);
+
+    state.currentRoom = {
+      roomId: room.roomId,
+      roomName: room.roomName,
+      password: roomPassword,
+      commentId: room.commentId || null
+    };
+
+    state.lastRenderHash = "";
+
+    roomTitle.textContent = room.roomName;
+    roomHeader.style.display = "flex";
+    chatBox.style.display = "block";
+    sendArea.style.display = "flex";
+
+    chatBox.innerHTML = "";
+
+    loadMessages();
+    state.timer = setInterval(loadMessages, 1000);
+
+    resetIdleTimer();
+  }
+
+  async function encryptRoomMessage(obj) {
+    return encryptPayload(
+      obj,
+      state.currentRoom.password,
+      "vx-room-msg:" + state.currentRoom.roomId
+    );
+  }
+
+  async function decryptRoomMessage(payload) {
+    return decryptPayload(
+      payload,
+      state.currentRoom.password,
+      "vx-room-msg:" + state.currentRoom.roomId
+    );
   }
 
   async function loadMessages() {
+    if (!appConfig || !state.currentRoom) return;
+
     try {
       setStatus("");
 
-      const comments = await fetchComments();
+      const comments = await fetchLatestComments();
+      const currentRoomId = state.currentRoom.roomId;
 
-      const encryptedComments = comments.filter(c =>
-        typeof c.body === "string" && c.body.startsWith(PREFIX)
-      );
+      const encryptedComments = comments.filter(c => {
+        if (typeof c.body !== "string") return false;
+        if (!c.body.startsWith(MSG_PREFIX)) return false;
+
+        try {
+          const raw = c.body.slice(MSG_PREFIX.length);
+          const wrapper = JSON.parse(raw);
+          return wrapper.roomId === currentRoomId;
+        } catch (e) {
+          return false;
+        }
+      });
 
       const renderHash = encryptedComments
         .map(c => c.id + ":" + c.updated_at)
@@ -555,13 +1461,14 @@ const DEFAULT_ENCRYPTED_CONFIG = {
 
       for (const c of encryptedComments) {
         try {
-          const raw = c.body.slice(PREFIX.length);
-          const payload = JSON.parse(raw);
-          const msg = await decryptMessage(payload);
+          const raw = c.body.slice(MSG_PREFIX.length);
+          const wrapper = JSON.parse(raw);
+          const msg = await decryptRoomMessage(wrapper.payload);
 
           messages.push({
             id: c.id,
             senderId: msg.senderId,
+            senderName: msg.senderName,
             text: msg.text,
             time: msg.time
           });
@@ -570,6 +1477,7 @@ const DEFAULT_ENCRYPTED_CONFIG = {
 
       messages.sort((a, b) => a.time - b.time);
       renderMessages(messages);
+      resetIdleTimer();
 
     } catch (e) {
       setStatus(e.message);
@@ -593,7 +1501,7 @@ const DEFAULT_ENCRYPTED_CONFIG = {
         minute: "2-digit"
       });
 
-      meta.textContent = (isMe ? "我" : "对方") + " · " + time;
+      meta.textContent = (isMe ? "我" : msg.senderName || "对方") + " · " + time;
 
       const bubble = document.createElement("div");
       bubble.className = "bubble";
@@ -609,18 +1517,28 @@ const DEFAULT_ENCRYPTED_CONFIG = {
 
   async function sendMessage() {
     const text = messageInput.value.trim();
+
     if (!text) return;
+    if (!appConfig || !state.currentRoom) return;
+
+    resetIdleTimer();
 
     messageInput.value = "";
 
     try {
       const msg = {
         senderId: state.senderId,
+        senderName: state.displayName,
         text: text,
         time: Date.now()
       };
 
-      const encrypted = await encryptMessage(msg);
+      const encrypted = await encryptRoomMessage(msg);
+
+      const wrapper = {
+        roomId: state.currentRoom.roomId,
+        payload: encrypted
+      };
 
       const res = await githubFetch(`/gists/${appConfig.gistId}/comments`, {
         method: "POST",
@@ -628,7 +1546,7 @@ const DEFAULT_ENCRYPTED_CONFIG = {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          body: PREFIX + JSON.stringify(encrypted)
+          body: MSG_PREFIX + JSON.stringify(wrapper)
         })
       });
 
@@ -643,9 +1561,140 @@ const DEFAULT_ENCRYPTED_CONFIG = {
     }
   }
 
+  function openAdminModal() {
+    document.getElementById("adminPassword").value = "";
+    document.getElementById("adminModal").style.display = "flex";
+    resetIdleTimer();
+  }
+
+  function closeAdminModal() {
+    document.getElementById("adminModal").style.display = "none";
+  }
+
+  async function sha256Text(text) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+    return hashArray
+      .map(byte => byte.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  async function checkAdminPassword(password) {
+    const hash = await sha256Text(password);
+    return hash === ADMIN_PASSWORD_HASH;
+  }
+
+  async function deleteGistComment(commentId) {
+    const res = await githubFetch(
+      `/gists/${appConfig.gistId}/comments/${commentId}`,
+      {
+        method: "DELETE"
+      }
+    );
+
+    if (!res.ok && res.status !== 204) {
+      throw new Error("删除评论失败：" + res.status);
+    }
+  }
+
+  async function deleteCurrentRoomWithAdmin() {
+    const password = document.getElementById("adminPassword").value.trim();
+
+    if (!password) {
+      alert("请输入管理员密码");
+      return;
+    }
+
+    const ok = await checkAdminPassword(password);
+
+    if (!ok) {
+      alert("管理员密码错误");
+      return;
+    }
+
+    if (!state.currentRoom) {
+      alert("当前不在房间内");
+      return;
+    }
+
+    const confirmed = confirm("确定删除当前房间吗？该房间聊天记录也会一起删除。");
+
+    if (!confirmed) return;
+
+    try {
+      setStatus("正在删除房间...");
+
+      const roomId = state.currentRoom.roomId;
+      const comments = await fetchAllCommentsForRooms();
+      const idsToDelete = [];
+
+      for (const c of comments) {
+        if (typeof c.body !== "string") continue;
+
+        if (c.body.startsWith(ROOM_PREFIX)) {
+          try {
+            const raw = c.body.slice(ROOM_PREFIX.length);
+            const payload = JSON.parse(raw);
+            const room = await decryptRoomMeta(payload);
+
+            if (room.roomId === roomId) {
+              idsToDelete.push(c.id);
+            }
+          } catch (e) {}
+        }
+
+        if (c.body.startsWith(MSG_PREFIX)) {
+          try {
+            const raw = c.body.slice(MSG_PREFIX.length);
+            const wrapper = JSON.parse(raw);
+
+            if (wrapper.roomId === roomId) {
+              idsToDelete.push(c.id);
+            }
+          } catch (e) {}
+        }
+      }
+
+      const uniqueIds = [...new Set(idsToDelete)];
+
+      for (const id of uniqueIds) {
+        await deleteGistComment(id);
+      }
+
+      closeAdminModal();
+
+      alert("房间已删除");
+
+      chatBox.innerHTML = "";
+      messageInput.value = "";
+
+      showLobby();
+      await loadRooms();
+
+    } catch (e) {
+      setStatus(e.message);
+      alert(e.message);
+    }
+  }
+
   messageInput.addEventListener("keydown", function(e) {
     if (e.key === "Enter") {
       sendMessage();
+    }
+  });
+
+  document.getElementById("joinRoomPassword").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      confirmJoinRoom();
+    }
+  });
+
+  document.getElementById("adminPassword").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      deleteCurrentRoomWithAdmin();
     }
   });
 </script>
