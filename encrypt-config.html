@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Encrypt Config</title>
+  <title>配置页面</title>
 
   <style>
     * {
@@ -13,198 +13,370 @@
 
     body {
       margin: 0;
+      padding: 18px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #111827;
-      color: #ffffff;
-      min-height: 100vh;
-      padding: 18px;
+      color: #111827;
     }
 
-    .box {
-      width: 100%;
-      max-width: 430px;
+    .wrap {
+      max-width: 760px;
       margin: 0 auto;
-      padding-top: 30px;
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.28);
     }
 
-    h2 {
-      font-size: 22px;
-      margin-bottom: 8px;
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
     }
 
-    p {
-      color: #9ca3af;
-      font-size: 14px;
+    .sub {
+      margin: 0 0 16px;
+      color: #6b7280;
       line-height: 1.6;
-      margin-bottom: 18px;
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      margin: 16px 0 6px;
+      font-weight: 800;
+      font-size: 14px;
     }
 
     input,
-    textarea,
-    button {
+    textarea {
       width: 100%;
-      border: none;
+      border: 1px solid #d1d5db;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font-size: 14px;
       outline: none;
-      border-radius: 12px;
-      font-size: 15px;
-    }
-
-    input {
-      padding: 14px;
-      margin-bottom: 12px;
-      background: #1f2937;
-      color: white;
-      border: 1px solid #374151;
-    }
-
-    input::placeholder {
-      color: #9ca3af;
-    }
-
-    button {
-      padding: 14px;
-      background: #22c55e;
-      color: white;
-      font-weight: 700;
-      margin: 8px 0 14px;
-      cursor: pointer;
+      font-family: inherit;
+      background: white;
     }
 
     textarea {
-      height: 260px;
-      padding: 14px;
-      background: #020617;
-      color: #22c55e;
-      border: 1px solid #374151;
-      font-family: monospace;
-      font-size: 13px;
+      min-height: 300px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      resize: vertical;
+      white-space: pre;
       line-height: 1.5;
-      resize: none;
     }
 
-    .tip {
-      font-size: 12px;
-      color: #fbbf24;
+    input:focus,
+    textarea:focus {
+      border-color: #111827;
+      box-shadow: 0 0 0 3px rgba(17,24,39,0.08);
+    }
+
+    .btn {
+      width: 100%;
+      border: none;
+      background: #111827;
+      color: white;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 800;
+      margin-top: 18px;
+      cursor: pointer;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn.secondary {
+      background: #f3f4f6;
+      color: #111827;
       margin-top: 10px;
+    }
+
+    .hint {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: #4b5563;
+      line-height: 1.6;
+    }
+
+    .warning {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .ok {
+      display: none;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #047857;
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      font-weight: 700;
+    }
+
+    .mini {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 6px;
+      line-height: 1.5;
     }
   </style>
 </head>
 
 <body>
+  <div class="wrap">
+    <h1>配置页面</h1>
 
-<div class="box">
-  <h2>Gist Chat 加密配置</h2>
+    <p class="sub">
+      这个页面用来生成主页面 <strong>index.html</strong> 里面的
+      <strong>DEFAULT_ENCRYPTED_CONFIG</strong> 和 <strong>ADMIN_PASSWORD_HASH</strong>。
+    </p>
 
-  <p>
-    这里用来把 Gist ID、GitHub Token 和聊天密钥加密成一段乱码。
-    生成后复制结果，后面放进真正的计算器聊天页面。
-  </p>
+    <div class="warning">
+      注意：这里输入的 GitHub Token、聊天密钥、万能管理密码只用于生成加密结果。
+      生成后复制到 index.html。不要把 Token 明文写进公开代码。
+    </div>
 
-  <input id="gistId" placeholder="Gist ID" value="250bbdfbad8be04672e0ae85300a23f2" />
+    <label>1. GitHub Token</label>
+    <input id="tokenInput" type="password" placeholder="粘贴你的 GitHub Token" />
 
-  <input id="token" placeholder="GitHub Token，不要发给别人" type="password" />
+    <label>2. Gist ID 或 Gist 链接</label>
+    <input id="gistIdInput" placeholder="例如：250bbdfbad8be04672e0ae85300a23f2" />
 
-  <input id="chatSecret" placeholder="聊天加密密钥，例如 vx-private-chat-2026" />
+    <label>3. 聊天加密密钥</label>
+    <input id="chatSecretInput" placeholder="例如：my-private-chat-secret-2026" />
 
-  <input id="unlockCode" placeholder="计算器暗号，例如 5201314" inputmode="numeric" />
+    <div class="hint">
+      聊天加密密钥用于加密房间信息、房间列表和聊天内容。你和对方使用同一套网页时，这个密钥必须一致。
+    </div>
 
-  <button onclick="generateConfig()">生成加密配置</button>
+    <label>4. 进入暗号</label>
+    <input id="unlockCodeInput" placeholder="例如：123456✖️" value="123456✖️" />
 
-  <textarea id="output" placeholder="生成结果会出现在这里"></textarea>
+    <div class="hint">
+      推荐暗号：<strong>123456✖️</strong><br>
+      在计算器主页面输入：<strong>1 → 2 → 3 → 4 → 5 → 6 → × → =</strong>
+    </div>
 
-  <div class="tip">
-    注意：生成后的配置可以放进网页，但暗号一定要记住。
+    <label>5. 万能管理密码</label>
+    <input id="adminPasswordInput" type="password" placeholder="例如：admin397931079" value="admin397931079" />
+
+    <div class="hint">
+      万能管理密码用于房间里的 <strong>房间设置</strong>。输入这个密码后，可以删除房间和该房间聊天记录。
+      生成后，主页面代码里只保存它的 SHA-256 哈希，不保存明文密码。
+    </div>
+
+    <button class="btn" onclick="generateConfig()">生成配置</button>
+
+    <div class="ok" id="okBox">配置已生成，可以复制到 index.html 里。</div>
+
+    <label>生成结果</label>
+    <textarea id="output" readonly placeholder="生成后这里会出现 DEFAULT_ENCRYPTED_CONFIG 和 ADMIN_PASSWORD_HASH"></textarea>
+
+    <button class="btn secondary" onclick="copyOutput()">复制生成结果</button>
+
+    <div class="mini">
+      复制后，到 index.html 里搜索 <strong>DEFAULT_ENCRYPTED_CONFIG</strong> 和
+      <strong>ADMIN_PASSWORD_HASH</strong>，把对应内容替换掉。
+    </div>
   </div>
-</div>
 
-<script>
-  function toBase64(buffer) {
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
+  <script>
+    function toBase64(buffer) {
+      const bytes = new Uint8Array(buffer);
+      let binary = "";
 
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+
+      return btoa(binary);
     }
 
-    return btoa(binary);
-  }
+    async function sha256Text(text) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
 
-  async function deriveKey(code, salt) {
-    const encoder = new TextEncoder();
-
-    const baseKey = await crypto.subtle.importKey(
-      "raw",
-      encoder.encode(code),
-      "PBKDF2",
-      false,
-      ["deriveKey"]
-    );
-
-    return crypto.subtle.deriveKey(
-      {
-        name: "PBKDF2",
-        salt: salt,
-        iterations: 180000,
-        hash: "SHA-256"
-      },
-      baseKey,
-      {
-        name: "AES-GCM",
-        length: 256
-      },
-      false,
-      ["encrypt", "decrypt"]
-    );
-  }
-
-  async function generateConfig() {
-    const gistId = document.getElementById("gistId").value.trim();
-    const token = document.getElementById("token").value.trim();
-    const chatSecret = document.getElementById("chatSecret").value.trim();
-    const unlockCode = document.getElementById("unlockCode").value.trim();
-
-    if (!gistId || !token || !chatSecret || !unlockCode) {
-      alert("请把所有内容填写完整");
-      return;
+      return hashArray
+        .map(byte => byte.toString(16).padStart(2, "0"))
+        .join("");
     }
 
-    if (!/^[0-9]{4,20}$/.test(unlockCode)) {
-      alert("计算器暗号建议使用 4 到 20 位数字");
-      return;
+    async function deriveKey(password, salt) {
+      const encoder = new TextEncoder();
+
+      const baseKey = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(password),
+        "PBKDF2",
+        false,
+        ["deriveKey"]
+      );
+
+      return crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt: salt,
+          iterations: 180000,
+          hash: "SHA-256"
+        },
+        baseKey,
+        {
+          name: "AES-GCM",
+          length: 256
+        },
+        false,
+        ["encrypt", "decrypt"]
+      );
     }
 
-    const config = {
-      gistId: gistId,
-      token: token,
-      chatSecret: chatSecret
-    };
+    async function encryptConfig(config, unlockCode) {
+      const encoder = new TextEncoder();
 
-    const encoder = new TextEncoder();
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
 
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await deriveKey(unlockCode, salt);
 
-    const key = await deriveKey(unlockCode, salt);
+      const encrypted = await crypto.subtle.encrypt(
+        {
+          name: "AES-GCM",
+          iv: iv
+        },
+        key,
+        encoder.encode(JSON.stringify(config))
+      );
 
-    const encrypted = await crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv: iv
-      },
-      key,
-      encoder.encode(JSON.stringify(config))
-    );
+      return {
+        salt: toBase64(salt),
+        iv: toBase64(iv),
+        data: toBase64(encrypted)
+      };
+    }
 
-    const result = {
-      salt: toBase64(salt),
-      iv: toBase64(iv),
-      data: toBase64(encrypted)
-    };
+    function normalizeGistId(input) {
+      const text = input.trim();
 
-    document.getElementById("output").value =
-`const DEFAULT_ENCRYPTED_CONFIG = ${JSON.stringify(result, null, 2)};`;
-  }
-</script>
+      if (text.includes("gist.github.com")) {
+        const parts = text.split("/").filter(Boolean);
+        return parts[parts.length - 1].split("#")[0].split("?")[0];
+      }
 
+      return text;
+    }
+
+    async function generateConfig() {
+      if (!window.crypto || !crypto.subtle) {
+        alert("当前浏览器不支持加密功能。请用 Chrome / Safari，并尽量通过 HTTPS 页面打开。");
+        return;
+      }
+
+      const token = document.getElementById("tokenInput").value.trim();
+      const gistIdRaw = document.getElementById("gistIdInput").value.trim();
+      const chatSecret = document.getElementById("chatSecretInput").value.trim();
+      const unlockCode = document.getElementById("unlockCodeInput").value.trim();
+      const adminPassword = document.getElementById("adminPasswordInput").value.trim();
+
+      if (!token) {
+        alert("请输入 GitHub Token");
+        return;
+      }
+
+      if (!gistIdRaw) {
+        alert("请输入 Gist ID 或 Gist 链接");
+        return;
+      }
+
+      if (!chatSecret) {
+        alert("请输入聊天加密密钥");
+        return;
+      }
+
+      if (!unlockCode) {
+        alert("请输入进入暗号");
+        return;
+      }
+
+      if (!adminPassword) {
+        alert("请输入万能管理密码");
+        return;
+      }
+
+      if (!/^[0-9+\-*/×÷.%✖\uFE0F]{4,40}$/.test(unlockCode)) {
+        alert("进入暗号可以使用数字和基础运算符，例如 123456✖️");
+        return;
+      }
+
+      if (adminPassword.length < 6 || adminPassword.length > 64) {
+        alert("万能管理密码建议设置为 6 到 64 位");
+        return;
+      }
+
+      const gistId = normalizeGistId(gistIdRaw);
+
+      const config = {
+        token: token,
+        gistId: gistId,
+        chatSecret: chatSecret
+      };
+
+      try {
+        const encrypted = await encryptConfig(config, unlockCode);
+        const adminHash = await sha256Text(adminPassword);
+
+        const result =
+`const DEFAULT_ENCRYPTED_CONFIG = {
+  "salt": "${encrypted.salt}",
+  "iv": "${encrypted.iv}",
+  "data": "${encrypted.data}"
+};
+
+const ADMIN_PASSWORD_HASH = "${adminHash}";`;
+
+        document.getElementById("output").value = result;
+        document.getElementById("okBox").style.display = "block";
+
+      } catch (e) {
+        alert("生成失败：" + e.message);
+      }
+    }
+
+    async function copyOutput() {
+      const output = document.getElementById("output").value;
+
+      if (!output) {
+        alert("请先生成配置");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(output);
+        alert("已复制");
+      } catch (e) {
+        document.getElementById("output").select();
+        document.execCommand("copy");
+        alert("已复制");
+      }
+    }
+  </script>
 </body>
 </html>
