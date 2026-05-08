@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Calculator</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111827;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .calculator {
+      width: 100%;
+      height: 100vh;
+      background: #111827;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 18px;
+    }
+
+    .display {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      font-size: 54px;
+      font-weight: 300;
+      padding: 20px 4px;
+      word-break: break-all;
+      text-align: right;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding-bottom: 18px;
+    }
+
+    .btn {
+      height: 74px;
+      border-radius: 50%;
+      border: none;
+      font-size: 26px;
+      color: white;
+      background: #374151;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+      opacity: 0.85;
+    }
+
+    .operator {
+      background: #f59e0b;
+    }
+
+    .function {
+      background: #9ca3af;
+      color: #111827;
+    }
+
+    .zero {
+      grid-column: span 2;
+      border-radius: 999px;
+      text-align: left;
+      padding-left: 30px;
+    }
+
+    .chat-app {
+      display: none;
+      width: 100%;
+      height: 100vh;
+      background: #f7f7f8;
+      flex-direction: column;
+    }
+
+    .chat-header {
+      height: 54px;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      position: relative;
+    }
+
+    .back-btn {
+      position: absolute;
+      left: 12px;
+      border: none;
+      background: #f3f4f6;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+    }
+
+    .chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+    }
+
+    .msg-wrap {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 12px;
+    }
+
+    .msg-wrap.me {
+      align-items: flex-end;
+    }
+
+    .msg-wrap.other {
+      align-items: flex-start;
+    }
+
+    .meta {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 4px;
+      padding: 0 5px;
+    }
+
+    .bubble {
+      max-width: 78%;
+      padding: 10px 13px;
+      border-radius: 16px;
+      font-size: 15px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .me .bubble {
+      background: #111827;
+      color: white;
+      border-top-right-radius: 4px;
+    }
+
+    .other .bubble {
+      background: white;
+      color: #111827;
+      border-top-left-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .send-area {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .send-area input {
+      flex: 1;
+      border: 1px solid #ddd;
+      border-radius: 999px;
+      padding: 12px 14px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .send-area button {
+      border: none;
+      border-radius: 999px;
+      background: #111827;
+      color: white;
+      padding: 0 18px;
+      font-size: 15px;
+    }
+
+    .status {
+      display: none;
+      background: #fff7ed;
+      color: #c2410c;
+      padding: 8px 12px;
+      font-size: 12px;
+      border-top: 1px solid #fed7aa;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="calculator" id="calculator">
+  <div class="display" id="display">0</div>
+
+  <div class="grid">
+    <button class="btn function" onclick="clearCalc()">C</button>
+    <button class="btn function" onclick="backspaceCalc()">⌫</button>
+    <button class="btn function" onclick="appendOperator('%')">%</button>
+    <button class="btn operator" onclick="appendOperator('/')">÷</button>
+
+    <button class="btn" onclick="appendNumber('7')">7</button>
+    <button class="btn" onclick="appendNumber('8')">8</button>
+    <button class="btn" onclick="appendNumber('9')">9</button>
+    <button class="btn operator" onclick="appendOperator('*')">×</button>
+
+    <button class="btn" onclick="appendNumber('4')">4</button>
+    <button class="btn" onclick="appendNumber('5')">5</button>
+    <button class="btn" onclick="appendNumber('6')">6</button>
+    <button class="btn operator" onclick="appendOperator('-')">−</button>
+
+    <button class="btn" onclick="appendNumber('1')">1</button>
+    <button class="btn" onclick="appendNumber('2')">2</button>
+    <button class="btn" onclick="appendNumber('3')">3</button>
+    <button class="btn operator" onclick="appendOperator('+')">+</button>
+
+    <button class="btn zero" onclick="appendNumber('0')">0</button>
+    <button class="btn" onclick="appendDot()">.</button>
+    <button class="btn operator" onclick="calculateResult()">=</button>
+  </div>
+</div>
+
+<div class="chat-app" id="chatApp">
+  <div class="chat-header">
+    <button class="back-btn" onclick="lockChat()">返回</button>
+    Private Chat
+  </div>
+
+  <div class="chat-box" id="chatBox"></div>
+
+  <div class="status" id="status"></div>
+
+  <div class="send-area">
+    <input id="messageInput" placeholder="输入消息..." />
+    <button onclick="sendMessage()">发送</button>
+  </div>
+</div>
+
+<script>
+const DEFAULT_ENCRYPTED_CONFIG = {
+  "salt": "XHAbsrSblfGS/vYVydrltA==",
+  "iv": "oa/ZXZyCsRe7T1HG",
+  "data": "34kR5da63kBfi89wLPDw+/Y4h36M8f1ijgcP+LmaWm/zb0PrLdhbWRDndbUze/pqRN6tJXKce0IsEUsr4+wWlS4NwSOUuofh87PnDMiINSsc5YqBxLqR2r6xtP2e6odprjD54JsvwVlnLH5Ye9VvDkyENKAhGqDprAeMt5mGxnpP5FnNYRvVipvpbRaVRv0e+YOwqOpGqM1ZwLK2+lsxfAOZthf7b62et32yM4Wg9x8q+LxL9w2J4cTQYWODDRcAJH6fzFa0mHu2"
+};						
+
+
+  const API = "https://api.github.com";
+  const PREFIX = "ENC_CHAT_VX:";
+
+  let calcExpression = "";
+  let unlockInput = "";
+
+  let appConfig = null;
+
+  let state = {
+    senderId: localStorage.getItem("vx_sender_id") || crypto.randomUUID(),
+    timer: null,
+    lastRenderHash: ""
+  };
+
+  localStorage.setItem("vx_sender_id", state.senderId);
+
+  const calculator = document.getElementById("calculator");
+  const chatApp = document.getElementById("chatApp");
+  const display = document.getElementById("display");
+  const chatBox = document.getElementById("chatBox");
+  const messageInput = document.getElementById("messageInput");
+  const statusEl = document.getElementById("status");
+
+  function updateDisplay() {
+    display.textContent = calcExpression || "0";
+  }
+
+  function appendNumber(num) {
+    if (calcExpression === "0" || calcExpression === "Error") {
+      calcExpression = num;
+    } else {
+      calcExpression += num;
+    }
+
+    unlockInput += num;
+    tryUnlock();
+    updateDisplay();
+  }
+
+  function appendOperator(op) {
+    if (!calcExpression || calcExpression === "Error") return;
+
+    const last = calcExpression.slice(-1);
+
+    if ("+-*/%".includes(last)) {
+      calcExpression = calcExpression.slice(0, -1) + op;
+    } else {
+      calcExpression += op;
+    }
+
+    unlockInput = "";
+    updateDisplay();
+  }
+
+  function appendDot() {
+    if (calcExpression === "Error") calcExpression = "";
+    calcExpression += ".";
+    unlockInput = "";
+    updateDisplay();
+  }
+
+  function clearCalc() {
+    calcExpression = "";
+    unlockInput = "";
+    updateDisplay();
+  }
+
+  function backspaceCalc() {
+    calcExpression = calcExpression.slice(0, -1);
+    unlockInput = unlockInput.slice(0, -1);
+    updateDisplay();
+  }
+
+  function calculateResult() {
+    try {
+      if (!calcExpression) return;
+
+      if (!/^[0-9+\-*/%. ]+$/.test(calcExpression)) {
+        calcExpression = "Error";
+        updateDisplay();
+        return;
+      }
+
+      const result = Function('"use strict"; return (' + calcExpression + ')')();
+
+      if (!isFinite(result)) {
+        calcExpression = "Error";
+      } else {
+        calcExpression = String(Number(result.toFixed(8)));
+      }
+
+      unlockInput = "";
+      updateDisplay();
+
+    } catch (e) {
+      calcExpression = "Error";
+      unlockInput = "";
+      updateDisplay();
+    }
+  }
+
+  function toBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+
+    return btoa(binary);
+  }
+
+  function fromBase64(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    return bytes;
+  }
+
+  async function deriveKey(password, salt) {
+    const encoder = new TextEncoder();
+
+    const baseKey = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(password),
+      "PBKDF2",
+      false,
+      ["deriveKey"]
+    );
+
+    return crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 180000,
+        hash: "SHA-256"
+      },
+      baseKey,
+      {
+        name: "AES-GCM",
+        length: 256
+      },
+      false,
+      ["encrypt", "decrypt"]
+    );
+  }
+
+  async function decryptConfig(unlockCode) {
+    const decoder = new TextDecoder();
+
+    const salt = fromBase64(DEFAULT_ENCRYPTED_CONFIG.salt);
+    const iv = fromBase64(DEFAULT_ENCRYPTED_CONFIG.iv);
+    const data = fromBase64(DEFAULT_ENCRYPTED_CONFIG.data);
+
+    const key = await deriveKey(unlockCode, salt);
+
+    const decrypted = await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      data
+    );
+
+    return JSON.parse(decoder.decode(decrypted));
+  }
+
+  async function tryUnlock() {
+    try {
+      appConfig = await decryptConfig(unlockInput);
+      openChat();
+    } catch (e) {
+      if (unlockInput.length > 20) {
+        unlockInput = "";
+      }
+    }
+  }
+
+  function openChat() {
+    calculator.style.display = "none";
+    chatApp.style.display = "flex";
+    loadMessages();
+    state.timer = setInterval(loadMessages, 2000);
+  }
+
+  function lockChat() {
+    chatApp.style.display = "none";
+    calculator.style.display = "flex";
+    clearInterval(state.timer);
+    state.timer = null;
+    appConfig = null;
+    calcExpression = "";
+    unlockInput = "";
+    updateDisplay();
+  }
+
+  function setStatus(text) {
+    if (!text) {
+      statusEl.style.display = "none";
+      statusEl.textContent = "";
+      return;
+    }
+
+    statusEl.style.display = "block";
+    statusEl.textContent = text;
+  }
+
+  async function githubFetch(path, options = {}) {
+    const headers = {
+      "Accept": "application/vnd.github+json",
+      "Authorization": "Bearer " + appConfig.token,
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(options.headers || {})
+    };
+
+    return fetch(API + path, {
+      ...options,
+      headers
+    });
+  }
+
+  async function getChatKey() {
+    const salt = new TextEncoder().encode("vx-chat-message-salt");
+    return deriveKey(appConfig.chatSecret, salt);
+  }
+
+  async function encryptMessage(obj) {
+    const encoder = new TextEncoder();
+    const key = await getChatKey();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const encrypted = await crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      encoder.encode(JSON.stringify(obj))
+    );
+
+    return {
+      iv: toBase64(iv),
+      data: toBase64(encrypted)
+    };
+  }
+
+  async function decryptMessage(payload) {
+    const decoder = new TextDecoder();
+    const key = await getChatKey();
+
+    const iv = fromBase64(payload.iv);
+    const data = fromBase64(payload.data);
+
+    const decrypted = await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      data
+    );
+
+    return JSON.parse(decoder.decode(decrypted));
+  }
+
+  async function fetchComments() {
+    const res = await githubFetch(
+      `/gists/${appConfig.gistId}/comments?per_page=100&page=1`
+    );
+
+    if (!res.ok) {
+      throw new Error("读取失败：" + res.status);
+    }
+
+    return res.json();
+  }
+
+  async function loadMessages() {
+    try {
+      setStatus("");
+
+      const comments = await fetchComments();
+
+      const encryptedComments = comments.filter(c =>
+        typeof c.body === "string" && c.body.startsWith(PREFIX)
+      );
+
+      const renderHash = encryptedComments
+        .map(c => c.id + ":" + c.updated_at)
+        .join("|");
+
+      if (renderHash === state.lastRenderHash) return;
+
+      state.lastRenderHash = renderHash;
+
+      const messages = [];
+
+      for (const c of encryptedComments) {
+        try {
+          const raw = c.body.slice(PREFIX.length);
+          const payload = JSON.parse(raw);
+          const msg = await decryptMessage(payload);
+
+          messages.push({
+            id: c.id,
+            senderId: msg.senderId,
+            text: msg.text,
+            time: msg.time
+          });
+        } catch (e) {}
+      }
+
+      messages.sort((a, b) => a.time - b.time);
+      renderMessages(messages);
+
+    } catch (e) {
+      setStatus(e.message);
+    }
+  }
+
+  function renderMessages(messages) {
+    chatBox.innerHTML = "";
+
+    messages.forEach(msg => {
+      const isMe = msg.senderId === state.senderId;
+
+      const wrap = document.createElement("div");
+      wrap.className = "msg-wrap " + (isMe ? "me" : "other");
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const time = new Date(msg.time).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+
+      meta.textContent = (isMe ? "我" : "对方") + " · " + time;
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.textContent = msg.text;
+
+      wrap.appendChild(meta);
+      wrap.appendChild(bubble);
+      chatBox.appendChild(wrap);
+    });
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    messageInput.value = "";
+
+    try {
+      const msg = {
+        senderId: state.senderId,
+        text: text,
+        time: Date.now()
+      };
+
+      const encrypted = await encryptMessage(msg);
+
+      const res = await githubFetch(`/gists/${appConfig.gistId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          body: PREFIX + JSON.stringify(encrypted)
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("发送失败：" + res.status);
+      }
+
+      await loadMessages();
+
+    } catch (e) {
+      setStatus(e.message);
+    }
+  }
+
+  messageInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  });
+</script>
+
+</body>
+</html>
