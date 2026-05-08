@@ -24,16 +24,14 @@
   </script>
 
   <link
-    id="dynamicFavicon"
     rel="icon"
     type="image/svg+xml"
-    href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Crect width="512" height="512" rx="96" fill="white"/%3E%3Cpath d="M151 88v96M103 136h96" stroke="%2322c55e" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M313 136h116" stroke="%233b82f6" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M101 333l96 96M197 333l-96 96" stroke="%23f97316" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="323" r="24" fill="%238b5cf6"/%3E%3Cpath d="M313 384h116" stroke="%238b5cf6" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="445" r="24" fill="%238b5cf6"/%3E%3C/svg%3E'
+    href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Crect width="512" height="512" rx="96" fill="white"/%3E%3Cfilter id="s" x="-50%25" y="-50%25" width="200%25" height="200%25"%3E%3CfeDropShadow dx="0" dy="14" stdDeviation="12" flood-color="%23000000" flood-opacity="0.24"/%3E%3C/filter%3E%3Ctext x="150" y="180" font-size="138" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%23007AFF" filter="url(%23s)"%3E%2B%3C/text%3E%3Ctext x="362" y="180" font-size="150" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%2334C759" filter="url(%23s)"%3E%E2%88%92%3C/text%3E%3Ctext x="150" y="385" font-size="150" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%23FF9500" filter="url(%23s)"%3E%C3%97%3C/text%3E%3Ctext x="362" y="385" font-size="150" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%23AF52DE" filter="url(%23s)"%3E%C3%B7%3C/text%3E%3C/svg%3E'
   />
 
   <link
-    id="dynamicAppleIcon"
     rel="apple-touch-icon"
-    href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Crect width="512" height="512" rx="96" fill="white"/%3E%3Cpath d="M151 88v96M103 136h96" stroke="%2322c55e" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M313 136h116" stroke="%233b82f6" stroke-width="46" stroke-linecap="round"/%3E%3Cpath d="M101 333l96 96M197 333l-96 96" stroke="%23f97316" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="323" r="24" fill="%238b5cf6"/%3E%3Cpath d="M313 384h116" stroke="%238b5cf6" stroke-width="46" stroke-linecap="round"/%3E%3Ccircle cx="371" cy="445" r="24" fill="%238b5cf6"/%3E%3C/svg%3E'
+    href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Crect width="512" height="512" rx="96" fill="white"/%3E%3Cfilter id="s" x="-50%25" y="-50%25" width="200%25" height="200%25"%3E%3CfeDropShadow dx="0" dy="14" stdDeviation="12" flood-color="%23000000" flood-opacity="0.24"/%3E%3C/filter%3E%3Ctext x="150" y="180" font-size="138" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%23007AFF" filter="url(%23s)"%3E%2B%3C/text%3E%3Ctext x="362" y="180" font-size="150" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%2334C759" filter="url(%23s)"%3E%E2%88%92%3C/text%3E%3Ctext x="150" y="385" font-size="150" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%23FF9500" filter="url(%23s)"%3E%C3%97%3C/text%3E%3Ctext x="362" y="385" font-size="150" font-family="Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle" fill="%23AF52DE" filter="url(%23s)"%3E%C3%B7%3C/text%3E%3C/svg%3E'
   />
 
   <meta name="theme-color" content="#111827" />
@@ -546,30 +544,6 @@
 </div>
 
 <script>
-  function installBuiltInIcon() {
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-        <rect width="512" height="512" rx="96" fill="white"/>
-        <path d="M151 88v96M103 136h96" stroke="#22c55e" stroke-width="46" stroke-linecap="round"/>
-        <path d="M313 136h116" stroke="#3b82f6" stroke-width="46" stroke-linecap="round"/>
-        <path d="M101 333l96 96M197 333l-96 96" stroke="#f97316" stroke-width="46" stroke-linecap="round"/>
-        <circle cx="371" cy="323" r="24" fill="#8b5cf6"/>
-        <path d="M313 384h116" stroke="#8b5cf6" stroke-width="46" stroke-linecap="round"/>
-        <circle cx="371" cy="445" r="24" fill="#8b5cf6"/>
-      </svg>
-    `;
-
-    const encoded = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-
-    const favicon = document.getElementById("dynamicFavicon");
-    if (favicon) favicon.href = encoded;
-
-    const appleIcon = document.getElementById("dynamicAppleIcon");
-    if (appleIcon) appleIcon.href = encoded;
-  }
-
-  installBuiltInIcon();
-
   const DEFAULT_ENCRYPTED_CONFIG = {
     "salt": "XHAbsrSblfGS/vYVydrltA==",
     "iv": "oa/ZXZyCsRe7T1HG",
@@ -670,7 +644,6 @@
     }
 
     unlockInput += num;
-    tryUnlock();
     updateDisplay();
   }
 
@@ -691,7 +664,6 @@
     }
 
     unlockInput += secretOp;
-    tryUnlock();
 
     if (!calcExpression || calcExpression === "Error") {
       updateDisplay();
@@ -715,11 +687,12 @@
       isFakeResult = false;
     }
 
-    if (calcExpression === "Error") calcExpression = "";
+    if (calcExpression === "Error") {
+      calcExpression = "";
+    }
 
     calcExpression += ".";
     unlockInput += ".";
-    tryUnlock();
     updateDisplay();
   }
 
@@ -744,7 +717,7 @@
     updateDisplay();
   }
 
-  function calculateResult() {
+  async function calculateResult() {
     try {
       if (isFakeResult) {
         calcExpression = "";
@@ -754,7 +727,23 @@
         return;
       }
 
-      if (!calcExpression) return;
+      if (unlockInput) {
+        const unlocked = await tryUnlock();
+
+        if (unlocked) {
+          return;
+        }
+      }
+
+      if (!calcExpression) {
+        return;
+      }
+
+      const last = calcExpression.slice(-1);
+
+      if ("+-*/%".includes(last)) {
+        return;
+      }
 
       if (!/^[0-9+\-*/%. ]+$/.test(calcExpression)) {
         calcExpression = "Error";
@@ -995,7 +984,7 @@
         activeUnlockCode = code;
 
         openApp();
-        return;
+        return true;
 
       } catch (e) {}
     }
@@ -1003,6 +992,8 @@
     if (unlockInput.length > 40) {
       unlockInput = "";
     }
+
+    return false;
   }
 
   function hideAllScreens() {
@@ -1076,7 +1067,7 @@
       return;
     }
 
-    if (!/^[0-9+\-*/×÷.%✖️✖]{4,40}$/.test(newCode)) {
+    if (!/^[0-9+\-*/×÷.%✖️✖\uFE0F]{4,40}$/.test(newCode)) {
       alert("进入密码只能使用数字和基础运算符，例如 123456✖️");
       return;
     }
