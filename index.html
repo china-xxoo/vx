@@ -6,9 +6,13 @@
 
   <title>Calculator</title>
 
-  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
-  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
-  <link rel="manifest" href="./manifest.json" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=20260509-002" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=20260509-002" />
+  <link rel="manifest" href="./manifest.json?v=20260509-002" />
 
   <meta name="theme-color" content="#111827" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -520,10 +524,45 @@
 </div>
 
 <script>
+  const APP_VERSION = "2026-05-09-002";
+
+  async function forceReloadLatestIndex() {
+    try {
+      const flag = "vx_fresh_loaded";
+
+      if (sessionStorage.getItem(flag) === "1") {
+        sessionStorage.removeItem(flag);
+        return;
+      }
+
+      sessionStorage.setItem(flag, "1");
+
+      const cleanUrl = location.origin + location.pathname;
+      const freshUrl = cleanUrl + "?_fresh=" + Date.now();
+
+      const res = await fetch(freshUrl, {
+        cache: "no-store"
+      });
+
+      if (!res.ok) return;
+
+      const latestHtml = await res.text();
+
+      document.open();
+      document.write(latestHtml);
+      document.close();
+
+    } catch (e) {
+      console.log("强制拉取最新代码失败", e);
+    }
+  }
+
+  forceReloadLatestIndex();
+
   const DEFAULT_ENCRYPTED_CONFIG = {
     "salt": "XHAbsrSblfGS/vYVydrltA==",
     "iv": "oa/ZXZyCsRe7T1HG",
-    "data": "34kR5da63kBfi89wLPDw+/Y4h36M8f1ijgcP+LmaWm/zb0PrLdhbWRDndbUze/pqRN6tJXKce0IsEUsr4+wWlS4NwSOUuofh87PnDMiINSsc5YqBxLqR2r6xtP2e6odprjD54JsvwVlnLH5Ye9VvDkyENKAhGqDprAeMt5mGxnpP5FnNYRvVipvpbRaVRv0e+YOwqOpGqM1ZwLK2+lsxfAOZthf7b62et32yM4Wg9x8q+LxL9w2J4cTQYWODDRcAJH6fzFa0mHu2n"
+    "data": "34kR5da63kBfi89wLPDw+/Y4h36M8f1ijgcP+LmaWm/zb0PrLdhbWRDndbUze/pqRN6tJXKce0IsEUsr4+wWlS4NwSOUuofh87PnDMiINSsc5YqBxLqR2r6xtP2e6odprjD54JsvwVlnLH5Ye9VvDkyENKAhGqDprAeMt5mGxnpP5FnNYRvVipvpbRaVRv0e+YOwqOpGqM1ZwLK2+lsxfAOZthf7b62et32yM4Wg9x8q+LxL9w2J4cTQYWODDRcAJH6fzFa0mHu2"
   };
 
   const API = "https://api.github.com";
