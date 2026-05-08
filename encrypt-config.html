@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Encrypt Config</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111827;
+      color: #ffffff;
+      min-height: 100vh;
+      padding: 18px;
+    }
+
+    .box {
+      width: 100%;
+      max-width: 430px;
+      margin: 0 auto;
+      padding-top: 30px;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    p {
+      color: #9ca3af;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+
+    input,
+    textarea,
+    button {
+      width: 100%;
+      border: none;
+      outline: none;
+      border-radius: 12px;
+      font-size: 15px;
+    }
+
+    input {
+      padding: 14px;
+      margin-bottom: 12px;
+      background: #1f2937;
+      color: white;
+      border: 1px solid #374151;
+    }
+
+    input::placeholder {
+      color: #9ca3af;
+    }
+
+    button {
+      padding: 14px;
+      background: #22c55e;
+      color: white;
+      font-weight: 700;
+      margin: 8px 0 14px;
+      cursor: pointer;
+    }
+
+    textarea {
+      height: 260px;
+      padding: 14px;
+      background: #020617;
+      color: #22c55e;
+      border: 1px solid #374151;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      resize: none;
+    }
+
+    .tip {
+      font-size: 12px;
+      color: #fbbf24;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+  <h2>Gist Chat 加密配置</h2>
+
+  <p>
+    这里用来把 Gist ID、GitHub Token 和聊天密钥加密成一段乱码。
+    生成后复制结果，后面放进真正的计算器聊天页面。
+  </p>
+
+  <input id="gistId" placeholder="Gist ID" value="250bbdfbad8be04672e0ae85300a23f2" />
+
+  <input id="token" placeholder="GitHub Token，不要发给别人" type="password" />
+
+  <input id="chatSecret" placeholder="聊天加密密钥，例如 vx-private-chat-2026" />
+
+  <input id="unlockCode" placeholder="计算器暗号，例如 5201314" inputmode="numeric" />
+
+  <button onclick="generateConfig()">生成加密配置</button>
+
+  <textarea id="output" placeholder="生成结果会出现在这里"></textarea>
+
+  <div class="tip">
+    注意：生成后的配置可以放进网页，但暗号一定要记住。
+  </div>
+</div>
+
+<script>
+  function toBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+
+    return btoa(binary);
+  }
+
+  async function deriveKey(code, salt) {
+    const encoder = new TextEncoder();
+
+    const baseKey = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(code),
+      "PBKDF2",
+      false,
+      ["deriveKey"]
+    );
+
+    return crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 180000,
+        hash: "SHA-256"
+      },
+      baseKey,
+      {
+        name: "AES-GCM",
+        length: 256
+      },
+      false,
+      ["encrypt", "decrypt"]
+    );
+  }
+
+  async function generateConfig() {
+    const gistId = document.getElementById("gistId").value.trim();
+    const token = document.getElementById("token").value.trim();
+    const chatSecret = document.getElementById("chatSecret").value.trim();
+    const unlockCode = document.getElementById("unlockCode").value.trim();
+
+    if (!gistId || !token || !chatSecret || !unlockCode) {
+      alert("请把所有内容填写完整");
+      return;
+    }
+
+    if (!/^[0-9]{4,20}$/.test(unlockCode)) {
+      alert("计算器暗号建议使用 4 到 20 位数字");
+      return;
+    }
+
+    const config = {
+      gistId: gistId,
+      token: token,
+      chatSecret: chatSecret
+    };
+
+    const encoder = new TextEncoder();
+
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const key = await deriveKey(unlockCode, salt);
+
+    const encrypted = await crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      encoder.encode(JSON.stringify(config))
+    );
+
+    const result = {
+      salt: toBase64(salt),
+      iv: toBase64(iv),
+      data: toBase64(encrypted)
+    };
+
+    document.getElementById("output").value =
+`const DEFAULT_ENCRYPTED_CONFIG = ${JSON.stringify(result, null, 2)};`;
+  }
+</script>
+
+</body>
+</html>
