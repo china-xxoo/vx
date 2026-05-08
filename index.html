@@ -126,20 +126,21 @@
       display: none;
       width: 100%;
       height: 100vh;
-      background: #f7f7f8;
+      background: #eef2f7;
       flex-direction: column;
     }
 
     .top-header,
     .chat-header {
-      height: 54px;
-      background: #ffffff;
+      height: 56px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
       border-bottom: 1px solid #e5e7eb;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 700;
-      font-size: 16px;
+      font-weight: 800;
+      font-size: 17px;
       position: relative;
       color: #111827;
       flex-shrink: 0;
@@ -186,15 +187,19 @@
       flex: 1;
       overflow-y: auto;
       padding: 18px;
-      background: #f7f7f8;
+      background:
+        radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(168,85,247,0.10), transparent 30%),
+        #eef2f7;
     }
 
     .card {
-      background: white;
-      border-radius: 18px;
+      background: rgba(255,255,255,0.94);
+      border-radius: 22px;
       padding: 16px;
       margin-bottom: 14px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+      box-shadow: 0 10px 30px rgba(15,23,42,0.08);
+      border: 1px solid rgba(255,255,255,0.75);
     }
 
     .card h2,
@@ -212,8 +217,8 @@
 
     .input {
       width: 100%;
-      border: 1px solid #ddd;
-      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
       padding: 13px 14px;
       font-size: 15px;
       outline: none;
@@ -221,57 +226,140 @@
       background: white;
     }
 
+    .input:focus {
+      border-color: #111827;
+      box-shadow: 0 0 0 3px rgba(17,24,39,0.08);
+    }
+
     .main-btn {
       width: 100%;
       border: none;
       background: #111827;
       color: white;
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 13px 14px;
       font-size: 15px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
     }
 
     .small-btn {
       border: none;
-      background: #f3f4f6;
-      color: #111827;
+      background: #111827;
+      color: white;
       border-radius: 999px;
-      padding: 7px 12px;
+      padding: 9px 15px;
       font-size: 13px;
+      font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
     }
 
     .room-item {
-      background: white;
-      border-radius: 16px;
-      padding: 14px;
-      margin-bottom: 10px;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      border-radius: 24px;
+      padding: 18px;
+      margin-bottom: 12px;
+      min-height: 142px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 12px 30px rgba(15,23,42,0.08);
+      border: 1px solid rgba(255,255,255,0.8);
+    }
+
+    .room-item::before {
+      content: "";
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      right: -42px;
+      bottom: -50px;
+      background: radial-gradient(circle, rgba(17,24,39,0.10), transparent 70%);
+      border-radius: 50%;
+    }
+
+    .room-topline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 1;
+    }
+
+    .room-corner {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      align-items: flex-end;
+      max-width: 45%;
+      font-size: 11px;
+      color: #6b7280;
+      text-align: right;
+    }
+
+    .room-tag {
+      background: #f3f4f6;
+      border-radius: 999px;
+      padding: 5px 8px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .room-tag.free {
+      background: #ecfdf5;
+      color: #047857;
+      font-weight: 800;
+    }
+
+    .room-tag.locked {
+      background: #fff7ed;
+      color: #c2410c;
+      font-weight: 800;
+    }
+
+    .room-number-label {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      z-index: 1;
+    }
+
+    .room-number {
+      font-size: 42px;
+      line-height: 1;
+      font-weight: 900;
+      color: #111827;
+      letter-spacing: 0.04em;
+      margin-top: 8px;
+      z-index: 1;
+    }
+
+    .room-bottom {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-    }
-
-    .room-name {
-      font-weight: 700;
-      color: #111827;
-      margin-bottom: 4px;
+      margin-top: 18px;
+      z-index: 1;
     }
 
     .room-meta {
       font-size: 12px;
       color: #6b7280;
+      min-width: 0;
     }
 
     .empty {
       background: #fff7ed;
       color: #c2410c;
       padding: 12px;
-      border-radius: 12px;
+      border-radius: 14px;
       font-size: 14px;
       line-height: 1.5;
     }
@@ -378,7 +466,7 @@
       width: 100%;
       max-width: 380px;
       background: white;
-      border-radius: 18px;
+      border-radius: 20px;
       padding: 18px;
     }
 
@@ -401,7 +489,7 @@
     .modal-actions button {
       flex: 1;
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 12px;
       font-size: 14px;
       cursor: pointer;
@@ -468,7 +556,7 @@
   </div>
 
   <div class="top-header" id="lobbyHeader" style="display:none;">
-    房间大厅
+    系统设置
     <button class="panic-btn" onclick="lockChat()">退出</button>
   </div>
 
@@ -495,8 +583,8 @@
     </div>
 
     <div class="card">
-      <h3>已有房间</h3>
-      <p>可以看到房间名字，但必须输入对应房间密码才能进入。</p>
+      <h3>房间列表</h3>
+      <p>房间以房间号为主显示。无密码房间可直接进入，其他房间需要输入对应房间密码。</p>
       <div id="roomList"></div>
     </div>
   </div>
@@ -534,7 +622,7 @@
 <div class="modal-mask" id="adminModal">
   <div class="modal">
     <h3>房间设置</h3>
-    <p>输入管理员密码后，可以删除当前房间和该房间聊天记录。</p>
+    <p>输入管理员密码后，可以删除当前房间和该房间聊天记录。默认无密码房间不可删除。</p>
     <input class="input" id="adminPassword" placeholder="管理员密码" type="password" />
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeAdminModal()">取消</button>
@@ -555,6 +643,17 @@
 
   const ROOM_PREFIX = "ENC_ROOM_META_V1:";
   const MSG_PREFIX = "ENC_ROOM_MSG_V1:";
+
+  const DEFAULT_PUBLIC_ROOM = {
+    type: "room",
+    roomId: "default-no-password-room-v1",
+    roomNo: "000001",
+    roomName: "默认房间",
+    createdBy: "System",
+    createdAt: 0,
+    noPassword: true,
+    commentId: null
+  };
 
   let calcExpression = "";
   let unlockInput = "";
@@ -996,6 +1095,27 @@
     return false;
   }
 
+  function generateRoomNo() {
+    return String(Math.floor(100000 + Math.random() * 900000));
+  }
+
+  function getRoomNo(room) {
+    if (room.roomNo) return room.roomNo;
+
+    const text = String(room.roomId || "");
+    let sum = 0;
+
+    for (let i = 0; i < text.length; i++) {
+      sum = (sum + text.charCodeAt(i) * (i + 1)) % 900000;
+    }
+
+    return String(100000 + sum).slice(0, 6);
+  }
+
+  function getDefaultRoomPassword() {
+    return String(appConfig.chatSecret || "default") + "::default-no-password-room-v1";
+  }
+
   function hideAllScreens() {
     nameHeader.style.display = "none";
     nameScreen.style.display = "none";
@@ -1268,6 +1388,7 @@
 
     try {
       const roomId = crypto.randomUUID();
+      const roomNo = generateRoomNo();
 
       const check = await encryptPayload(
         {
@@ -1281,9 +1402,11 @@
       const meta = {
         type: "room",
         roomId: roomId,
+        roomNo: roomNo,
         roomName: roomName,
         createdBy: state.displayName,
         createdAt: Date.now(),
+        noPassword: false,
         check: check
       };
 
@@ -1328,11 +1451,13 @@
 
       const roomsHash = roomComments.map(c => c.id + ":" + c.updated_at).join("|");
 
-      if (roomsHash === state.lastRoomsHash) return;
+      if (roomsHash === state.lastRoomsHash && state.rooms.length) return;
 
       state.lastRoomsHash = roomsHash;
 
       const rooms = [];
+
+      rooms.push({ ...DEFAULT_PUBLIC_ROOM });
 
       for (const c of roomComments) {
         try {
@@ -1342,14 +1467,16 @@
 
           if (room && room.type === "room" && room.roomId) {
             room.commentId = c.id;
+            room.noPassword = !!room.noPassword;
             rooms.push(room);
           }
         } catch (e) {}
       }
 
+      const defaultRoom = rooms.shift();
       rooms.sort((a, b) => b.createdAt - a.createdAt);
+      state.rooms = [defaultRoom].concat(rooms);
 
-      state.rooms = rooms;
       renderRooms();
 
     } catch (e) {
@@ -1358,51 +1485,76 @@
   }
 
   function renderRooms() {
-    if (!state.rooms.length) {
-      roomList.innerHTML = `
-        <div class="empty">
-          目前还没有房间。可以先新建一个房间，并设置房间密码。
-        </div>
-      `;
-      return;
-    }
-
     roomList.innerHTML = "";
 
     state.rooms.forEach(room => {
       const div = document.createElement("div");
       div.className = "room-item";
 
-      const info = document.createElement("div");
+      const top = document.createElement("div");
+      top.className = "room-topline";
 
-      const name = document.createElement("div");
-      name.className = "room-name";
-      name.textContent = room.roomName;
+      const left = document.createElement("div");
+
+      const label = document.createElement("div");
+      label.className = "room-number-label";
+      label.textContent = "ROOM NO.";
+
+      const number = document.createElement("div");
+      number.className = "room-number";
+      number.textContent = getRoomNo(room);
+
+      left.appendChild(label);
+      left.appendChild(number);
+
+      const corner = document.createElement("div");
+      corner.className = "room-corner";
+
+      const nameTag = document.createElement("div");
+      nameTag.className = "room-tag";
+      nameTag.textContent = "名称：" + room.roomName;
+
+      const pwdTag = document.createElement("div");
+      pwdTag.className = "room-tag " + (room.noPassword ? "free" : "locked");
+      pwdTag.textContent = room.noPassword ? "无密码" : "需密码";
+
+      corner.appendChild(nameTag);
+      corner.appendChild(pwdTag);
+
+      top.appendChild(left);
+      top.appendChild(corner);
+
+      const bottom = document.createElement("div");
+      bottom.className = "room-bottom";
 
       const meta = document.createElement("div");
       meta.className = "room-meta";
 
-      const time = new Date(room.createdAt).toLocaleString([], {
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
+      if (room.noPassword) {
+        meta.textContent = "系统默认房间";
+      } else {
+        const time = new Date(room.createdAt).toLocaleString([], {
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
 
-      meta.textContent = "创建者：" + room.createdBy + " · " + time;
-
-      info.appendChild(name);
-      info.appendChild(meta);
+        meta.textContent = "创建者：" + room.createdBy + " · " + time;
+      }
 
       const btn = document.createElement("button");
       btn.className = "small-btn";
-      btn.textContent = "进入";
+      btn.textContent = room.noPassword ? "直接进入" : "进入";
       btn.onclick = function() {
         openJoinModal(room.roomId);
       };
 
-      div.appendChild(info);
-      div.appendChild(btn);
+      bottom.appendChild(meta);
+      bottom.appendChild(btn);
+
+      div.appendChild(top);
+      div.appendChild(bottom);
 
       roomList.appendChild(div);
     });
@@ -1413,8 +1565,14 @@
 
     if (!pendingRoom) return;
 
+    if (pendingRoom.noPassword) {
+      const password = getDefaultRoomPassword();
+      openRoom(pendingRoom, password);
+      return;
+    }
+
     document.getElementById("joinRoomText").textContent =
-      "房间：" + pendingRoom.roomName;
+      "房间号：" + getRoomNo(pendingRoom) + " ｜ 名称：" + pendingRoom.roomName;
 
     document.getElementById("joinRoomPassword").value = "";
     document.getElementById("joinModal").style.display = "flex";
@@ -1464,14 +1622,16 @@
 
     state.currentRoom = {
       roomId: room.roomId,
+      roomNo: getRoomNo(room),
       roomName: room.roomName,
       password: roomPassword,
+      noPassword: !!room.noPassword,
       commentId: room.commentId || null
     };
 
     state.lastRenderHash = "";
 
-    roomTitle.textContent = room.roomName;
+    roomTitle.textContent = getRoomNo(room);
     roomHeader.style.display = "flex";
     chatBox.style.display = "block";
     sendArea.style.display = "flex";
@@ -1690,6 +1850,11 @@
 
     if (!state.currentRoom) {
       alert("当前不在房间内");
+      return;
+    }
+
+    if (state.currentRoom.noPassword) {
+      alert("默认无密码房间不可删除");
       return;
     }
 
