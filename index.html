@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
   <title>Calculator</title>
 
   <link rel="manifest" href="/vx/manifest.webmanifest" />
@@ -21,9 +21,13 @@
   <style>
     :root {
       --app-height: 100dvh;
+      --visible-height: 100dvh;
+      --vv-top: 0px;
       --top-safe: env(safe-area-inset-top, 0px);
       --bottom-safe: env(safe-area-inset-bottom, 0px);
       --keyboard-offset: 0px;
+      --header-height: calc(58px + var(--top-safe));
+      --send-height: calc(62px + var(--bottom-safe));
       --bg0: #020617;
       --bg1: #07111f;
       --line: rgba(125, 211, 252, 0.22);
@@ -139,9 +143,11 @@
     .chat-app {
       display: none;
       position: fixed;
-      inset: 0;
+      left: 0;
+      right: 0;
+      top: var(--vv-top);
       width: 100%;
-      height: var(--app-height);
+      height: var(--visible-height);
       overflow: hidden;
       flex-direction: column;
       background:
@@ -156,7 +162,11 @@
     }
 
     .app-header {
-      height: calc(58px + var(--top-safe));
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: var(--vv-top);
+      height: var(--header-height);
       padding: var(--top-safe) 12px 0;
       flex-shrink: 0;
       display: grid;
@@ -251,11 +261,16 @@
     }
 
     .app-body {
-      flex: 1;
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: calc(var(--vv-top) + var(--header-height));
+      height: calc(var(--visible-height) - var(--header-height));
       min-height: 0;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      z-index: 8;
     }
 
     .screen {
@@ -427,8 +442,10 @@
       position: fixed;
       left: 0;
       right: 0;
-      bottom: var(--keyboard-offset);
-      min-height: calc(62px + var(--bottom-safe));
+      top: calc(var(--vv-top) + var(--visible-height) - var(--send-height));
+      bottom: auto;
+      height: var(--send-height);
+      min-height: var(--send-height);
       padding: 9px 10px calc(9px + var(--bottom-safe));
       display: none;
       gap: 8px;
@@ -627,6 +644,7 @@
       opacity: 0.84;
     }
   </style>
+  <!-- keyboard-layout-fixed: top header stays fixed while input method opens -->
 </head>
 
 <body>
@@ -846,12 +864,21 @@
   const toastEl = document.getElementById("toast");
 
   function updateAppHeight() {
-    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    document.documentElement.style.setProperty("--app-height", h + "px");
+    const root = document.documentElement;
 
     if (window.visualViewport) {
-      const keyboard = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
-      document.documentElement.style.setProperty("--keyboard-offset", keyboard + "px");
+      const vv = window.visualViewport;
+      const visibleHeight = Math.max(320, vv.height);
+      const vvTop = Math.max(0, vv.offsetTop || 0);
+      const keyboard = Math.max(0, window.innerHeight - vv.height - vvTop);
+
+      root.style.setProperty("--visible-height", visibleHeight + "px");
+      root.style.setProperty("--vv-top", vvTop + "px");
+      root.style.setProperty("--keyboard-offset", keyboard + "px");
+    } else {
+      root.style.setProperty("--visible-height", window.innerHeight + "px");
+      root.style.setProperty("--vv-top", "0px");
+      root.style.setProperty("--keyboard-offset", "0px");
     }
   }
 
@@ -2186,6 +2213,23 @@
       } catch (e) {}
     }
   }
+
+
+  messageInput.addEventListener("focus", function() {
+    updateAppHeight();
+    setTimeout(function() {
+      updateAppHeight();
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }, 80);
+    setTimeout(function() {
+      updateAppHeight();
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }, 280);
+  });
+
+  messageInput.addEventListener("blur", function() {
+    setTimeout(updateAppHeight, 120);
+  });
 
   messageInput.addEventListener("keydown", function(e) {
     if (e.key === "Enter") sendMessage();
