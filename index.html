@@ -20,6 +20,13 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Calculator" />
+  <meta name="screen-orientation" content="portrait" />
+  <meta name="full-screen" content="yes" />
+  <meta name="browsermode" content="application" />
+  <meta name="x5-fullscreen" content="true" />
+  <meta name="x5-page-mode" content="app" />
+  <meta name="x5-orientation" content="portrait" />
+  <meta name="msapplication-tap-highlight" content="no" />
 
   <style>
     * {
@@ -1807,6 +1814,55 @@
       box-shadow: inset 0 0 18px rgba(34, 211, 238, 0.05);
     }
 
+
+    /* ===== Android/PWA app-mode lock: calculator loads first, page never feels scrollable ===== */
+    :root {
+      --app-height: 100dvh;
+      --keyboard-inset: 0px;
+    }
+
+    html,
+    body {
+      height: var(--app-height) !important;
+      min-height: var(--app-height) !important;
+      max-height: var(--app-height) !important;
+      overflow: hidden !important;
+      overscroll-behavior: none !important;
+      touch-action: manipulation !important;
+    }
+
+    body {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+    }
+
+    .calculator,
+    .chat-app {
+      height: var(--app-height) !important;
+      min-height: var(--app-height) !important;
+      max-height: var(--app-height) !important;
+      overflow: hidden !important;
+      overscroll-behavior: none !important;
+    }
+
+    .top-header,
+    .chat-header {
+      flex: 0 0 56px !important;
+    }
+
+    .screen,
+    .chat-box {
+      overscroll-behavior: contain !important;
+    }
+
+    .chat-app.keyboard-open .top-header,
+    .chat-app.keyboard-open .chat-header {
+      position: relative !important;
+      top: 0 !important;
+      flex: 0 0 56px !important;
+    }
+
   </style>
 </head>
 
@@ -1985,6 +2041,10 @@
   let activeUnlockCode = "";
   let pendingRoom = null;
 
+  let lastClearTapAt = 0;
+  let clearTapCount = 0;
+  let stableAppHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+
   let mqtt = {
     ws: null,
     connected: false,
@@ -2046,6 +2106,73 @@
       .replaceAll("/", "÷");
 
     display.textContent = showText;
+  }
+
+  function setStableAppHeight(force) {
+    const active = document.activeElement;
+    const keyboardLikelyOpen = active && /^(INPUT|TEXTAREA)$/.test(active.tagName);
+    const h = window.innerHeight || document.documentElement.clientHeight || stableAppHeight || 0;
+
+    if (force || !stableAppHeight || h > stableAppHeight || !keyboardLikelyOpen) {
+      stableAppHeight = h;
+    }
+
+    if (stableAppHeight) {
+      document.documentElement.style.setProperty("--app-height", stableAppHeight + "px");
+    }
+  }
+
+  function requestAndroidFullscreen() {
+    try {
+      const isStandalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
+      if (isStandalone || document.fullscreenElement) return;
+
+      const el = document.documentElement;
+      const fn = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if (fn) {
+        const result = fn.call(el);
+        if (result && result.catch) result.catch(function() {});
+      }
+    } catch (e) {}
+  }
+
+  function activateAppMode() {
+    setStableAppHeight(true);
+    window.scrollTo(0, 0);
+    document.documentElement.style.overscrollBehavior = "none";
+    document.body.style.overscrollBehavior = "none";
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.inset = "0";
+  }
+
+  async function forceRefreshHtml() {
+    calcExpression = "更新中";
+    unlockInput = "";
+    isFakeResult = true;
+    updateDisplay();
+
+    try {
+      disconnectMQTT && disconnectMQTT();
+    } catch (e) {}
+
+    try {
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(function(key) { return caches.delete(key); }));
+      }
+    } catch (e) {}
+
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(function(reg) { return reg.unregister(); }));
+      }
+    } catch (e) {}
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("_html", String(Date.now()));
+    window.location.replace(url.toString());
   }
 
   function showRandomFakeCalculation() {
@@ -2141,6 +2268,22 @@
   }
 
   function clearCalc() {
+    const now = Date.now();
+
+    if (now - lastClearTapAt <= 650) {
+      clearTapCount += 1;
+    } else {
+      clearTapCount = 1;
+    }
+
+    lastClearTapAt = now;
+
+    if (clearTapCount >= 2) {
+      clearTapCount = 0;
+      forceRefreshHtml();
+      return;
+    }
+
     calcExpression = "";
     unlockInput = "";
     isFakeResult = false;
@@ -2172,6 +2315,8 @@
       }
 
       if (unlockInput) {
+        activateAppMode();
+        requestAndroidFullscreen();
         const unlocked = await tryUnlock();
 
         if (unlocked) {
@@ -2522,6 +2667,7 @@
 
   async function openApp() {
     // 第一步只显示 App 外壳，不马上做大量网络请求，避免进入后卡住。
+    activateAppMode();
     calculator.style.display = "none";
     chatApp.style.display = "flex";
 
@@ -3943,7 +4089,8 @@
 
     let inset = 0;
     if (window.visualViewport) {
-      inset = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
+      const baseHeight = stableAppHeight || window.innerHeight || document.documentElement.clientHeight || 0;
+      inset = Math.max(0, baseHeight - window.visualViewport.height - window.visualViewport.offsetTop);
     }
 
     if (inset < 80) inset = 0;
@@ -3960,12 +4107,26 @@
     }
   }
 
+  setStableAppHeight(true);
+
+  window.addEventListener("orientationchange", function () {
+    setTimeout(function () {
+      stableAppHeight = window.innerHeight || document.documentElement.clientHeight || stableAppHeight;
+      setStableAppHeight(true);
+      updateKeyboardInset();
+    }, 350);
+  });
+
+  window.addEventListener("resize", function () {
+    setStableAppHeight(false);
+    updateKeyboardInset();
+  });
+
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", updateKeyboardInset);
     window.visualViewport.addEventListener("scroll", updateKeyboardInset);
   }
 
-  window.addEventListener("resize", updateKeyboardInset);
   window.addEventListener("scroll", function () {
     if (chatApp && chatApp.style.display !== "none") {
       window.scrollTo(0, 0);
