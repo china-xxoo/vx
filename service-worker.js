@@ -1,58 +1,87 @@
-const CACHE_VERSION = "vx-cache-20260509-01";
-const APP_SCOPE = "/vx/";
+const CACHE_NAME = "vx-pwa-shell-default-hall-24h-20260509-1";
 
-self.addEventListener("install", (event) => {
+const APP_SHELL = [
+  "/vx/",
+  "/vx/index.html",
+  "/vx/manifest.webmanifest",
+  "/vx/vx-logo-180.png",
+  "/vx/vx-logo-192.png",
+  "/vx/vx-logo-512.png"
+];
+
+self.addEventListener("install", event => {
   self.skipWaiting();
-});
 
-self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_VERSION) {
-            return caches.delete(key);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(APP_SHELL).catch(() => null);
+    })
   );
 });
 
-self.addEventListener("fetch", (event) => {
-  const request = event.request;
-  const url = new URL(request.url);
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys()
+      .then(keys => {
+        return Promise.all(
+          keys
+            .filter(key => key !== CACHE_NAME)
+            .map(key => caches.delete(key))
+        );
+      })
+      .then(() => self.clients.claim())
+  );
+});
 
-  if (request.method !== "GET") return;
+self.addEventListener("fetch", event => {
+  const req = event.request;
+  const url = new URL(req.url);
 
-  if (url.pathname.endsWith("/index.html") || url.pathname === APP_SCOPE || url.pathname === "/vx") {
+  if (url.origin !== self.location.origin || !url.pathname.startsWith("/vx/")) {
+    return;
+  }
+
+  if (
+    req.mode === "navigate" ||
+    url.pathname.endsWith(".html") ||
+    url.pathname === "/vx/"
+  ) {
     event.respondWith(
-      fetch(request, { cache: "no-store" }).catch(() => caches.match(request))
+      fetch(req, { cache: "no-store" })
+        .then(res => {
+          const copy = res.clone();
+
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(req, copy);
+          });
+
+          return res;
+        })
+        .catch(() => {
+          return caches.match(req).then(cached => {
+            return cached || caches.match("/vx/index.html");
+          });
+        })
     );
+
     return;
   }
 
   event.respondWith(
-    caches.match(request).then((cached) => {
-      return cached || fetch(request).then((response) => {
-        const copy = response.clone();
+    caches.match(req).then(cached => {
+      const fresh = fetch(req)
+        .then(res => {
+          const copy = res.clone();
 
-        if (
-          url.origin === location.origin &&
-          (
-            url.pathname.endsWith(".png") ||
-            url.pathname.endsWith(".webmanifest") ||
-            url.pathname.endsWith(".css") ||
-            url.pathname.endsWith(".js")
-          )
-        ) {
-          caches.open(CACHE_VERSION).then((cache) => {
-            cache.put(request, copy);
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(req, copy);
           });
-        }
 
-        return response;
-      });
+          return res;
+        })
+        .catch(() => cached);
+
+      return cached || fresh;
     })
   );
 });
