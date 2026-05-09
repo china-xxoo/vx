@@ -10,11 +10,11 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <link rel="icon" type="image/png" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
-  <link rel="shortcut icon" type="image/png" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
-  <link rel="apple-touch-icon" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
-  <link rel="apple-touch-icon-precomposed" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" href="/vx/apple-touch-icon.png" />
+  <link rel="shortcut icon" type="image/png" href="/vx/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="/vx/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/vx/apple-touch-icon.png" />
+  <link rel="apple-touch-icon-precomposed" href="/vx/apple-touch-icon.png" />
 
   <meta name="theme-color" content="#020617" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -1325,6 +1325,113 @@
       }
     }
 
+
+    /* ===== Hotfix 2026-05-09: modal, emergency, logo, nickname prompt ===== */
+    #nicknameNotice {
+      display: none !important;
+    }
+
+    .modal-mask,
+    .modal-mask.sheet-mask {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 1000 !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 18px !important;
+    }
+
+    .modal-mask[style*="display: flex"],
+    .modal-mask[style*="display:flex"] {
+      display: flex !important;
+    }
+
+    .settings-mini-modal {
+      width: min(82vw, 270px) !important;
+      max-width: 270px !important;
+      border-radius: 18px !important;
+      padding: 14px !important;
+    }
+
+    .settings-mini-modal h3 {
+      font-size: 15px !important;
+      margin: 0 0 10px !important;
+      text-align: center !important;
+    }
+
+    .settings-mini-modal .input {
+      height: 42px !important;
+      margin-bottom: 10px !important;
+      text-align: center !important;
+    }
+
+    .settings-mini-modal .modal-actions button {
+      padding: 10px !important;
+      font-size: 13px !important;
+    }
+
+    .emergency-bar {
+      display: none;
+      position: fixed !important;
+      left: 50% !important;
+      top: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      width: min(74vw, 310px) !important;
+      z-index: 850 !important;
+      pointer-events: none !important;
+      background: transparent !important;
+      border: none !important;
+    }
+
+    .emergency-close-btn {
+      pointer-events: auto !important;
+      background: rgba(220, 38, 38, 0.72) !important;
+      color: #fff !important;
+      border: 1px solid rgba(255,255,255,0.35) !important;
+      box-shadow: 0 0 24px rgba(220,38,38,0.42), 0 18px 44px rgba(2,6,23,0.46) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+    }
+
+    .top-header .header-text-btn,
+    .chat-header .header-left,
+    .chat-header .admin-btn {
+      z-index: 230 !important;
+      pointer-events: auto !important;
+    }
+
+    .mqtt-status-pill {
+      pointer-events: none !important;
+      z-index: 220 !important;
+    }
+
+    .header-new {
+      right: 210px !important;
+    }
+
+    .header-settings {
+      right: 154px !important;
+    }
+
+    .app-title-with-logo {
+      min-width: 42px !important;
+      min-height: 34px !important;
+    }
+
+    .app-logo {
+      display: block !important;
+      width: 28px !important;
+      height: 28px !important;
+      object-fit: cover !important;
+      background: rgba(15,23,42,0.7) !important;
+    }
+
+    @media (max-width: 380px) {
+      .header-new { right: 200px !important; }
+      .header-settings { right: 146px !important; }
+      .mqtt-status-pill { min-width: 118px !important; padding: 0 8px !important; font-size: 11px !important; }
+    }
+
   </style>
 </head>
 
@@ -1366,7 +1473,7 @@
 
   <div class="top-header wechat-header" id="lobbyHeader" style="display:none;">
     <span class="app-title-with-logo">
-      <img class="app-logo" src="https://china-xxoo.github.io/vx/apple-touch-icon.png" alt="logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+      <img class="app-logo" src="/vx/apple-touch-icon.png" alt="logo" onerror="this.onerror=null;this.src='https://china-xxoo.github.io/vx/apple-touch-icon.png';" />
       <span class="app-logo-fallback">C</span>
     </span>
     <button class="header-text-btn header-new" onclick="openCreateRoomModal()">新建</button>
@@ -1374,9 +1481,7 @@
   </div>
 
   <div class="screen wechat-screen" id="lobbyScreen">
-    <div id="nicknameNotice" class="wechat-notice">
-      还没有设置昵称。请点击右上角“设置”添加昵称，否则不能进入或新建聊天室。
-    </div>
+    <div id="nicknameNotice" class="wechat-notice" style="display:none;"></div>
     <div id="roomList" class="wechat-list"></div>
   </div>
 
@@ -1973,7 +2078,7 @@
 
   function requireNickname() {
     if (hasNickname()) return true;
-    alert("请先在右上角“设置”里添加昵称，添加后才可以进入或新建聊天室。");
+    alert("请先设置昵称");
     openSettingsModal();
     return false;
   }
@@ -2011,14 +2116,8 @@
 
   function updateNicknameNotice() {
     if (!nicknameNotice) return;
-
-    if (hasNickname()) {
-      nicknameNotice.className = "wechat-notice nickname-ok";
-      nicknameNotice.textContent = "昵称：" + state.displayName;
-    } else {
-      nicknameNotice.className = "wechat-notice";
-      nicknameNotice.textContent = "昵称：未设置";
-    }
+    nicknameNotice.style.display = "none";
+    nicknameNotice.textContent = "";
   }
 
   function hideAllScreens() {
