@@ -5,18 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
   <title>Calculator</title>
 
-  <link rel="manifest" href="/vx/manifest.webmanifest" />
-  <link rel="icon" type="image/png" href="/vx/vx-logo-180.png" />
-  <link rel="shortcut icon" type="image/png" href="/vx/vx-logo-180.png" />
-  <link rel="apple-touch-icon" href="/vx/vx-logo-180.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/vx/vx-logo-180.png" />
-  <link rel="apple-touch-icon-precomposed" href="/vx/vx-logo-180.png" />
+  <link rel="manifest" href="/vx/manifest.webmanifest?v=pwa-nosound-emergency10-20260509" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/vx/vx-logo-192.png?v=pwa-nosound-emergency10-20260509" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/vx/vx-logo-512.png?v=pwa-nosound-emergency10-20260509" />
+  <link rel="shortcut icon" type="image/png" href="/vx/vx-logo-192.png?v=pwa-nosound-emergency10-20260509" />
+  <link rel="apple-touch-icon" href="/vx/vx-logo-180.png?v=pwa-nosound-emergency10-20260509" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/vx/vx-logo-180.png?v=pwa-nosound-emergency10-20260509" />
+  <link rel="apple-touch-icon-precomposed" href="/vx/vx-logo-180.png?v=pwa-nosound-emergency10-20260509" />
 
   <meta name="theme-color" content="#020617" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Calculator" />
+  <meta name="application-name" content="Calculator" />
+  <meta name="format-detection" content="telephone=no" />
 
   <style>
     :root {
@@ -170,7 +173,7 @@
       padding: var(--top-safe) calc(10px + env(safe-area-inset-right, 0px)) 0 calc(10px + env(safe-area-inset-left, 0px));
       flex-shrink: 0;
       display: grid;
-      grid-template-columns: 54px minmax(130px, 1fr) max-content;
+      grid-template-columns: minmax(92px, 1fr) auto minmax(92px, 1fr);
       align-items: center;
       gap: 6px;
       background: rgba(2, 6, 23, 0.72);
@@ -209,6 +212,77 @@
       box-shadow: 0 0 18px rgba(56,189,248,0.26);
     }
 
+    .logo-wrap {
+      position: relative;
+      width: 32px;
+      height: 32px;
+      flex: 0 0 auto;
+      display: block;
+    }
+
+    .logo-unread-badge {
+      display: none;
+      position: absolute;
+      top: -7px;
+      right: -9px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: #ef4444;
+      color: #fff;
+      font-size: 11px;
+      line-height: 18px;
+      text-align: center;
+      font-weight: 950;
+      box-shadow: 0 0 14px rgba(239,68,68,0.75);
+      border: 1px solid rgba(255,255,255,0.55);
+    }
+
+    .room-back-btn {
+      flex: 0 0 auto;
+      border: 1px solid rgba(56,189,248,0.24);
+      background: rgba(15,23,42,0.50);
+      color: #dff7ff;
+      border-radius: 999px;
+      padding: 7px 9px;
+      font-size: 12px;
+      font-weight: 950;
+      line-height: 1;
+      white-space: nowrap;
+      cursor: pointer;
+      box-shadow: inset 0 0 14px rgba(56,189,248,0.06);
+    }
+
+    .room-back-btn:active {
+      transform: scale(0.97);
+      opacity: 0.86;
+    }
+
+    .room-title-btn {
+      max-width: 100%;
+      min-width: 0;
+      border: 1px solid rgba(56,189,248,0.22);
+      background: rgba(15,23,42,0.45);
+      color: #e0f7ff;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: 0.03em;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      box-shadow: inset 0 0 14px rgba(56,189,248,0.06);
+    }
+
+    .room-title-btn:active {
+      transform: scale(0.97);
+      opacity: 0.86;
+    }
+
     .header-btn {
       border: 1px solid rgba(56,189,248,0.28);
       background: rgba(15, 23, 42, 0.66);
@@ -230,7 +304,7 @@
 
     .data-status {
       justify-self: center;
-      width: 142px;
+      width: min(198px, 46vw);
       max-width: 100%;
       height: 30px;
       border-radius: 999px;
@@ -243,7 +317,7 @@
       background: rgba(15,23,42,0.72);
       box-shadow: inset 0 0 18px rgba(56,189,248,0.07);
       color: rgba(226, 232, 240, 0.92);
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 900;
       overflow: hidden;
       white-space: nowrap;
@@ -337,6 +411,16 @@
       display: none !important;
     }
 
+    .room-side {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 7px;
+      min-width: 54px;
+    }
+
     .room-badge {
       flex-shrink: 0;
       border: 1px solid rgba(56,189,248,0.26);
@@ -346,6 +430,22 @@
       font-size: 12px;
       font-weight: 900;
       background: rgba(56,189,248,0.08);
+    }
+
+    .room-unread {
+      min-width: 24px;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(239, 68, 68, 0.92);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 950;
+      box-shadow: 0 0 18px rgba(239,68,68,0.45);
+      border: 1px solid rgba(255,255,255,0.22);
     }
 
     .chat-shell {
@@ -596,11 +696,11 @@
       border-radius: 50%;
       background:
         radial-gradient(circle at 35% 25%, rgba(255,255,255,0.18), transparent 30%),
-        rgba(220, 38, 38, 0.25);
+        rgba(220, 38, 38, 0.10);
       color: #fff;
       cursor: pointer;
       box-shadow:
-        0 0 28px rgba(239,68,68,0.32),
+        0 0 28px rgba(239,68,68,0.24),
         0 12px 34px rgba(0,0,0,0.26),
         inset 0 0 18px rgba(255,255,255,0.08);
       backdrop-filter: blur(14px);
@@ -646,7 +746,7 @@
 
     @media (max-width: 420px) {
       .app-header {
-        grid-template-columns: 50px minmax(122px, 1fr) max-content;
+        grid-template-columns: minmax(82px, 1fr) auto minmax(82px, 1fr);
         gap: 5px;
         padding-left: calc(8px + env(safe-area-inset-left, 0px));
         padding-right: calc(8px + env(safe-area-inset-right, 0px));
@@ -655,10 +755,19 @@
         width: 34px;
         height: 34px;
       }
+      .room-back-btn {
+        padding: 7px 8px;
+        font-size: 11.2px;
+      }
+      .room-title-btn {
+        max-width: 88px;
+        padding: 7px 8px;
+        font-size: 11.2px;
+      }
       .data-status {
-        width: 136px;
-        font-size: 12px;
-        padding: 0 8px;
+        width: min(176px, 45vw);
+        font-size: 10.8px;
+        padding: 0 7px;
       }
       .header-btn {
         min-width: 46px;
@@ -709,8 +818,9 @@
 <div class="chat-app" id="chatApp">
   <div class="app-header">
     <div class="header-left">
-      <img class="app-logo" src="/vx/vx-logo-180.png" alt="logo" />
-      <button class="header-btn" id="backBtn" onclick="backToLobby()" style="display:none;">房间</button>
+      <div class="logo-wrap" id="headerLogo"><img class="app-logo" src="/vx/vx-logo-180.png" alt="logo" /><span class="logo-unread-badge" id="logoUnreadBadge"></span></div>
+      <button class="room-back-btn" id="roomBackBtn" onclick="backToLobby()" style="display:none;">返回</button>
+      <button class="room-title-btn" id="roomTitleBtn" onclick="backToLobby()" style="display:none;">【聊天大厅】</button>
     </div>
 
     <div class="data-status" id="dataStatus">
@@ -741,6 +851,7 @@
         <span class="history-tip" id="historyTip"></span>
       </div>
       <div class="chat-box" id="chatBox"></div>
+      <div class="typing-tip" id="typingTip"></div>
     </div>
   </div>
 
@@ -807,12 +918,12 @@
 
 <script>
   const DEFAULT_ENCRYPTED_CONFIG = {
-    "salt": "mD+MSNlz/wdZ1ejc4CrW0w==",
-    "iv": "gA1+MMbI4ovNM9sN",
-    "data": "YzgAikVHoyepAKdvPOJUjKK34pbo4Fxhg75u4GkiYr2J7v+sqI3Tduwx7+X1HyAop3CcwGsA/u+hehcnx5OnnCR18t0RnLljxkCyBktDEmseCbOpOVItrSSHTbo7zAg4KlynHXcaSDXj2k3z8/4gTKkL5Fzwjwleou7kvUg8yausUinUG3GFc6bLEH5s9kARmFhj6jXGU6nzxt6E6Tb8w+1y7DCBB/dVnQpO8cWHY7XphV/WBdrY"
+    "salt": "B/sOvwknzZifq+2gBL00Fg==",
+    "iv": "TfuOfSRUGy7CUKae",
+    "data": "5IFtP2QRWL40Q9yReCo1fx743xeoKyvw9ITbF/UPJlMmEN5hPyilV6BiKi98aN1wlZVdEUVxbeCUOZzltDyDHcpNxYnRASU9/yNCV3eIDrN4kE/JxVoquYhZXIt+0AwX2sMSVXJ5UQ3W66WaLltdByPDt3nhifJqVDSUXMcoBW98NVJl0SZEayrOtW4aB9Bz/zqM0RGW+MtMdFmGBJcO7l7xVPHs9VAy84IDCPrbgrZqRGMUwFsVfz4="
   };
 
-  const ADMIN_PASSWORD_HASH = "21bc5b04f12d8ba253d1ff68ad358622606c8034be1fdeb99f8d31a0691a1b8e";
+  const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131edda6730f5845";
   const API = "https://api.github.com";
   const ROOM_PREFIX = "ENC_ROOM_META_V1:";
   const MSG_PREFIX = "ENC_ROOM_MSG_V1:";
@@ -825,6 +936,9 @@
   const ROOM_FALLBACK_MS = 6000;
   const GIST_RETRY_MS = 3500;
   const MAX_CACHE_MESSAGES = 800;
+  const PRESENCE_HEARTBEAT_MS = 8000;
+  const PRESENCE_TTL_MS = 24000;
+  const TYPING_STOP_MS = 1800;
 
   const DEFAULT_PUBLIC_ROOM = {
     type: "room",
@@ -858,11 +972,22 @@
     idleTimer: null,
     lastRoomsHash: "",
     roomSeen: new Set(),
+    onlineClients: {},
+    typingUsers: {},
+    typingStopTimer: null,
+    typingPublishTimer: null,
+    roomMessageNoticeClock: {},
+    audio: {
+      ctx: null,
+      enabled: false,
+      lastPlayAt: 0
+    },
     mqtt: {
       ws: null,
       connected: false,
       reconnectTimer: null,
       pingTimer: null,
+      presenceTimer: null,
       clientId: "vx_" + Math.random().toString(16).slice(2) + "_" + Date.now(),
       activeTopic: null
     }
@@ -882,11 +1007,15 @@
   const messageInput = document.getElementById("messageInput");
   const dataStatus = document.getElementById("dataStatus");
   const dataStatusText = document.getElementById("dataStatusText");
-  const backBtn = document.getElementById("backBtn");
+  const headerLogo = document.getElementById("headerLogo");
+  const logoUnreadBadge = document.getElementById("logoUnreadBadge");
+  const roomBackBtn = document.getElementById("roomBackBtn");
+  const roomTitleBtn = document.getElementById("roomTitleBtn");
   const lobbyActions = document.getElementById("lobbyActions");
   const roomActions = document.getElementById("roomActions");
   const roomInfoText = document.getElementById("roomInfoText");
   const historyTip = document.getElementById("historyTip");
+  const typingTip = document.getElementById("typingTip");
   const emergencyBar = document.getElementById("emergencyBar");
   const toastEl = document.getElementById("toast");
 
@@ -1175,198 +1304,13 @@
     }, ms);
   }
 
-  function setDataStatus(type) {
-    dataStatus.className = "data-status";
-    if (type === "connected") {
-      dataStatus.classList.add("connected");
-      dataStatusText.textContent = "数据连接中";
-    } else if (type === "connecting") {
-      dataStatus.classList.add("connecting");
-      dataStatusText.textContent = "数据连接中";
-    } else {
-      dataStatusText.textContent = "数据已断开";
-    }
+
+  function initNotifyAudio() {
+    // Sound disabled by request.
   }
 
-  function hasNickname() {
-    return !!String(state.displayName || "").trim();
-  }
-
-  function requireNickname() {
-    if (hasNickname()) return true;
-    openSettingsModal();
-    return false;
-  }
-
-  function updateNicknameLine() {
-    nicknameLine.textContent = "";
-  }
-
-  function openApp() {
-    calculator.style.display = "none";
-    chatApp.style.display = "flex";
-    emergencyBar.style.display = "block";
-    updateNicknameLine();
-    showLobby();
-    resetIdleTimer();
-    requestIdleCallbackSafe(() => {
-      connectMQTT();
-      loadRooms();
-      startGistRetryLoop();
-      flushPendingGistMessages();
-    });
-  }
-
-  function lockChat() {
-    disconnectMQTT();
-    clearInterval(state.timer);
-    clearInterval(state.lobbyTimer);
-    clearInterval(state.gistRetryTimer);
-    clearTimeout(state.idleTimer);
-    state.currentRoom = null;
-    appConfig = null;
-    activeUnlockCode = "";
-    unlockInput = "";
-    closeAllModals();
-    chatApp.style.display = "none";
-    emergencyBar.style.display = "none";
-    calculator.style.display = "flex";
-    showRandomFakeCalculation();
-  }
-
-  function emergencyClose() {
-    messageInput.value = "";
-    chatBox.innerHTML = "";
-    lockChat();
-  }
-
-  function resetIdleTimer() {
-    clearTimeout(state.idleTimer);
-    state.idleTimer = setTimeout(lockChat, 60000);
-  }
-
-  ["pointerdown", "keydown", "input", "touchstart"].forEach(eventName => {
-    document.addEventListener(eventName, () => {
-      if (appConfig) resetIdleTimer();
-    }, { passive: true });
-  });
-
-  function requestIdleCallbackSafe(fn) {
-    if ("requestIdleCallback" in window) requestIdleCallback(fn, { timeout: 500 });
-    else setTimeout(fn, 80);
-  }
-
-  function showLobby() {
-    closeJoinModal();
-    backBtn.style.display = "none";
-    lobbyActions.style.display = "flex";
-    roomActions.style.display = "none";
-    lobbyScreen.style.display = "block";
-    chatShell.style.display = "none";
-    sendArea.style.display = "none";
-    state.currentRoom = null;
-    state.roomSeen = new Set();
-    unsubscribeActiveRoomTopic();
-    updateNicknameLine();
-    clearInterval(state.lobbyTimer);
-    state.lobbyTimer = setInterval(() => {
-      if (!state.mqtt.connected && appConfig) loadRooms(true);
-    }, LOBBY_FALLBACK_MS);
-    loadRooms(true);
-  }
-
-  function backToLobby() {
-    chatBox.innerHTML = "";
-    messageInput.value = "";
-    showLobby();
-  }
-
-  function showChat() {
-    backBtn.style.display = "inline-flex";
-    lobbyActions.style.display = "none";
-    roomActions.style.display = "flex";
-    lobbyScreen.style.display = "none";
-    chatShell.style.display = "flex";
-    sendArea.style.display = "flex";
-  }
-
-  function openSettingsModal() {
-    document.getElementById("nameInput").value = state.displayName || "";
-    document.getElementById("settingsModal").style.display = "flex";
-  }
-
-  function closeSettingsModal() {
-    document.getElementById("settingsModal").style.display = "none";
-  }
-
-  function saveName() {
-    const name = document.getElementById("nameInput").value.trim();
-    if (!name) {
-      showToast("请输入昵称");
-      return;
-    }
-    state.displayName = name;
-    localStorage.setItem("vx_display_name", name);
-    updateNicknameLine();
-    closeSettingsModal();
-    showToast("已保存");
-  }
-
-  function openCreateRoomModal() {
-    if (!requireNickname()) return;
-    document.getElementById("newRoomName").value = "";
-    document.getElementById("newRoomPassword").value = "";
-    document.getElementById("createRoomModal").style.display = "flex";
-  }
-
-  function closeCreateRoomModal() {
-    document.getElementById("createRoomModal").style.display = "none";
-  }
-
-  function openJoinModal(roomId) {
-    if (!requireNickname()) return;
-    pendingRoom = state.rooms.find(r => r.roomId === roomId);
-    if (!pendingRoom) return;
-
-    if (pendingRoom.noPassword) {
-      openRoom(pendingRoom, getDefaultRoomPassword(), { accessType: "default" });
-      return;
-    }
-
-    document.getElementById("joinRoomPassword").value = "";
-    document.getElementById("joinModal").style.display = "flex";
-  }
-
-  function closeJoinModal() {
-    pendingRoom = null;
-    document.getElementById("joinModal").style.display = "none";
-  }
-
-  function openAdminModal() {
-    document.getElementById("adminPassword").value = "";
-    document.getElementById("adminModal").style.display = "flex";
-  }
-
-  function closeAdminModal() {
-    document.getElementById("adminModal").style.display = "none";
-  }
-
-  function closeAllModals() {
-    closeSettingsModal();
-    closeCreateRoomModal();
-    closeJoinModal();
-    closeAdminModal();
-  }
-
-  function validateRoomName(name) {
-    const value = name.trim();
-    if (!value) return false;
-    if (/[\u4e00-\u9fff]/.test(value)) return value.length <= 5;
-    return value.length <= 8;
-  }
-
-  function isDuplicateRoomName(name) {
-    return state.rooms.some(r => String(r.roomName || "").trim().toLowerCase() === name.trim().toLowerCase());
+  function playNotifySound(kind = "message") {
+    // Sound disabled by request.
   }
 
   function generateRoomNo() {
@@ -1463,6 +1407,12 @@
 
       closeCreateRoomModal();
       await loadRooms(false);
+      mqttPublishJson(roomsTopic(), {
+        type: "roomCreated",
+        room: sanitizeRoomForRealtime(meta),
+        senderId: state.senderId,
+        time: Date.now()
+      });
       mqttPublishJson(roomsTopic(), { type: "roomsUpdate", time: Date.now() });
       showToast("房间已创建");
       openRoom(meta, roomSecret, { accessType: "owner" });
@@ -1518,6 +1468,93 @@
     return "vx_room_last_gist_comment_v4_" + roomId;
   }
 
+  function roomEnteredKey(roomId) {
+    return "vx_room_entered_v4_" + roomId;
+  }
+
+  function roomLatestCountKey(roomId) {
+    return "vx_room_latest_count_v4_" + roomId;
+  }
+
+  function roomLastReadCountKey(roomId) {
+    return "vx_room_last_read_count_v4_" + roomId;
+  }
+
+  function hasEnteredRoom(roomId) {
+    return localStorage.getItem(roomEnteredKey(roomId)) === "1";
+  }
+
+  function getStoredNumber(key, fallback = 0) {
+    const n = Number(localStorage.getItem(key));
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function getRoomMessageCount(roomId) {
+    return loadRoomCache(roomId).length;
+  }
+
+  function getLatestRoomCount(roomId) {
+    const stored = getStoredNumber(roomLatestCountKey(roomId), 0);
+    const cached = getRoomMessageCount(roomId);
+    return Math.max(stored, cached);
+  }
+
+  function setLatestRoomCount(roomId, count) {
+    localStorage.setItem(roomLatestCountKey(roomId), String(Math.max(0, Number(count) || 0)));
+  }
+
+  function markRoomEntered(roomId) {
+    localStorage.setItem(roomEnteredKey(roomId), "1");
+  }
+
+  function markRoomRead(roomId) {
+    markRoomEntered(roomId);
+    const count = getRoomMessageCount(roomId);
+    setLatestRoomCount(roomId, count);
+    localStorage.setItem(roomLastReadCountKey(roomId), String(count));
+    updateUnreadBadge();
+    if (!state.currentRoom || state.currentRoom.roomId !== roomId) {
+      renderRooms();
+    }
+  }
+
+  function incrementRoomLatest(roomId) {
+    const next = getLatestRoomCount(roomId) + 1;
+    setLatestRoomCount(roomId, next);
+    updateUnreadBadge();
+    return next;
+  }
+
+  function getRoomUnreadCount(roomId) {
+    if (!hasEnteredRoom(roomId)) return 0;
+    const latest = getLatestRoomCount(roomId);
+    const read = getStoredNumber(roomLastReadCountKey(roomId), latest);
+    return Math.max(0, latest - read);
+  }
+
+
+  function getTotalUnreadCount() {
+    return (state.rooms || []).reduce((sum, room) => sum + getRoomUnreadCount(room.roomId), 0);
+  }
+
+  function updateUnreadBadge() {
+    const total = getTotalUnreadCount();
+    if (logoUnreadBadge) {
+      if (total > 0) {
+        logoUnreadBadge.style.display = "block";
+        logoUnreadBadge.textContent = total > 99 ? "99+" : String(total);
+      } else {
+        logoUnreadBadge.style.display = "none";
+        logoUnreadBadge.textContent = "";
+      }
+    }
+
+    try {
+      if ("setAppBadge" in navigator && total > 0) navigator.setAppBadge(total);
+      else if ("clearAppBadge" in navigator) navigator.clearAppBadge();
+    } catch (e) {}
+  }
+
   function pendingKey() {
     return "vx_pending_gist_v4";
   }
@@ -1543,6 +1580,7 @@
     }
     const clipped = unique.slice(-MAX_CACHE_MESSAGES);
     localStorage.setItem(roomCacheKey(roomId), JSON.stringify(clipped));
+    setLatestRoomCount(roomId, Math.max(getLatestRoomCount(roomId), clipped.length));
   }
 
   function getMessageKey(msg) {
@@ -1603,8 +1641,13 @@
     renderMessage(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
 
+    if (state.currentRoom && state.currentRoom.roomId === msg.roomId) {
+      markRoomRead(msg.roomId);
+    }
+
     if (source === "mqtt" && msg.senderId !== state.senderId) {
       showToast("新消息1条");
+      playNotifySound("message");
     }
     return true;
   }
@@ -1627,11 +1670,15 @@
     };
 
     roomInfoText.textContent = (room.roomName || getRoomNo(room)) + " · 建立者：" + (room.createdBy || "System");
+    roomTitleBtn.textContent = "【" + (room.roomName || getRoomNo(room)) + "】";
 
     initSeenFromCache(room.roomId);
     const cached = loadRoomCache(room.roomId);
     renderAllMessages(cached);
+    markRoomEntered(room.roomId);
+    markRoomRead(room.roomId);
 
+    clearTypingIndicator();
     subscribeRoomTopic(room.roomId);
 
     historyTip.style.display = "inline";
@@ -1693,6 +1740,10 @@
         localStorage.setItem(roomLastCommentKey(roomId), String(items[items.length - 1].commentId));
       }
 
+      if (state.currentRoom && state.currentRoom.roomId === roomId) {
+        markRoomRead(roomId);
+      }
+
       if (added > 0) {
         showToast("补充历史" + added + "条");
       }
@@ -1720,6 +1771,7 @@
     };
 
     messageInput.value = "";
+    publishTyping(false);
 
     appendMessageIfNew(msg, "local");
 
@@ -1734,6 +1786,14 @@
       };
 
       mqttPublishJson(roomTopic(state.currentRoom.roomId), wrapper);
+      mqttPublishJson(roomsTopic(), {
+        type: "roomMessageNotice",
+        roomId: state.currentRoom.roomId,
+        messageId: msg.messageId,
+        senderId: state.senderId,
+        senderClientId: state.mqtt.clientId,
+        time: msg.time
+      });
       enqueuePendingGist({
         id: msg.messageId,
         roomId: state.currentRoom.roomId,
@@ -1892,14 +1952,26 @@
       meta.className = "room-meta";
       meta.textContent = "";
 
+      const side = document.createElement("div");
+      side.className = "room-side";
+
       const badge = document.createElement("div");
       badge.className = "room-badge";
       badge.textContent = room.noPassword ? "大厅" : "加密";
+      side.appendChild(badge);
+
+      const unreadCount = getRoomUnreadCount(room.roomId);
+      if (unreadCount > 0) {
+        const unread = document.createElement("div");
+        unread.className = "room-unread";
+        unread.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
+        side.appendChild(unread);
+      }
 
       main.appendChild(name);
       main.appendChild(meta);
       div.appendChild(main);
-      div.appendChild(badge);
+      div.appendChild(side);
       roomList.appendChild(div);
     });
   }
@@ -1974,6 +2046,8 @@
 
       localStorage.removeItem(roomCacheKey(state.currentRoom.roomId));
       localStorage.removeItem(roomLastCommentKey(state.currentRoom.roomId));
+      setLatestRoomCount(state.currentRoom.roomId, 0);
+      localStorage.setItem(roomLastReadCountKey(state.currentRoom.roomId), "0");
       state.roomSeen = new Set();
       chatBox.innerHTML = "";
 
@@ -2010,7 +2084,11 @@
 
       localStorage.removeItem(roomCacheKey(roomId));
       localStorage.removeItem(roomLastCommentKey(roomId));
+      localStorage.removeItem(roomEnteredKey(roomId));
+      localStorage.removeItem(roomLatestCountKey(roomId));
+      localStorage.removeItem(roomLastReadCountKey(roomId));
 
+      mqttPublishJson(roomsTopic(), { type: "roomDeleted", roomId, time: Date.now() });
       mqttPublishJson(roomsTopic(), { type: "roomsUpdate", time: Date.now() });
 
       closeAdminModal();
@@ -2106,6 +2184,10 @@
     return MQTT_PREFIX + "/rooms/update";
   }
 
+  function presenceTopic() {
+    return MQTT_PREFIX + "/presence/all";
+  }
+
   function roomTopic(roomId) {
     return MQTT_PREFIX + "/room/" + roomId + "/live";
   }
@@ -2151,13 +2233,129 @@
   function disconnectMQTT() {
     clearTimeout(state.mqtt.reconnectTimer);
     clearInterval(state.mqtt.pingTimer);
+    clearInterval(state.mqtt.presenceTimer);
+    publishPresence("offline");
     try {
       if (state.mqtt.ws) state.mqtt.ws.close();
     } catch (e) {}
     state.mqtt.ws = null;
     state.mqtt.connected = false;
     state.mqtt.activeTopic = null;
+    delete state.onlineClients[state.mqtt.clientId];
     setDataStatus("disconnected");
+  }
+
+  function publishPresence(status = "online") {
+    if (!state.mqtt.connected && status === "online") return;
+    const payload = {
+      type: "presence",
+      status,
+      clientId: state.mqtt.clientId,
+      senderId: state.senderId,
+      senderName: state.displayName || "未命名",
+      time: Date.now()
+    };
+    mqttPublishJson(presenceTopic(), payload);
+    if (status === "online") {
+      state.onlineClients[state.mqtt.clientId] = payload;
+    } else {
+      delete state.onlineClients[state.mqtt.clientId];
+    }
+    setDataStatus(state.mqtt.connected ? "connected" : "disconnected");
+  }
+
+  function startPresenceHeartbeat() {
+    clearInterval(state.mqtt.presenceTimer);
+    publishPresence("online");
+    state.mqtt.presenceTimer = setInterval(() => {
+      pruneOnlineClients();
+      publishPresence("online");
+      setDataStatus(state.mqtt.connected ? "connected" : "disconnected");
+    }, PRESENCE_HEARTBEAT_MS);
+  }
+
+  function handlePresence(obj) {
+    if (!obj || obj.type !== "presence" || !obj.clientId) return;
+    if (obj.status === "offline") {
+      delete state.onlineClients[obj.clientId];
+    } else {
+      state.onlineClients[obj.clientId] = {
+        clientId: obj.clientId,
+        senderId: obj.senderId || "",
+        senderName: obj.senderName || "未命名",
+        time: Number(obj.time || Date.now())
+      };
+    }
+    setDataStatus(state.mqtt.connected ? "connected" : "disconnected");
+  }
+
+  function publishTyping(isTyping) {
+    if (!state.currentRoom || !state.mqtt.connected) return;
+    mqttPublishJson(roomTopic(state.currentRoom.roomId), {
+      type: "typing",
+      roomId: state.currentRoom.roomId,
+      senderId: state.senderId,
+      senderName: state.displayName || "未命名",
+      isTyping: !!isTyping,
+      time: Date.now()
+    });
+  }
+
+  function clearTypingIndicator() {
+    state.typingUsers = {};
+    if (typingTip) {
+      typingTip.textContent = "";
+      typingTip.classList.remove("show");
+    }
+  }
+
+  function renderTypingIndicator() {
+    if (!typingTip) return;
+    const now = Date.now();
+    const names = Object.keys(state.typingUsers || {})
+      .map(id => state.typingUsers[id])
+      .filter(item => item && now - Number(item.time || 0) < 3000)
+      .map(item => item.senderName || "有人");
+
+    Object.keys(state.typingUsers || {}).forEach(id => {
+      const item = state.typingUsers[id];
+      if (!item || now - Number(item.time || 0) >= 3000) delete state.typingUsers[id];
+    });
+
+    if (!names.length) {
+      typingTip.textContent = "";
+      typingTip.classList.remove("show");
+      return;
+    }
+
+    const unique = [...new Set(names)].slice(0, 2);
+    typingTip.textContent = unique.join("、") + " 正在输入...";
+    typingTip.classList.add("show");
+  }
+
+  function handleTyping(obj) {
+    if (!state.currentRoom || !obj || obj.roomId !== state.currentRoom.roomId) return;
+    if (obj.senderId === state.senderId) return;
+
+    if (obj.isTyping) {
+      state.typingUsers[obj.senderId || obj.senderName || "unknown"] = {
+        senderName: obj.senderName || "有人",
+        time: Date.now()
+      };
+    } else if (obj.senderId) {
+      delete state.typingUsers[obj.senderId];
+    }
+
+    renderTypingIndicator();
+    clearTimeout(handleTyping._timer);
+    handleTyping._timer = setTimeout(renderTypingIndicator, 3200);
+  }
+
+  function notifyTypingInput() {
+    if (!state.currentRoom || !hasNickname()) return;
+    clearTimeout(state.typingPublishTimer);
+    publishTyping(true);
+    state.typingPublishTimer = setTimeout(() => publishTyping(false), TYPING_STOP_MS);
   }
 
   function handleMQTTPacket(arrayBuffer) {
@@ -2172,6 +2370,8 @@
         state.mqtt.connected = true;
         setDataStatus("connected");
         mqttSubscribe(roomsTopic());
+        mqttSubscribe(presenceTopic());
+        startPresenceHeartbeat();
         clearInterval(state.mqtt.pingTimer);
         state.mqtt.pingTimer = setInterval(mqttPing, 15000);
         if (state.currentRoom) subscribeRoomTopic(state.currentRoom.roomId);
@@ -2216,19 +2416,52 @@
   }
 
   async function handleMQTTMessage(topic, obj) {
+    if (topic === presenceTopic()) {
+      handlePresence(obj);
+      return;
+    }
+
     if (topic === roomsTopic()) {
-      if (obj.type === "roomsUpdate") loadRooms(true);
+      if (obj.type === "roomCreated" && obj.room) {
+        upsertRoomRealtime(obj.room);
+        requestIdleCallbackSafe(() => loadRooms(true));
+      } else if (obj.type === "roomDeleted" && obj.roomId) {
+        removeRoomRealtime(obj.roomId);
+        requestIdleCallbackSafe(() => loadRooms(true));
+      } else if (obj.type === "roomMessageNotice" && obj.roomId) {
+        if (obj.senderClientId === state.mqtt.clientId) return;
+        if (state.currentRoom && state.currentRoom.roomId === obj.roomId) {
+          markRoomRead(obj.roomId);
+          return;
+        }
+        if (hasEnteredRoom(obj.roomId)) {
+          incrementRoomLatest(obj.roomId);
+          renderRooms();
+          playNotifySound("room");
+        }
+      } else if (obj.type === "roomsUpdate") {
+        loadRooms(true);
+      }
       return;
     }
 
     if (!state.currentRoom) return;
     if (topic !== roomTopic(state.currentRoom.roomId)) return;
 
+    if (obj.type === "typing") {
+      handleTyping(obj);
+      return;
+    }
+
     if (obj.type === "roomCleared" && obj.roomId === state.currentRoom.roomId) {
       localStorage.removeItem(roomCacheKey(obj.roomId));
       localStorage.removeItem(roomLastCommentKey(obj.roomId));
+      setLatestRoomCount(obj.roomId, 0);
+      localStorage.setItem(roomLastReadCountKey(obj.roomId), "0");
+      updateUnreadBadge();
       state.roomSeen = new Set();
       chatBox.innerHTML = "";
+      clearTypingIndicator();
       showToast("当前房间已清空");
       return;
     }
@@ -2274,6 +2507,13 @@
     if (e.key === "Enter") clearCurrentRoomMessagesWithAdmin();
   });
 
+  window.addEventListener("beforeunload", () => {
+    try {
+      publishPresence("offline");
+      publishTyping(false);
+    } catch (e) {}
+  });
+
   window.addEventListener("online", () => {
     if (appConfig) {
       connectMQTT();
@@ -2289,6 +2529,23 @@
       else loadRooms(true);
     }
   });
+
+
+  function registerAndroidPWAServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    window.addEventListener("load", function() {
+      navigator.serviceWorker.register("/vx/service-worker.js?v=pwa-nosound-emergency10-20260509", {
+        scope: "/vx/"
+      }).then(function(reg) {
+        if (reg && reg.update) reg.update();
+      }).catch(function(err) {
+        console.log("Service Worker 注册失败", err);
+      });
+    });
+  }
+
+  registerAndroidPWAServiceWorker();
+
 </script>
 
 </body>
