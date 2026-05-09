@@ -7,290 +7,316 @@
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      min-height: 100%;
+      margin: 0; padding: 0; min-height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #07111f;
       color: #e5f3ff;
-    }
-    body {
       background:
-        radial-gradient(circle at 20% 0%, rgba(59,130,246,.24), transparent 32%),
-        radial-gradient(circle at 90% 10%, rgba(168,85,247,.18), transparent 30%),
-        radial-gradient(circle at 50% 100%, rgba(14,165,233,.16), transparent 36%),
-        #07111f;
-      padding: 18px;
+        radial-gradient(circle at top left, rgba(0, 180, 255, .22), transparent 32%),
+        radial-gradient(circle at top right, rgba(139, 92, 246, .22), transparent 28%),
+        linear-gradient(135deg, #061526, #0a1021 45%, #120d2b);
     }
+    body { padding: 22px 14px 46px; }
     .wrap { width: min(760px, 100%); margin: 0 auto; }
-    .header {
-      padding: 18px 4px 14px;
-      text-align: center;
+    h1 {
+      text-align: center; margin: 6px 0 8px;
+      font-size: 26px; letter-spacing: .04em; color: #fff;
+      text-shadow: 0 0 18px rgba(80, 220, 255, .5);
     }
-    .title {
-      margin: 0;
-      font-size: 24px;
-      line-height: 1.2;
-      letter-spacing: .04em;
-      font-weight: 900;
-      color: #f8fbff;
-      text-shadow: 0 0 18px rgba(56,189,248,.35);
+    .sub {
+      text-align: center; color: rgba(229,243,255,.78);
+      font-size: 13px; margin-bottom: 18px;
     }
-    .subtitle {
-      margin: 8px 0 0;
-      color: rgba(226, 241, 255, .68);
+    .notice {
+      border: 1px solid rgba(251, 191, 36, .38);
+      background: rgba(251, 191, 36, .08);
+      color: #ffe6a6;
+      border-radius: 16px;
+      padding: 12px 14px;
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.55;
+      margin-bottom: 16px;
     }
     .card {
-      border: 1px solid rgba(125, 211, 252, .18);
-      border-radius: 24px;
-      background: rgba(15, 23, 42, .66);
-      box-shadow: 0 22px 80px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.05);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: rgba(5, 18, 36, .78);
+      border: 1px solid rgba(103, 232, 249, .18);
+      box-shadow: 0 22px 70px rgba(0,0,0,.32), inset 0 0 28px rgba(80, 220, 255, .04);
+      border-radius: 22px;
       padding: 16px;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
-    .card h2 {
-      margin: 0 0 12px;
-      font-size: 16px;
-      letter-spacing: .04em;
-      color: #fff;
+    .section-title {
+      font-size: 18px; font-weight: 900; color: #fff;
+      margin: 0 0 14px;
     }
-    .field { margin-bottom: 12px; }
-    .label {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin: 0 0 7px;
-      color: rgba(226,241,255,.82);
-      font-size: 13px;
-      font-weight: 800;
+    label {
+      display: flex; justify-content: space-between; align-items: center;
+      font-weight: 800; color: rgba(229,243,255,.88);
+      font-size: 13px; margin: 14px 0 7px;
     }
-    .hint {
-      color: rgba(226,241,255,.48);
-      font-size: 12px;
-      font-weight: 500;
-      white-space: nowrap;
-    }
+    .hint { color: rgba(229,243,255,.48); font-weight: 700; font-size: 12px; }
     input, textarea {
       width: 100%;
-      border: 1px solid rgba(125, 211, 252, .20);
-      background: rgba(2, 6, 23, .52);
-      color: #f8fbff;
-      border-radius: 15px;
-      padding: 13px 14px;
+      border: 1px solid rgba(103, 232, 249, .20);
+      border-radius: 14px;
       outline: none;
+      background: rgba(2, 8, 23, .72);
+      color: #fff;
+      padding: 13px 14px;
       font-size: 14px;
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
     }
     input:focus, textarea:focus {
-      border-color: rgba(56,189,248,.72);
-      box-shadow: 0 0 0 3px rgba(56,189,248,.13), inset 0 0 0 1px rgba(255,255,255,.04);
+      border-color: rgba(103, 232, 249, .6);
+      box-shadow: 0 0 0 3px rgba(34, 211, 238, .12);
     }
-    textarea { min-height: 220px; resize: vertical; line-height: 1.45; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-    .preview {
-      margin-top: 7px;
-      color: rgba(125, 211, 252, .90);
-      font-size: 12px;
-      word-break: break-all;
-      display: none;
+    textarea {
+      min-height: 230px; resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px; line-height: 1.55;
     }
-    .preview strong { color: #fff; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
-    .btn {
+    .unlock-box {
+      border-radius: 18px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(2, 8, 23, .68), rgba(15, 23, 42, .58));
+      border: 1px solid rgba(103, 232, 249, .18);
+    }
+    .calc-display {
       width: 100%;
-      border: none;
+      min-height: 58px;
+      display: flex; align-items: center; justify-content: flex-end;
       border-radius: 16px;
-      padding: 14px 16px;
-      color: #04111f;
-      background: linear-gradient(135deg, #67e8f9 0%, #60a5fa 52%, #a78bfa 100%);
-      font-size: 15px;
+      padding: 13px 14px;
+      background: rgba(0, 0, 0, .28);
+      border: 1px solid rgba(255,255,255,.10);
+      color: #fff;
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: .03em;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .standard-row {
+      margin-top: 8px;
+      color: #7dd3fc;
+      font-size: 12px;
+      font-weight: 800;
+      word-break: break-all;
+    }
+    .keypad {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .key {
+      height: 54px;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+      color: #f8fbff;
+      background: rgba(255,255,255,.09);
+      font-size: 20px;
       font-weight: 900;
       cursor: pointer;
-      box-shadow: 0 12px 34px rgba(59,130,246,.22);
+      box-shadow: 0 10px 24px rgba(0,0,0,.20);
+      user-select: none;
     }
-    .btn.secondary {
-      color: #e5f3ff;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.12);
-      box-shadow: none;
+    .key:active { transform: scale(.97); opacity: .82; }
+    .key.op { color: #9beeff; background: rgba(14, 165, 233, .16); border-color: rgba(103,232,249,.28); }
+    .key.danger { color: #fecaca; background: rgba(239,68,68,.16); border-color: rgba(248,113,113,.30); }
+    .key.equal { color: #020617; background: linear-gradient(135deg, #67e8f9, #a78bfa); }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .btn {
+      border: none; border-radius: 16px; padding: 15px 16px;
+      font-weight: 900; font-size: 15px; cursor: pointer;
+      color: #061526;
+      background: linear-gradient(135deg, #67e8f9, #a78bfa);
+      box-shadow: 0 12px 32px rgba(96,165,250,.25);
     }
-    .btn:active { transform: scale(.985); opacity: .9; }
-    .status {
-      margin-top: 10px;
-      min-height: 20px;
-      color: #86efac;
-      font-size: 13px;
-      line-height: 1.5;
-      text-align: center;
-      word-break: break-word;
-    }
-    .warn {
-      padding: 12px;
-      border-radius: 16px;
-      background: rgba(245, 158, 11, .10);
-      border: 1px solid rgba(245, 158, 11, .22);
-      color: rgba(254, 243, 199, .92);
-      font-size: 12px;
-      line-height: 1.6;
-      margin-bottom: 14px;
-    }
-    .rule {
-      color: rgba(226,241,255,.62);
-      font-size: 12px;
-      line-height: 1.65;
-      margin: 0;
-    }
-    code {
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 8px;
-      padding: 1px 5px;
-      color: #bae6fd;
-    }
+    .btn.secondary { background: rgba(255,255,255,.10); color: #e5f3ff; border: 1px solid rgba(255,255,255,.12); }
+    .btn:active { transform: scale(.99); opacity: .9; }
+    .copied { text-align: center; color: #86efac; font-size: 13px; margin-top: 10px; font-weight: 900; min-height: 18px; }
+    .small { color: rgba(229,243,255,.56); font-size: 12px; line-height: 1.55; margin-top: 10px; }
   </style>
 </head>
+
 <body>
   <div class="wrap">
-    <div class="header">
-      <h1 class="title">VX 配置生成器</h1>
-      <p class="subtitle">只在当前浏览器本地生成配置，不上传任何信息。</p>
-    </div>
+    <h1>VX 配置生成器</h1>
+    <div class="sub">只在当前浏览器本地生成配置，不上传任何信息。</div>
 
-    <div class="warn">
-      进入暗号会先统一成标准加减乘除符号后再加密：<code>X / x / × / ✖ / ✖️ / *</code> 都按乘号处理；<code>÷ / /</code> 都按除号处理。暗号长度不限制，可以是 1 个数字，也可以是很多数字，前后中间都可以加符号。
-    </div>
-
-    <div class="card">
-      <h2>基础配置</h2>
-
-      <div class="field">
-        <div class="label">进入暗号 <span class="hint">数字 + 加减乘除，不限长度</span></div>
-        <input id="unlockCode" inputmode="text" autocomplete="off" placeholder="例如：1X23++45÷6" oninput="updatePreview()" />
-        <div class="preview" id="unlockPreview"></div>
-      </div>
-
-      <div class="field">
-        <div class="label">GitHub Token</div>
-        <input id="token" autocomplete="off" placeholder="ghp_... 或 github_pat_..." />
-      </div>
-
-      <div class="field">
-        <div class="label">Gist ID</div>
-        <input id="gistId" autocomplete="off" placeholder="你的 Gist ID" />
-      </div>
-
-      <div class="field">
-        <div class="label">聊天加密密钥 <span class="hint">chatSecret</span></div>
-        <input id="chatSecret" autocomplete="off" placeholder="用于房间/消息加密的密钥" />
-      </div>
-
-      <div class="field">
-        <div class="label">万能管理密码</div>
-        <input id="adminPassword" type="password" autocomplete="new-password" placeholder="管理密码，用于清空/删除/管理房间" />
-      </div>
-
-      <button class="btn" onclick="generateConfig()">生成配置</button>
-      <div class="status" id="status"></div>
+    <div class="notice">
+      进入暗号请直接用下面克隆计算器点击输入。这里的数字和加减乘除按钮会和 index 页面保持同一套输入规则：
+      <b>加 +</b>、<b>减 -</b>、<b>乘 ×</b>、<b>除 ÷</b>。如果你手动输入 X / x / * / ✖ / ✖️，也会统一当成乘号；/ 会统一当成除号。暗号不做数学计算，只当密码字符串。
     </div>
 
     <div class="card">
-      <h2>生成结果</h2>
-      <textarea id="output" readonly placeholder="生成后这里会出现 DEFAULT_ENCRYPTED_CONFIG 和 ADMIN_PASSWORD_HASH"></textarea>
-      <div class="row" style="margin-top:10px;">
-        <button class="btn secondary" onclick="copyOutput()">复制结果</button>
-        <button class="btn secondary" onclick="clearAll()">清空页面</button>
+      <div class="section-title">基础配置</div>
+
+      <label>进入暗号 <span class="hint">建议用下方克隆计算器点击输入</span></label>
+      <div class="unlock-box">
+        <div class="calc-display" id="unlockDisplay"></div>
+        <input id="unlockCode" autocomplete="off" inputmode="text" placeholder="也可以手动输入，例如：11111÷ 或 12X34" style="margin-top:10px;" />
+        <div class="standard-row">标准化暗号：<span id="normalizedPreview">未输入</span></div>
+
+        <div class="keypad" aria-label="暗号计算器键盘">
+          <button class="key danger" data-action="clear">C</button>
+          <button class="key danger" data-action="back">⌫</button>
+          <button class="key op" data-value="÷">÷</button>
+          <button class="key op" data-value="×">×</button>
+
+          <button class="key" data-value="7">7</button>
+          <button class="key" data-value="8">8</button>
+          <button class="key" data-value="9">9</button>
+          <button class="key op" data-value="-">-</button>
+
+          <button class="key" data-value="4">4</button>
+          <button class="key" data-value="5">5</button>
+          <button class="key" data-value="6">6</button>
+          <button class="key op" data-value="+">+</button>
+
+          <button class="key" data-value="1">1</button>
+          <button class="key" data-value="2">2</button>
+          <button class="key" data-value="3">3</button>
+          <button class="key equal" data-action="noop">=</button>
+
+          <button class="key" data-value="0">0</button>
+          <button class="key op" data-value="+">+</button>
+          <button class="key op" data-value="-">-</button>
+          <button class="key op" data-value="÷">÷</button>
+        </div>
       </div>
+
+      <label>GitHub Token</label>
+      <input id="githubToken" autocomplete="off" placeholder="github_pat_..." />
+
+      <label>Gist ID</label>
+      <input id="gistId" autocomplete="off" placeholder="Gist ID" />
+
+      <label>聊天加密密钥 <span class="hint">chatSecret</span></label>
+      <input id="chatSecret" autocomplete="off" placeholder="例如：2026" />
+
+      <label>万能管理密码</label>
+      <input id="adminPassword" type="password" autocomplete="new-password" placeholder="管理密码" />
+
+      <button class="btn" style="width:100%; margin-top:14px;" onclick="generateConfig()">生成配置</button>
+      <div class="copied" id="copiedTip"></div>
     </div>
 
     <div class="card">
-      <h2>暗号规则</h2>
-      <p class="rule">
-        允许：数字、<code>+</code>、<code>-</code>、<code>*</code>、<code>/</code>。输入时可以用 <code>X</code>、<code>x</code>、<code>×</code>、<code>✖</code>、<code>✖️</code> 表示乘号；可以用 <code>÷</code> 表示除号；全角加减乘除也会统一处理。暗号不会被当作数学表达式计算，只作为密码字符串加密。
-      </p>
+      <div class="section-title">生成结果</div>
+      <textarea id="result" readonly placeholder="生成后结果会显示在这里"></textarea>
+      <div class="actions">
+        <button class="btn secondary" onclick="copyResult()">复制结果</button>
+        <button class="btn secondary" onclick="clearPage()">清空页面</button>
+      </div>
+      <div class="small">
+        生成后把结果发给我，我再加入 index.html。注意：配置页面生成时和 index 解锁时都必须使用同一套标准化规则。
+      </div>
     </div>
   </div>
 
   <script>
-    function toBase64(buffer) {
-      const bytes = new Uint8Array(buffer);
-      let binary = "";
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      return btoa(binary);
-    }
-
-    function normalizeFullWidthDigits(text) {
-      return String(text || "").replace(/[０-９]/g, function(ch) {
-        return String.fromCharCode(ch.charCodeAt(0) - 0xFF10 + 48);
-      });
-    }
+    const PBKDF2_ITERATIONS = 180000;
 
     function normalizeUnlockCode(input) {
-      return normalizeFullWidthDigits(input)
+      return String(input || "")
         .trim()
         .replace(/\s+/g, "")
-        .replace(/✖️/g, "*")
-        .replace(/[×✖xX＊﹡]/g, "*")
-        .replace(/[÷／]/g, "/")
+        .replace(/✖️/g, "×")
+        .replace(/[xX＊*✖]/g, "×")
+        .replace(/[×]/g, "×")
+        .replace(/[÷／/]/g, "÷")
         .replace(/[−－—–]/g, "-")
         .replace(/[＋﹢]/g, "+");
     }
 
-    function validateUnlockCode(input) {
-      const code = normalizeUnlockCode(input);
+    function canonicalUnlockCode(input) {
+      return normalizeUnlockCode(input)
+        .replace(/×/g, "*")
+        .replace(/÷/g, "/");
+    }
 
-      if (!code) {
+    function validateUnlockCode(input) {
+      const displayCode = normalizeUnlockCode(input);
+      const canonical = canonicalUnlockCode(displayCode);
+
+      if (!canonical) {
         throw new Error("请输入进入暗号");
       }
 
-      if (!/[0-9]/.test(code)) {
+      if (!/[0-9]/.test(canonical)) {
         throw new Error("进入暗号至少需要包含一个数字");
       }
 
-      if (!/^[0-9+\-*/]+$/.test(code)) {
+      if (!/^[0-9+\-*/]+$/.test(canonical)) {
         throw new Error("进入暗号只能包含数字和加减乘除符号");
       }
 
-      return code;
+      return canonical;
     }
 
-    function updatePreview() {
-      const input = document.getElementById("unlockCode").value;
-      const preview = document.getElementById("unlockPreview");
-      const normalized = normalizeUnlockCode(input);
+    function updateUnlockUI() {
+      const input = document.getElementById("unlockCode");
+      const display = document.getElementById("unlockDisplay");
+      const preview = document.getElementById("normalizedPreview");
+      const normalized = normalizeUnlockCode(input.value);
+      const canonical = canonicalUnlockCode(input.value);
 
-      if (!input) {
-        preview.style.display = "none";
-        preview.innerHTML = "";
-        return;
+      input.value = normalized;
+      display.textContent = normalized || "";
+      preview.textContent = canonical || "未输入";
+    }
+
+    document.getElementById("unlockCode").addEventListener("input", updateUnlockUI);
+
+    document.querySelectorAll(".key").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const input = document.getElementById("unlockCode");
+        const value = btn.dataset.value;
+        const action = btn.dataset.action;
+
+        if (action === "clear") {
+          input.value = "";
+        } else if (action === "back") {
+          input.value = Array.from(input.value).slice(0, -1).join("");
+        } else if (value) {
+          input.value += value;
+        }
+
+        updateUnlockUI();
+      });
+    });
+
+    function utf8ToBytes(str) {
+      return new TextEncoder().encode(str);
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = "";
+      const arr = new Uint8Array(bytes);
+      for (let i = 0; i < arr.length; i++) {
+        binary += String.fromCharCode(arr[i]);
       }
-
-      preview.style.display = "block";
-      preview.innerHTML = "标准化暗号：<strong>" + escapeHtml(normalized || "空") + "</strong>";
+      return btoa(binary);
     }
 
-    function escapeHtml(text) {
-      return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    function bufferToHex(buffer) {
+      return Array.from(new Uint8Array(buffer))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
     }
 
-    async function deriveKey(password, salt) {
-      const encoder = new TextEncoder();
+    async function sha256Hex(text) {
+      const digest = await crypto.subtle.digest("SHA-256", utf8ToBytes(text));
+      return bufferToHex(digest);
+    }
 
+    async function deriveKey(unlockCode, saltBytes) {
       const baseKey = await crypto.subtle.importKey(
         "raw",
-        encoder.encode(password),
+        utf8ToBytes(unlockCode),
         "PBKDF2",
         false,
         ["deriveKey"]
@@ -299,8 +325,8 @@
       return crypto.subtle.deriveKey(
         {
           name: "PBKDF2",
-          salt: salt,
-          iterations: 180000,
+          salt: saltBytes,
+          iterations: PBKDF2_ITERATIONS,
           hash: "SHA-256"
         },
         baseKey,
@@ -313,105 +339,81 @@
       );
     }
 
-    async function encryptConfigWithUnlockCode(config, unlockCode) {
-      const encoder = new TextEncoder();
+    async function encryptConfig(unlockCode, configObject) {
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const key = await deriveKey(unlockCode, salt);
-
+      const plaintext = utf8ToBytes(JSON.stringify(configObject));
       const encrypted = await crypto.subtle.encrypt(
-        { name: "AES-GCM", iv: iv },
+        { name: "AES-GCM", iv },
         key,
-        encoder.encode(JSON.stringify(config))
+        plaintext
       );
 
       return {
-        salt: toBase64(salt),
-        iv: toBase64(iv),
-        data: toBase64(encrypted)
+        salt: bytesToBase64(salt),
+        iv: bytesToBase64(iv),
+        data: bytesToBase64(encrypted)
       };
     }
 
-    async function sha256Text(text) {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(text);
-      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
-    }
-
     async function generateConfig() {
-      const status = document.getElementById("status");
-      const output = document.getElementById("output");
+      const tip = document.getElementById("copiedTip");
+      tip.textContent = "";
 
       try {
-        status.style.color = "#bae6fd";
-        status.textContent = "正在生成...";
-
         const unlockCode = validateUnlockCode(document.getElementById("unlockCode").value);
-        const token = document.getElementById("token").value.trim();
+        const githubToken = document.getElementById("githubToken").value.trim();
         const gistId = document.getElementById("gistId").value.trim();
         const chatSecret = document.getElementById("chatSecret").value.trim();
         const adminPassword = document.getElementById("adminPassword").value;
 
-        if (!token) throw new Error("请输入 GitHub Token");
+        if (!githubToken) throw new Error("请输入 GitHub Token");
         if (!gistId) throw new Error("请输入 Gist ID");
         if (!chatSecret) throw new Error("请输入聊天加密密钥");
         if (!adminPassword) throw new Error("请输入万能管理密码");
 
-        const config = {
-          token: token,
-          gistId: gistId,
-          chatSecret: chatSecret
-        };
+        const encrypted = await encryptConfig(unlockCode, {
+          githubToken,
+          gistId,
+          chatSecret
+        });
 
-        const encryptedConfig = await encryptConfigWithUnlockCode(config, unlockCode);
-        const adminHash = await sha256Text(adminPassword);
+        const adminHash = await sha256Hex(adminPassword);
 
-        const result =
-`const DEFAULT_ENCRYPTED_CONFIG = ${JSON.stringify(encryptedConfig, null, 2)};
+        const output =
+`const DEFAULT_ENCRYPTED_CONFIG = ${JSON.stringify(encrypted, null, 2)};
 
 const ADMIN_PASSWORD_HASH = "${adminHash}";`;
 
-        output.value = result;
-        status.style.color = "#86efac";
-        status.textContent = "生成成功。把结果复制到 index.html 里替换对应配置。";
-      } catch (e) {
-        status.style.color = "#fca5a5";
-        status.textContent = e.message || "生成失败";
+        document.getElementById("result").value = output;
+
+        await navigator.clipboard.writeText(output).catch(() => {});
+        tip.textContent = "已生成并尝试复制";
+      } catch (err) {
+        tip.textContent = err.message || "生成失败";
       }
     }
 
-    async function copyOutput() {
-      const output = document.getElementById("output");
-      const status = document.getElementById("status");
-
-      if (!output.value.trim()) {
-        status.style.color = "#fca5a5";
-        status.textContent = "没有可复制的内容";
-        return;
-      }
-
-      try {
-        await navigator.clipboard.writeText(output.value);
-        status.style.color = "#86efac";
-        status.textContent = "已复制";
-      } catch (e) {
-        output.select();
-        document.execCommand("copy");
-        status.style.color = "#86efac";
-        status.textContent = "已复制";
-      }
+    async function copyResult() {
+      const text = document.getElementById("result").value;
+      if (!text) return;
+      await navigator.clipboard.writeText(text).catch(() => {});
+      document.getElementById("copiedTip").textContent = "已复制";
     }
 
-    function clearAll() {
-      ["unlockCode", "token", "gistId", "chatSecret", "adminPassword", "output"].forEach(id => {
-        document.getElementById(id).value = "";
-      });
-      document.getElementById("unlockPreview").style.display = "none";
-      document.getElementById("unlockPreview").innerHTML = "";
-      document.getElementById("status").textContent = "";
+    function clearPage() {
+      document.getElementById("unlockCode").value = "";
+      document.getElementById("githubToken").value = "";
+      document.getElementById("gistId").value = "";
+      document.getElementById("chatSecret").value = "";
+      document.getElementById("adminPassword").value = "";
+      document.getElementById("result").value = "";
+      document.getElementById("copiedTip").textContent = "";
+      updateUnlockUI();
     }
+
+    updateUnlockUI();
   </script>
 </body>
 </html>
