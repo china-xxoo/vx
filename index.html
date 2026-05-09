@@ -23,9 +23,9 @@
     })();
   </script>
 
-  <link rel="icon" type="image/png" href="./apple-touch-icon.png.png?v=iconfix-004" />
-  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png.png?v=iconfix-004" />
-  <link rel="apple-touch-icon-precomposed" href="./apple-touch-icon.png.png?v=iconfix-004" />
+  <link rel="icon" type="image/png" href="./apple-touch-icon.png?v=iconfix-005" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=iconfix-005" />
+  <link rel="apple-touch-icon-precomposed" href="./apple-touch-icon.png?v=iconfix-005" />
 
   <meta name="theme-color" content="#111827" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -803,6 +803,30 @@
       padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
       box-shadow: 0 -12px 30px rgba(0,0,0,0.18);
     }
+
+    .compact-modal {
+      max-width: 320px;
+      padding: 16px;
+    }
+
+    .compact-modal h3 {
+      margin-bottom: 10px;
+      font-size: 17px;
+    }
+
+    .current-name-line {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #f3f4f6;
+    }
+
+    .chat-header .admin-btn {
+      right: 12px;
+    }
+
   </style>
 </head>
 
@@ -841,11 +865,9 @@
 <div class="chat-app" id="chatApp">
 
   <div class="top-header wechat-header" id="lobbyHeader" style="display:none;">
-    <button class="header-text-btn header-exit" onclick="lockChat()">退出</button>
     <span class="app-title-with-logo">
-      <img class="app-logo" src="./apple-touch-icon.png.png?v=iconfix-004" alt="logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+      <img class="app-logo" src="./apple-touch-icon.png?v=iconfix-005" alt="logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
       <span class="app-logo-fallback">C</span>
-      <span>聊天室</span>
     </span>
     <button class="header-text-btn header-new" onclick="openCreateRoomModal()">新建</button>
     <button class="header-text-btn header-settings" onclick="openSettingsModal()">设置</button>
@@ -862,7 +884,6 @@
     <button class="header-left" onclick="backToLobby()">房间</button>
     <span id="roomTitle">聊天室</span>
     <button class="admin-btn" onclick="openAdminModal()">管理</button>
-    <button class="panic-btn" onclick="panicExit()">退出</button>
   </div>
 
   <div class="chat-creator-bar" id="roomCreatorBar"></div>
@@ -1475,10 +1496,10 @@
 
     if (hasNickname()) {
       nicknameNotice.className = "wechat-notice nickname-ok";
-      nicknameNotice.textContent = "当前昵称：" + state.displayName + "。你可以在右上角“设置”中修改昵称和进入密码。";
+      nicknameNotice.textContent = "昵称：" + state.displayName;
     } else {
       nicknameNotice.className = "wechat-notice";
-      nicknameNotice.textContent = "还没有设置昵称。请点击右上角“设置”添加昵称，否则不能进入或新建聊天室。";
+      nicknameNotice.textContent = "昵称：未设置";
     }
   }
 
@@ -1510,8 +1531,10 @@
 
   function openSettingsModal() {
     document.getElementById("nameInput").value = state.displayName || "";
-    document.getElementById("newUnlockCode").value = "";
-    document.getElementById("confirmUnlockCode").value = "";
+    const currentNameLine = document.getElementById("currentNameLine");
+    if (currentNameLine) {
+      currentNameLine.textContent = "当前昵称：" + (state.displayName || "未设置");
+    }
     settingsModal.style.display = "flex";
     resetIdleTimer();
   }
@@ -1581,7 +1604,11 @@
     state.displayName = name;
     localStorage.setItem("vx_display_name", name);
     updateNicknameNotice();
-    alert("昵称已保存");
+    const currentNameLine = document.getElementById("currentNameLine");
+    if (currentNameLine) {
+      currentNameLine.textContent = "当前昵称：" + state.displayName;
+    }
+    closeSettingsModal();
   }
 
   function resetName() {
@@ -1640,6 +1667,7 @@
 
     lobbyHeader.style.display = "flex";
     lobbyScreen.style.display = "block";
+    emergencyBar.style.display = "block";
 
     updateNicknameNotice();
 
