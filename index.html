@@ -918,9 +918,9 @@
 
 <script>
   const DEFAULT_ENCRYPTED_CONFIG = {
-    "salt": "0N/9Lgn5P/8iJaRA1YrmDw==",
-    "iv": "6EhLD8xy3CgnZDiZ",
-    "data": "8dRCvGGInGQMJMhJH/KmtNDO0BHu1n+ALdoumEDekLIS39teQ0IRnY1IrFQb+UgiB0BB6X36fPJ4SIOeCLL2g96iJo/EA6ePOskoNV5l0Z+b1gsVmYxnM5jCdUdfNkYoaOIfl9oZqqlf+1w2ybxj6rjNGrJjbwyWmwjqZZKUDxGOOcZw8GexNdHrR5ur+iZtAHsp+DJv5qtEV/lje2kQ80DrqV2Cetl8lzehxPgEtQJl4MOZBGdpGwI="
+    "salt": "B8XjrqR3EQhBef6YEucncw==",
+    "iv": "NlLA5wgnl7GHOM0/",
+    "data": "RJkOyn5oarfPMJntg9g7VuilRu87fmR/LIere3FV9xhv8Ih4hEGtSEGh+BAroQxjYTYVKO8J4gH/wbqZhxVSi34Dqpk+tSJMBqhl0cAlfoiJLcLGXqqU+TLgB9/Ld36VIFCueiJsavZ98y25js5kg17wreyO5bkQBCNe+EujKBxtRij/THjIlY3S13cR+y4kPHTgn+rCXEZN6547ili3YkVBAhT9vyqMC53PqzEshiUYneJsx1WDraA="
   };
 
   const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131edda6730f5845";
@@ -1373,46 +1373,50 @@
 
   function getUnlockCodeCandidates(input) {
     const variants = new Set();
-    variants.add(input);
+    const raw = String(input || "").trim().replace(/\s+/g, "");
 
-    // 暗语优先：兼容多种乘除符号写法。
-    // 例如：✖️ / ✖ / × / * 以及 ÷ / / 都会交叉尝试，
-    // 避免暗语里有多个符号时因为符号形态不同而识别失败。
-    const normalized = String(input)
-      .replace(/✖️/g, "✖")
-      .replace(/×/g, "✖")
-      .replace(/\*/g, "✖")
-      .replace(/÷/g, "/")
-      .replace(/−/g, "-");
+    if (!raw) return [];
 
-    const multiplyForms = ["✖️", "✖", "×", "*"];
-    const divideForms = ["÷", "/"];
+    // 暗语符号统一规则：只把“加、减、乘、除”作为运算符。
+    // 乘号兼容：X / x / × / * / ✖ / ✖️ / 全角Ｘｘ
+    // 除号兼容：÷ / / / ／
+    // 减号兼容：- / − / － / — / –
+    // 加号兼容：+ / ＋
+    // 说明：会同时尝试多种写法；如果你在配置页写 X，这里也会当成乘号匹配。
+    variants.add(raw);
+
+    const canonical = raw
+      .replace(/✖️/g, "*")
+      .replace(/[✖×xXｘＸ＊*]/g, "*")
+      .replace(/[÷／/]/g, "/")
+      .replace(/[−－—–]/g, "-")
+      .replace(/[＋﹢]/g, "+");
+
+    variants.add(canonical);
+
+    const multiplyForms = ["*", "×", "X", "x", "✖", "✖️"];
+    const divideForms = ["/", "÷"];
     const minusForms = ["-", "−"];
+    const plusForms = ["+", "＋"];
 
+    // 避免组合爆炸：暗语一般较短，只生成加减乘除符号形态组合。
     multiplyForms.forEach(mul => {
       divideForms.forEach(div => {
         minusForms.forEach(minus => {
-          variants.add(
-            normalized
-              .replace(/✖/g, mul)
-              .replace(/\//g, div)
-              .replace(/-/g, minus)
-          );
+          plusForms.forEach(plus => {
+            variants.add(
+              canonical
+                .replace(/\*/g, mul)
+                .replace(/\//g, div)
+                .replace(/-/g, minus)
+                .replace(/\+/g, plus)
+            );
+          });
         });
       });
     });
 
     return Array.from(variants);
-  }
-
-  function isInvalidCalcExpression(expr) {
-    const text = String(expr || "");
-    if (!text) return false;
-    if (!/^[0-9+\-*/%. ]+$/.test(text)) return true;
-    if (/[+\-*/%.]$/.test(text)) return true;
-    if (/^[+*/%.]/.test(text)) return true;
-    if (/[+\-*/%.]{2,}/.test(text)) return true;
-    return false;
   }
 
   async function tryUnlock() {
