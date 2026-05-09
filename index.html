@@ -1266,33 +1266,18 @@
         return;
       }
 
+      if (!unlockInput && !calcExpression) return;
+
+      // 安全逻辑：先识别暗语；不是暗语就一律按普通计算错误处理，
+      // 不显示“输入有误”等暴露入口性质的提示。
       if (unlockInput) {
         const unlocked = await tryUnlock();
         if (unlocked) return;
       }
 
-      if (!calcExpression) return;
-      const last = calcExpression.slice(-1);
-      if ("+-*/%".includes(last)) {
-        calcExpression = "Error";
-        unlockInput = "";
-        showToast("输入有误");
-        updateDisplay();
-        return;
-      }
-
-      if (!/^[0-9+\-*/%. ]+$/.test(calcExpression)) {
-        calcExpression = "Error";
-        unlockInput = "";
-        showToast("输入有误");
-        updateDisplay();
-        return;
-      }
-
-      const result = Function('"use strict"; return (' + calcExpression + ')')();
-      calcExpression = isFinite(result) ? String(Number(result.toFixed(8))) : "Error";
-      if (calcExpression === "Error") showToast("输入有误");
+      calcExpression = "Error";
       unlockInput = "";
+      showToast("输入有误");
       updateDisplay();
     } catch (e) {
       calcExpression = "Error";
@@ -1389,11 +1374,45 @@
   function getUnlockCodeCandidates(input) {
     const variants = new Set();
     variants.add(input);
-    variants.add(input.replace(/(\*|×|✖️|✖)/g, "✖️"));
-    variants.add(input.replace(/(\*|×|✖️|✖)/g, "×"));
-    variants.add(input.replace(/(\*|×|✖️|✖)/g, "*"));
-    variants.add(input.replace(/(\*|×|✖️|✖)/g, "✖"));
+
+    // 暗语优先：兼容多种乘除符号写法。
+    // 例如：✖️ / ✖ / × / * 以及 ÷ / / 都会交叉尝试，
+    // 避免暗语里有多个符号时因为符号形态不同而识别失败。
+    const normalized = String(input)
+      .replace(/✖️/g, "✖")
+      .replace(/×/g, "✖")
+      .replace(/\*/g, "✖")
+      .replace(/÷/g, "/")
+      .replace(/−/g, "-");
+
+    const multiplyForms = ["✖️", "✖", "×", "*"];
+    const divideForms = ["÷", "/"];
+    const minusForms = ["-", "−"];
+
+    multiplyForms.forEach(mul => {
+      divideForms.forEach(div => {
+        minusForms.forEach(minus => {
+          variants.add(
+            normalized
+              .replace(/✖/g, mul)
+              .replace(/\//g, div)
+              .replace(/-/g, minus)
+          );
+        });
+      });
+    });
+
     return Array.from(variants);
+  }
+
+  function isInvalidCalcExpression(expr) {
+    const text = String(expr || "");
+    if (!text) return false;
+    if (!/^[0-9+\-*/%. ]+$/.test(text)) return true;
+    if (/[+\-*/%.]$/.test(text)) return true;
+    if (/^[+*/%.]/.test(text)) return true;
+    if (/[+\-*/%.]{2,}/.test(text)) return true;
+    return false;
   }
 
   async function tryUnlock() {
