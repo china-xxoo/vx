@@ -126,6 +126,7 @@
 
     .chat-app {
       display: none;
+      position: relative;
       width: 100%;
       height: 100vh;
       height: 100dvh;
@@ -559,6 +560,249 @@
       margin-top: 8px;
       line-height: 1.4;
     }
+
+
+    .app-title-with-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .app-logo {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      object-fit: cover;
+      display: block;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    .app-logo-fallback {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: #111827;
+      color: #fff;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+
+    /* WeChat-like lobby layout */
+    .top-header.wechat-header {
+      height: 52px;
+      background: #f7f7f7;
+      border-bottom: 1px solid #dcdcdc;
+      font-weight: 700;
+    }
+
+    .header-text-btn {
+      position: absolute;
+      border: none;
+      background: transparent;
+      color: #111827;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 8px 6px;
+      cursor: pointer;
+    }
+
+    .header-text-btn:active {
+      opacity: 0.5;
+    }
+
+    .header-exit {
+      left: 12px;
+    }
+
+    .header-new {
+      right: 58px;
+    }
+
+    .header-settings {
+      right: 12px;
+    }
+
+    #lobbyScreen.wechat-screen {
+      padding: 0;
+      background: #ededed;
+    }
+
+    .wechat-notice {
+      margin: 10px 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      background: #fff7ed;
+      color: #c2410c;
+    }
+
+    .wechat-notice.nickname-ok {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .wechat-list {
+      background: #ffffff;
+      border-top: 1px solid #e5e5e5;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .wechat-room-button {
+      width: 100%;
+      min-height: 72px;
+      border: none;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      text-align: left;
+      position: relative;
+      font-family: inherit;
+    }
+
+    .wechat-room-button::after {
+      content: "";
+      position: absolute;
+      left: 74px;
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: #eeeeee;
+    }
+
+    .wechat-room-button:active {
+      background: #f2f2f2;
+    }
+
+    .wechat-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: linear-gradient(145deg, #22c55e, #16a34a);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .wechat-avatar.locked {
+      background: linear-gradient(145deg, #111827, #374151);
+    }
+
+    .wechat-room-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .wechat-room-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+
+    .wechat-room-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .wechat-room-time {
+      font-size: 11px;
+      color: #9ca3af;
+      flex-shrink: 0;
+    }
+
+    .wechat-room-sub {
+      font-size: 13px;
+      color: #8a8a8a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-creator-bar {
+      display: none;
+      background: #f7f7f7;
+      color: #6b7280;
+      font-size: 12px;
+      padding: 7px 12px;
+      border-bottom: 1px solid #e5e7eb;
+      flex-shrink: 0;
+      text-align: center;
+    }
+
+    .emergency-bar {
+      display: none;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(78vw, 330px);
+      padding: 0;
+      background: transparent;
+      border: none;
+      flex-shrink: 0;
+      z-index: 30;
+      pointer-events: none;
+    }
+
+    .emergency-close-btn {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.32);
+      border-radius: 999px;
+      background: rgba(220, 38, 38, 0.72);
+      color: #ffffff;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow: 0 14px 34px rgba(220,38,38,0.30);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      pointer-events: auto;
+    }
+
+    .emergency-close-btn:active {
+      transform: scale(0.98);
+      opacity: 0.86;
+    }
+
+    .meta-name {
+      font-weight: 800;
+      color: #4b5563;
+    }
+
+    .modal-mask.sheet-mask {
+      align-items: flex-end;
+      padding: 0;
+    }
+
+    .modal-mask.sheet-mask .modal {
+      max-width: none;
+      width: 100%;
+      border-radius: 18px 18px 0 0;
+      padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+      box-shadow: 0 -12px 30px rgba(0,0,0,0.18);
+    }
   </style>
 </head>
 
@@ -596,30 +840,22 @@
 
 <div class="chat-app" id="chatApp">
 
-  <div class="top-header" id="lobbyHeader" style="display:none;">
-    <button class="header-left" onclick="lockChat()">退出</button>
-    聊天室
-    <button class="panic-btn" onclick="openSettingsModal()">设置</button>
+  <div class="top-header wechat-header" id="lobbyHeader" style="display:none;">
+    <button class="header-text-btn header-exit" onclick="lockChat()">退出</button>
+    <span class="app-title-with-logo">
+      <img class="app-logo" src="./apple-touch-icon.png.png?v=iconfix-004" alt="logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+      <span class="app-logo-fallback">C</span>
+      <span>聊天室</span>
+    </span>
+    <button class="header-text-btn header-new" onclick="openCreateRoomModal()">新建</button>
+    <button class="header-text-btn header-settings" onclick="openSettingsModal()">设置</button>
   </div>
 
-  <div class="screen" id="lobbyScreen">
-    <div id="nicknameNotice" class="notice">
+  <div class="screen wechat-screen" id="lobbyScreen">
+    <div id="nicknameNotice" class="wechat-notice">
       还没有设置昵称。请点击右上角“设置”添加昵称，否则不能进入或新建聊天室。
     </div>
-
-    <div class="card">
-      <h3>新建房间</h3>
-      <p>新建房间需要设置独立房间密码。之后可以用“房间密码”或“管理密码”进入。</p>
-      <input class="input" id="newRoomName" placeholder="房间名称，例如：A" />
-      <input class="input" id="newRoomPassword" placeholder="房间密码，至少 4 位" type="password" />
-      <button class="main-btn" onclick="createRoom()">新建并进入房间</button>
-    </div>
-
-    <div class="card">
-      <h3>聊天室列表</h3>
-      <p>默认聊天大厅可直接进入；其他房间输入房间密码或管理密码进入。进入后系统会每 1 秒强制刷新并拉取最新 Gist 数据。</p>
-      <div id="roomList"></div>
-    </div>
+    <div id="roomList" class="wechat-list"></div>
   </div>
 
   <div class="chat-header" id="roomHeader" style="display:none;">
@@ -629,6 +865,10 @@
     <button class="panic-btn" onclick="panicExit()">退出</button>
   </div>
 
+  <div class="chat-creator-bar" id="roomCreatorBar"></div>
+  <div class="emergency-bar" id="emergencyBar">
+    <button class="emergency-close-btn" onclick="emergencyClose()">有内鬼，紧急关闭</button>
+  </div>
   <div class="chat-box" id="chatBox" style="display:none;"></div>
 
   <div class="status" id="status"></div>
@@ -640,7 +880,20 @@
 
 </div>
 
-<div class="modal-mask" id="settingsModal">
+<div class="modal-mask sheet-mask" id="createRoomModal">
+  <div class="modal">
+    <h3>新建聊天室</h3>
+    <p>房间名限制：最多 5 个汉字或 8 个英文；不能和已有聊天室重名。</p>
+    <input class="input" id="newRoomName" placeholder="房间名称，例如：好友 / Work" maxlength="16" />
+    <input class="input" id="newRoomPassword" placeholder="房间密码，至少 4 位" type="password" />
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeCreateRoomModal()">取消</button>
+      <button class="confirm-btn" onclick="createRoom()">创建</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask sheet-mask" id="settingsModal">
   <div class="modal">
     <h3>设置</h3>
     <p>昵称会显示在所有聊天对话里。没有昵称时，不能进入或新建聊天室。</p>
@@ -662,7 +915,7 @@
   </div>
 </div>
 
-<div class="modal-mask" id="joinModal">
+<div class="modal-mask sheet-mask" id="joinModal">
   <div class="modal">
     <h3>进入房间</h3>
     <p id="joinRoomText"></p>
@@ -674,7 +927,7 @@
   </div>
 </div>
 
-<div class="modal-mask" id="adminModal">
+<div class="modal-mask sheet-mask" id="adminModal">
   <div class="modal">
     <h3>房间管理</h3>
     <p>输入管理密码后，可以清空当前房间聊天记录；自建房间还可以直接删除房间。</p>
@@ -705,7 +958,7 @@
     type: "room",
     roomId: "default-no-password-room-v1",
     roomNo: "000001",
-    roomName: "默认房间",
+    roomName: "聊天大厅",
     createdBy: "System",
     createdAt: 0,
     noPassword: true,
@@ -745,6 +998,9 @@
   const roomList = document.getElementById("roomList");
   const nicknameNotice = document.getElementById("nicknameNotice");
   const settingsModal = document.getElementById("settingsModal");
+  const createRoomModal = document.getElementById("createRoomModal");
+  const roomCreatorBar = document.getElementById("roomCreatorBar");
+  const emergencyBar = document.getElementById("emergencyBar");
 
   const chatBox = document.getElementById("chatBox");
   const sendArea = document.getElementById("sendArea");
@@ -1218,10 +1474,10 @@
     if (!nicknameNotice) return;
 
     if (hasNickname()) {
-      nicknameNotice.className = "notice nickname-ok";
+      nicknameNotice.className = "wechat-notice nickname-ok";
       nicknameNotice.textContent = "当前昵称：" + state.displayName + "。你可以在右上角“设置”中修改昵称和进入密码。";
     } else {
-      nicknameNotice.className = "notice";
+      nicknameNotice.className = "wechat-notice";
       nicknameNotice.textContent = "还没有设置昵称。请点击右上角“设置”添加昵称，否则不能进入或新建聊天室。";
     }
   }
@@ -1230,6 +1486,8 @@
     lobbyHeader.style.display = "none";
     lobbyScreen.style.display = "none";
     roomHeader.style.display = "none";
+    roomCreatorBar.style.display = "none";
+    emergencyBar.style.display = "none";
     chatBox.style.display = "none";
     sendArea.style.display = "none";
     setStatus("");
@@ -1260,6 +1518,56 @@
 
   function closeSettingsModal() {
     settingsModal.style.display = "none";
+  }
+
+  function openCreateRoomModal() {
+    if (!requireNickname()) return;
+    document.getElementById("newRoomName").value = "";
+    document.getElementById("newRoomPassword").value = "";
+    createRoomModal.style.display = "flex";
+    resetIdleTimer();
+  }
+
+  function closeCreateRoomModal() {
+    createRoomModal.style.display = "none";
+  }
+
+  function getRoomNameWeight(name) {
+    let weight = 0;
+    for (const ch of name) {
+      if (/[^\x00-\xff]/.test(ch)) {
+        weight += 1.6;
+      } else {
+        weight += 1;
+      }
+    }
+    return weight;
+  }
+
+  function normalizeRoomName(name) {
+    return String(name || "").trim().toLowerCase();
+  }
+
+  function validateRoomName(roomName) {
+    if (!roomName) {
+      alert("请输入房间名称");
+      return false;
+    }
+
+    if (getRoomNameWeight(roomName) > 8) {
+      alert("房间名太长：最多 5 个汉字或 8 个英文。混合名称也不能超过同等长度。");
+      return false;
+    }
+
+    const target = normalizeRoomName(roomName);
+    const duplicate = state.rooms.some(room => normalizeRoomName(room.roomName) === target);
+
+    if (duplicate) {
+      alert("房间名称已存在，请换一个名称。");
+      return false;
+    }
+
+    return true;
   }
 
   function saveName() {
@@ -1342,7 +1650,7 @@
     state.lastRenderHash = "";
 
     loadRooms();
-    state.lobbyTimer = setInterval(loadRooms, 1000);
+    state.lobbyTimer = setInterval(loadRooms, 500);
 
     resetIdleTimer();
   }
@@ -1374,11 +1682,18 @@
     closeJoinModal();
     closeAdminModal();
     closeSettingsModal();
+    closeCreateRoomModal();
 
     showRandomFakeCalculation();
   }
 
   function panicExit() {
+    lockChat();
+  }
+
+  function emergencyClose() {
+    messageInput.value = "";
+    chatBox.innerHTML = "";
     lockChat();
   }
 
@@ -1487,8 +1802,7 @@
     const roomName = document.getElementById("newRoomName").value.trim();
     const roomPassword = document.getElementById("newRoomPassword").value.trim();
 
-    if (!roomName) {
-      alert("请输入房间名称");
+    if (!validateRoomName(roomName)) {
       return;
     }
 
@@ -1550,6 +1864,7 @@
 
       document.getElementById("newRoomName").value = "";
       document.getElementById("newRoomPassword").value = "";
+      closeCreateRoomModal();
 
       openRoom(meta, roomSecret, { accessType: "owner" });
 
@@ -1603,79 +1918,65 @@
     }
   }
 
+  function getRoomAvatarText(room) {
+    const name = String(room.roomName || "聊天室").trim();
+    return name.slice(0, 1) || "聊";
+  }
+
   function renderRooms() {
     roomList.innerHTML = "";
 
     state.rooms.forEach(room => {
-      const div = document.createElement("div");
-      div.className = "room-item";
-
-      const top = document.createElement("div");
-      top.className = "room-topline";
-
-      const left = document.createElement("div");
-
-      const label = document.createElement("div");
-      label.className = "room-number-label";
-      label.textContent = "ROOM NO.";
-
-      const number = document.createElement("div");
-      number.className = "room-number";
-      number.textContent = getRoomNo(room);
-
-      left.appendChild(label);
-      left.appendChild(number);
-
-      const corner = document.createElement("div");
-      corner.className = "room-corner";
-
-      const nameTag = document.createElement("div");
-      nameTag.className = "room-tag";
-      nameTag.textContent = "名称：" + room.roomName;
-
-      const pwdTag = document.createElement("div");
-      pwdTag.className = "room-tag " + (room.noPassword ? "free" : "locked");
-      pwdTag.textContent = room.noPassword ? "默认大厅" : "房间密码 / 管理密码";
-
-      corner.appendChild(nameTag);
-      corner.appendChild(pwdTag);
-
-      top.appendChild(left);
-      top.appendChild(corner);
-
-      const bottom = document.createElement("div");
-      bottom.className = "room-bottom";
-
-      const meta = document.createElement("div");
-      meta.className = "room-meta";
-
-      if (room.noPassword) {
-        meta.textContent = "系统默认聊天大厅";
-      } else {
-        const time = new Date(room.createdAt).toLocaleString([], {
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit"
-        });
-
-        meta.textContent = "创建者：" + room.createdBy + " · " + time;
-      }
-
       const btn = document.createElement("button");
-      btn.className = "small-btn";
-      btn.textContent = room.noPassword ? "直接进入" : "进入";
+      btn.className = "wechat-room-button";
       btn.onclick = function() {
         openJoinModal(room.roomId);
       };
 
-      bottom.appendChild(meta);
-      bottom.appendChild(btn);
+      const avatar = document.createElement("div");
+      avatar.className = "wechat-avatar" + (room.noPassword ? "" : " locked");
+      avatar.textContent = getRoomAvatarText(room);
 
-      div.appendChild(top);
-      div.appendChild(bottom);
+      const main = document.createElement("div");
+      main.className = "wechat-room-main";
 
-      roomList.appendChild(div);
+      const titleRow = document.createElement("div");
+      titleRow.className = "wechat-room-title-row";
+
+      const title = document.createElement("div");
+      title.className = "wechat-room-title";
+      title.textContent = "【" + room.roomName + "】";
+
+      const time = document.createElement("div");
+      time.className = "wechat-room-time";
+
+      if (room.noPassword) {
+        time.textContent = "大厅";
+      } else {
+        time.textContent = new Date(room.createdAt).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+
+      titleRow.appendChild(title);
+      titleRow.appendChild(time);
+
+      const sub = document.createElement("div");
+      sub.className = "wechat-room-sub";
+
+      if (room.noPassword) {
+        sub.textContent = "默认聊天大厅 · 直接进入";
+      } else {
+        sub.textContent = "建立者：" + (room.createdBy || "未知") + " · 房间密码 / 管理密码进入";
+      }
+
+      main.appendChild(titleRow);
+      main.appendChild(sub);
+
+      btn.appendChild(avatar);
+      btn.appendChild(main);
+      roomList.appendChild(btn);
     });
   }
 
@@ -1773,6 +2074,7 @@
       password: roomPassword,
       noPassword: !!room.noPassword,
       commentId: room.commentId || null,
+      createdBy: room.createdBy || "System",
       adminMode: !!options.adminMode,
       accessType: options.accessType || "room",
       canSend: options.canSend !== false,
@@ -1783,13 +2085,16 @@
 
     roomTitle.textContent = room.roomName || getRoomNo(room);
     roomHeader.style.display = "flex";
+    roomCreatorBar.textContent = room.noPassword ? "建立者：System" : "建立者：" + (room.createdBy || "未知");
+    roomCreatorBar.style.display = "block";
+    emergencyBar.style.display = "block";
     chatBox.style.display = "block";
     sendArea.style.display = state.currentRoom.canSend ? "flex" : "none";
 
     chatBox.innerHTML = "";
 
     loadMessages();
-    state.timer = setInterval(loadMessages, 1000);
+    state.timer = setInterval(loadMessages, 500);
 
     if (state.currentRoom.legacyAdminNoSecret) {
       setStatus("这个旧房间没有管理密钥，管理密码可进入管理和删除，但无法解密显示旧消息。建议清空或删除后重建。 ");
@@ -1889,7 +2194,23 @@
         minute: "2-digit"
       });
 
-      meta.textContent = (msg.senderName || (isMe ? state.displayName : "对方")) + " · " + time;
+      const senderName = String(
+        msg.senderName ||
+        (isMe ? state.displayName : "未知用户") ||
+        "未命名"
+      ).trim() || "未命名";
+
+      meta.innerHTML = "";
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "meta-name";
+      nameSpan.textContent = senderName;
+
+      const timeSpan = document.createElement("span");
+      timeSpan.textContent = " · " + time;
+
+      meta.appendChild(nameSpan);
+      meta.appendChild(timeSpan);
 
       const bubble = document.createElement("div");
       bubble.className = "bubble";
@@ -1921,7 +2242,7 @@
     try {
       const msg = {
         senderId: state.senderId,
-        senderName: state.displayName,
+        senderName: String(state.displayName || "未命名").trim() || "未命名",
         text: text,
         time: Date.now()
       };
