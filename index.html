@@ -66,8 +66,8 @@
 
     .title {
       font-size: 22px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
+      font-weight: 900;
+      letter-spacing: 0.03em;
       margin-bottom: 8px;
     }
 
@@ -118,7 +118,7 @@
     }
 
     .status-desc {
-      min-height: 42px;
+      min-height: 44px;
       font-size: 13px;
       line-height: 1.5;
       color: rgba(255,255,255,0.68);
@@ -150,13 +150,13 @@
 
     .log {
       width: min(92vw, 390px);
-      height: 112px;
+      height: 132px;
       margin-top: 14px;
       padding: 12px;
       overflow-y: auto;
       border-radius: 18px;
       background: rgba(0,0,0,0.24);
-      color: rgba(255,255,255,0.68);
+      color: rgba(255,255,255,0.72);
       font-size: 12px;
       line-height: 1.45;
       text-align: left;
@@ -169,8 +169,8 @@
   <div class="app">
     <img class="logo" src="https://china-xxoo.github.io/vx/apple-touch-icon.png" alt="logo" />
 
-    <div class="title">Cloudflare 后台检测</div>
-    <div class="sub-title">GitHub Pages 打开页面，实时检测手机能不能连接 Cloudflare Worker。</div>
+    <div class="title">EMQX 后台检测</div>
+    <div class="sub-title">GitHub Pages 打开页面，检测手机能不能连接免费 MQTT 实时后台。</div>
 
     <div class="status-card">
       <div class="big-dot" id="statusDot"></div>
@@ -186,18 +186,21 @@
   </div>
 
   <script>
-    const CF_WS_URL = "wss://vx-notify-2026.appleloveword4.workers.dev/ws";
-    const CF_TOKEN = "vx_notify_2026_private_key";
+    const MQTT_WS_URL = "wss://broker.emqx.io:8084/mqtt";
+    const CLIENT_ID = "vx_web_" + Math.random().toString(16).slice(2) + "_" + Date.now();
+    const TEST_TOPIC = "vx/test/" + CLIENT_ID;
 
     let ws = null;
     let reconnectTimer = null;
-    let heartbeatTimer = null;
-    let lastPongAt = 0;
+    let pingTimer = null;
+    let packetId = 1;
+    let connected = false;
+    let receivedSelfTest = false;
 
     function log(text) {
       const box = document.getElementById("logBox");
       const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      box.innerHTML = `[${time}] ${text}<br>` + box.innerHTML;
+      box.innerHTML = "[" + time + "] " + text + "<br>" + box.innerHTML;
     }
 
     function setStatus(type, desc) {
@@ -210,35 +213,182 @@
       if (type === "connected") {
         dot.classList.add("green");
         text.textContent = "后台已连接";
-        descEl.textContent = desc || "WebSocket 已连接，Cloudflare 后台可用。";
+        descEl.textContent = desc || "MQTT WebSocket 已连接，实时通道可用。";
         return;
       }
 
       if (type === "connecting") {
         dot.classList.add("yellow");
         text.textContent = "后台连接中";
-        descEl.textContent = desc || "正在连接 Cloudflare Worker...";
+        descEl.textContent = desc || "正在连接 EMQX MQTT 后台...";
         return;
       }
 
       text.textContent = "后台未连接";
-      descEl.textContent = desc || "当前设备无法实时连接 Cloudflare 后台。";
+      descEl.textContent = desc || "当前设备无法连接 EMQX MQTT 后台。";
+    }
+
+    function encodeString(str) {
+      const encoder = new TextEncoder();
+      const bytes = encoder.encode(str);
+      return [bytes.length >> 8, bytes.length & 255, ...bytes];
+    }
+
+    function encodeLength(length) {
+      const encoded = [];
+      do {
+        let digit = length % 128;
+        length = Math.floor(length / 128);
+        if (length > 0) digit = digit | 128;
+        encoded.push(digit);
+      } while (length > 0);
+      return encoded;
+    }
+
+    function makePacket(type, body) {
+      return new Uint8Array([type, ...encodeLength(body.length), ...body]);
+    }
+
+    function sendPacket(type, body) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(makePacket(type, body));
+    }
+
+    function sendConnect() {
+      const variableHeader = [
+        ...encodeString("MQTT"),
+        4,
+        2,
+        0,
+        30
+      ];
+
+      const payload = [
+        ...encodeString(CLIENT_ID)
+      ];
+
+      sendPacket(0x10, [...variableHeader, ...payload]);
+      log("发送 CONNECT");
+    }
+
+    function sendSubscribe(topic) {
+      const id = packetId++;
+      const variableHeader = [id >> 8, id & 255];
+      const payload = [...encodeString(topic), 0];
+      sendPacket(0x82, [...variableHeader, ...payload]);
+      log("订阅：" + topic);
+    }
+
+    function sendPublish(topic, message) {
+      const encoder = new TextEncoder();
+      const payload = [
+        ...encodeString(topic),
+        ...encoder.encode(message)
+      ];
+      sendPacket(0x30, payload);
+      log("发布测试消息");
+    }
+
+    function sendPing() {
+      sendPacket(0xC0, []);
+      log("PING");
+    }
+
+    function parseRemainingLength(bytes, index) {
+      let multiplier = 1;
+      let value = 0;
+      let encodedByte;
+      let pos = index;
+
+      do {
+        encodedByte = bytes[pos++];
+        value += (encodedByte & 127) * multiplier;
+        multiplier *= 128;
+      } while ((encodedByte & 128) !== 0);
+
+      return { value, bytesUsed: pos - index, nextIndex: pos };
+    }
+
+    function decodeString(bytes, index) {
+      const len = (bytes[index] << 8) + bytes[index + 1];
+      const start = index + 2;
+      const end = start + len;
+      const decoder = new TextDecoder();
+      return {
+        value: decoder.decode(bytes.slice(start, end)),
+        nextIndex: end
+      };
+    }
+
+    function handlePacket(arrayBuffer) {
+      const bytes = new Uint8Array(arrayBuffer);
+      const type = bytes[0] >> 4;
+      const rem = parseRemainingLength(bytes, 1);
+      let index = rem.nextIndex;
+
+      if (type === 2) {
+        connected = true;
+        log("CONNACK，连接成功");
+
+        sendSubscribe(TEST_TOPIC);
+
+        setTimeout(function () {
+          sendPublish(TEST_TOPIC, "hello-" + Date.now());
+        }, 500);
+
+        pingTimer = setInterval(sendPing, 15000);
+        return;
+      }
+
+      if (type === 3) {
+        const topicInfo = decodeString(bytes, index);
+        const topic = topicInfo.value;
+        index = topicInfo.nextIndex;
+
+        const decoder = new TextDecoder();
+        const message = decoder.decode(bytes.slice(index));
+
+        log("收到消息：" + topic + " / " + message);
+
+        if (topic === TEST_TOPIC) {
+          receivedSelfTest = true;
+          setStatus("connected", "连接成功，并且已收到自己发布的测试消息。");
+        }
+
+        return;
+      }
+
+      if (type === 9) {
+        log("SUBACK");
+        return;
+      }
+
+      if (type === 13) {
+        log("PONG");
+        if (connected) setStatus("connected", "MQTT 心跳正常。");
+        return;
+      }
+
+      log("收到 MQTT 包类型：" + type);
     }
 
     function clearTimers() {
       clearTimeout(reconnectTimer);
-      clearInterval(heartbeatTimer);
+      clearInterval(pingTimer);
       reconnectTimer = null;
-      heartbeatTimer = null;
+      pingTimer = null;
     }
 
-    function connectBackend() {
+    function connectMQTT() {
       clearTimers();
+      connected = false;
+      receivedSelfTest = false;
       setStatus("connecting");
-      log("开始连接：" + CF_WS_URL);
+      log("开始连接：" + MQTT_WS_URL);
 
       try {
-        ws = new WebSocket(CF_WS_URL);
+        ws = new WebSocket(MQTT_WS_URL, "mqtt");
+        ws.binaryType = "arraybuffer";
       } catch (e) {
         setStatus("disconnected", "WebSocket 创建失败：" + e.message);
         log("创建失败：" + e.message);
@@ -247,71 +397,36 @@
       }
 
       ws.onopen = function () {
-        lastPongAt = Date.now();
-        log("WebSocket 已打开，发送认证...");
-        ws.send(JSON.stringify({ type: "auth", token: CF_TOKEN }));
-
-        heartbeatTimer = setInterval(function () {
-          if (!ws || ws.readyState !== WebSocket.OPEN) return;
-
-          if (Date.now() - lastPongAt > 16000) {
-            log("心跳超时，重新连接");
-            try { ws.close(); } catch (e) {}
-            setStatus("disconnected", "心跳超时，正在重连...");
-            scheduleReconnect();
-            return;
-          }
-
-          ws.send(JSON.stringify({ type: "ping", time: Date.now() }));
-        }, 5000);
+        log("WebSocket 已打开");
+        sendConnect();
       };
 
       ws.onmessage = function (event) {
-        let msg;
-        try {
-          msg = JSON.parse(event.data);
-        } catch (e) {
-          log("收到非 JSON 数据");
-          return;
-        }
-
-        if (msg.type === "hello") {
-          log("收到 hello");
-        }
-
-        if (msg.type === "ready") {
-          lastPongAt = Date.now();
-          setStatus("connected");
-          log("认证成功，后台已连接");
-        }
-
-        if (msg.type === "pong") {
-          lastPongAt = Date.now();
-          setStatus("connected");
-          log("pong");
-        }
-
-        if (msg.type === "error") {
-          setStatus("disconnected", "后台返回错误：" + (msg.message || "unknown"));
-          log("错误：" + (msg.message || "unknown"));
-        }
+        handlePacket(event.data);
       };
 
       ws.onerror = function () {
-        setStatus("disconnected", "连接出错。手机网络可能无法访问 workers.dev。");
+        setStatus("disconnected", "连接出错。当前网络可能无法访问 EMQX WSS。");
         log("WebSocket error");
       };
 
       ws.onclose = function () {
+        clearTimers();
         setStatus("disconnected", "连接已断开，5 秒后自动重连。");
         log("WebSocket close");
         scheduleReconnect();
       };
+
+      setTimeout(function () {
+        if (!receivedSelfTest) {
+          setStatus("disconnected", "未收到测试消息，连接可能不可用。");
+        }
+      }, 8000);
     }
 
     function scheduleReconnect() {
       clearTimeout(reconnectTimer);
-      reconnectTimer = setTimeout(connectBackend, 5000);
+      reconnectTimer = setTimeout(connectMQTT, 5000);
     }
 
     function reconnectNow() {
@@ -319,13 +434,11 @@
       if (ws) {
         try { ws.close(); } catch (e) {}
       }
-      connectBackend();
+      connectMQTT();
     }
 
     document.addEventListener("visibilitychange", function () {
-      if (!document.hidden) {
-        reconnectNow();
-      }
+      if (!document.hidden) reconnectNow();
     });
 
     window.addEventListener("online", reconnectNow);
@@ -339,7 +452,7 @@
       e.preventDefault();
     }, { passive: false });
 
-    connectBackend();
+    connectMQTT();
   </script>
 </body>
 </html>
