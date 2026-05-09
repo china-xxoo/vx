@@ -918,9 +918,9 @@
 
 <script>
   const DEFAULT_ENCRYPTED_CONFIG = {
-  "salt": "Dd0kSSjUvNz6ngdsub/uig==",
-  "iv": "vGd1ojrMoKnOJXl+",
-  "data": "3x3jxpMrUhz6zTchmUR6AVbpILM/UjV5lHZKzOyU04tFQRWYe3VUvj7RyfSiDYylIr1PoOeIRhlcvVUY05l/xH6DOwyBdVZoN9OA8U0rJK3dgnkR77+LYIYIaxDh3ktK7W6abB1OiXSHlmQ20Wlnj4XQydd1vjZptYuRGSJZLDeOBisZGmmTTQlyYjSmhHJ7tzIN8MvxU9hNIzj6gEyDtMMU6zwp+xssMxg6iHAsF1faeXMv2hNUht0="
+  "salt": "NZXC7FpoB6P5d3a+sAh+cA==",
+  "iv": "bpda/WHBHwpEYb3A",
+  "data": "XXO5E9WV/urZEMIjvqXhiiikuRyJvUw4Fp1DYXFSkftWmNUtx45yvGhPAQ1sJAY8utOFLLExLxiWWlYoMF4Iae9fP4QWXACSe1i8yNU16VsYIsDPv74NrJa8aPUcanefp1tckgBloaPl59rO6+ixX/5kqb4on2vkCFodo2RPvai29yicRc7lhBmDIMgTF4norFVPPFrEDk8WpnxkzvM9nq35s24eVG+m10yUGCnW8tfGjhN0r+kCLpc="
 };
 
 const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131edda6730f5845";
@@ -1371,35 +1371,38 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
     throw lastError || new Error("密码错误");
   }
 
+  function normalizeUnlockCode(input) {
+    // 与 encrypt-config.html 配置页保持完全一致：
+    // 暗号不做数学计算，只把加减乘除符号统一成标准字符。
+    return String(input || "")
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/✖️/g, "*")
+      .replace(/[×✖xX＊﹡]/g, "*")
+      .replace(/[÷／]/g, "/")
+      .replace(/[−－—–]/g, "-")
+      .replace(/[＋﹢]/g, "+");
+  }
+
   function getUnlockCodeCandidates(input) {
     const variants = new Set();
     const raw = String(input || "").trim().replace(/\s+/g, "");
+    const canonical = normalizeUnlockCode(raw);
 
-    if (!raw) return [];
+    if (!raw && !canonical) return [];
 
-    // 暗语符号统一规则：只把“加、减、乘、除”作为运算符。
-    // 乘号兼容：X / x / × / * / ✖ / ✖️ / 全角Ｘｘ
-    // 除号兼容：÷ / / / ／
-    // 减号兼容：- / − / － / — / –
-    // 加号兼容：+ / ＋
-    // 说明：会同时尝试多种写法；如果你在配置页写 X，这里也会当成乘号匹配。
-    variants.add(raw);
+    // 第一优先级：配置页面生成时使用的标准暗号。
+    if (canonical) variants.add(canonical);
 
-    const canonical = raw
-      .replace(/✖️/g, "*")
-      .replace(/[✖×xXｘＸ＊*]/g, "*")
-      .replace(/[÷／/]/g, "/")
-      .replace(/[−－—–]/g, "-")
-      .replace(/[＋﹢]/g, "+");
+    // 兼容极少数旧配置：也尝试原始输入。
+    if (raw) variants.add(raw);
 
-    variants.add(canonical);
-
+    // 兼容旧版配置里可能保存的乘除符号形式。
     const multiplyForms = ["*", "×", "X", "x", "✖", "✖️"];
     const divideForms = ["/", "÷"];
-    const minusForms = ["-", "−"];
+    const minusForms = ["-", "−", "－"];
     const plusForms = ["+", "＋"];
 
-    // 避免组合爆炸：暗语一般较短，只生成加减乘除符号形态组合。
     multiplyForms.forEach(mul => {
       divideForms.forEach(div => {
         minusForms.forEach(minus => {
@@ -1416,7 +1419,7 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
       });
     });
 
-    return Array.from(variants);
+    return Array.from(variants).filter(Boolean);
   }
 
   async function tryUnlock() {
@@ -1432,7 +1435,6 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
         return true;
       } catch (e) {}
     }
-    if (unlockInput.length > 40) unlockInput = "";
     return false;
   }
 
