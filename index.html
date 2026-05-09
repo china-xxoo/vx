@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content" />
 
   <title>Calculator</title>
 
@@ -10,11 +10,11 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <link rel="icon" type="image/png" href="/vx/apple-touch-icon.png" />
-  <link rel="shortcut icon" type="image/png" href="/vx/apple-touch-icon.png" />
-  <link rel="apple-touch-icon" href="/vx/apple-touch-icon.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/vx/apple-touch-icon.png" />
-  <link rel="apple-touch-icon-precomposed" href="/vx/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="shortcut icon" type="image/png" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="apple-touch-icon-precomposed" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
 
   <meta name="theme-color" content="#020617" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -1432,6 +1432,133 @@
       .mqtt-status-pill { min-width: 118px !important; padding: 0 8px !important; font-size: 11px !important; }
     }
 
+  
+
+    /* ===== Final layout fix: logo left, status center, new/settings right ===== */
+    .chat-app {
+      --keyboard-inset: 0px;
+    }
+
+    .top-header.wechat-header,
+    .chat-header {
+      position: relative !important;
+      height: 56px !important;
+      min-height: 56px !important;
+      padding: 0 126px 0 60px !important;
+      overflow: visible !important;
+    }
+
+    .app-title-with-logo {
+      position: absolute !important;
+      left: 12px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      width: 38px !important;
+      height: 38px !important;
+      min-width: 38px !important;
+      min-height: 38px !important;
+      padding: 4px !important;
+      border-radius: 14px !important;
+      z-index: 260 !important;
+    }
+
+    .app-logo {
+      display: block !important;
+      width: 30px !important;
+      height: 30px !important;
+      border-radius: 10px !important;
+      object-fit: cover !important;
+      background: transparent !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+
+    .app-logo-fallback {
+      display: none !important;
+    }
+
+    .mqtt-status-pill {
+      position: absolute !important;
+      left: 50% !important;
+      right: auto !important;
+      top: calc(env(safe-area-inset-top, 0px) + 13px) !important;
+      transform: translateX(-50%) !important;
+      z-index: 255 !important;
+      min-width: 112px !important;
+      height: 30px !important;
+      padding: 0 10px !important;
+      pointer-events: none !important;
+      white-space: nowrap !important;
+    }
+
+    .header-new {
+      right: 72px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      z-index: 270 !important;
+    }
+
+    .header-settings {
+      right: 12px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      z-index: 270 !important;
+    }
+
+    .chat-header #roomTitle {
+      display: none !important;
+    }
+
+    .chat-header .header-left {
+      left: 12px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      z-index: 270 !important;
+    }
+
+    .chat-header .admin-btn {
+      right: 12px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      z-index: 270 !important;
+    }
+
+    .chat-creator-bar {
+      text-align: center !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      padding-left: 14px !important;
+      padding-right: 14px !important;
+    }
+
+    .send-area {
+      will-change: transform;
+      transform: translateY(calc(-1 * var(--keyboard-inset, 0px))) !important;
+      transition: transform 0.18s ease;
+      z-index: 260 !important;
+    }
+
+    .chat-box {
+      padding-bottom: calc(18px + var(--keyboard-inset, 0px)) !important;
+    }
+
+    .chat-app.keyboard-open .top-header,
+    .chat-app.keyboard-open .chat-header,
+    .chat-app.keyboard-open .mqtt-status-pill {
+      transform: none;
+    }
+
+    @media (max-width: 380px) {
+      .mqtt-status-pill {
+        min-width: 104px !important;
+        font-size: 10px !important;
+        padding: 0 8px !important;
+      }
+      .header-new { right: 66px !important; padding: 6px 9px !important; }
+      .header-settings { right: 10px !important; padding: 6px 9px !important; }
+    }
+
   </style>
 </head>
 
@@ -1473,7 +1600,7 @@
 
   <div class="top-header wechat-header" id="lobbyHeader" style="display:none;">
     <span class="app-title-with-logo">
-      <img class="app-logo" src="/vx/apple-touch-icon.png" alt="logo" onerror="this.onerror=null;this.src='https://china-xxoo.github.io/vx/apple-touch-icon.png';" />
+      <img class="app-logo" src="https://china-xxoo.github.io/vx/apple-touch-icon.png" alt="logo" onerror="this.style.display='none';" />
       <span class="app-logo-fallback">C</span>
     </span>
     <button class="header-text-btn header-new" onclick="openCreateRoomModal()">新建</button>
@@ -2764,7 +2891,7 @@
 
     roomTitle.textContent = room.roomName || getRoomNo(room);
     roomHeader.style.display = "flex";
-    roomCreatorBar.textContent = room.noPassword ? "建立者：System" : "建立者：" + (room.createdBy || "未知");
+    roomCreatorBar.textContent = (room.noPassword ? "聊天大厅" : "房间：" + (room.roomName || getRoomNo(room))) + " · 建立者：" + (room.createdBy || "System");
     roomCreatorBar.style.display = "block";
     emergencyBar.style.display = "block";
     chatBox.style.display = "block";
@@ -3496,6 +3623,53 @@
     if (appConfig) connectMQTT();
   });
 
+
+
+  /* ===== Keyboard viewport fix: keep top/header/status fixed; only middle/chat area adjusts ===== */
+  function updateKeyboardInset() {
+    const app = document.getElementById("chatApp");
+    if (!app) return;
+
+    let inset = 0;
+    if (window.visualViewport) {
+      inset = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
+    }
+
+    if (inset < 80) inset = 0;
+    app.style.setProperty("--keyboard-inset", inset + "px");
+    app.classList.toggle("keyboard-open", inset > 0);
+
+    if (inset > 0) {
+      window.scrollTo(0, 0);
+      if (state && state.currentRoom && chatBox) {
+        setTimeout(function () {
+          chatBox.scrollTop = chatBox.scrollHeight;
+        }, 60);
+      }
+    }
+  }
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", updateKeyboardInset);
+    window.visualViewport.addEventListener("scroll", updateKeyboardInset);
+  }
+
+  window.addEventListener("resize", updateKeyboardInset);
+  window.addEventListener("scroll", function () {
+    if (chatApp && chatApp.style.display !== "none") {
+      window.scrollTo(0, 0);
+    }
+  }, { passive: true });
+
+  if (messageInput) {
+    messageInput.addEventListener("focus", function () {
+      setTimeout(updateKeyboardInset, 80);
+      setTimeout(updateKeyboardInset, 260);
+    });
+    messageInput.addEventListener("blur", function () {
+      setTimeout(updateKeyboardInset, 80);
+    });
+  }
 </script>
 
 </body>
