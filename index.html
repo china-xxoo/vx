@@ -167,30 +167,37 @@
       right: 0;
       top: var(--vv-top);
       height: var(--header-height);
-      padding: var(--top-safe) 12px 0;
+      padding: var(--top-safe) calc(10px + env(safe-area-inset-right, 0px)) 0 calc(10px + env(safe-area-inset-left, 0px));
       flex-shrink: 0;
       display: grid;
-      grid-template-columns: 112px 1fr 132px;
+      grid-template-columns: 54px minmax(130px, 1fr) max-content;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       background: rgba(2, 6, 23, 0.72);
       border-bottom: 1px solid var(--line);
       box-shadow: 0 10px 30px rgba(0,0,0,0.24);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
       z-index: 20;
+      overflow: hidden;
     }
 
     .header-left,
     .header-right {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       min-width: 0;
+    }
+
+    .header-left {
+      overflow: hidden;
     }
 
     .header-right {
       justify-content: flex-end;
+      flex-wrap: nowrap;
+      overflow: visible;
     }
 
     .app-logo {
@@ -207,7 +214,8 @@
       background: rgba(15, 23, 42, 0.66);
       color: #dff7ff;
       border-radius: 999px;
-      padding: 8px 10px;
+      padding: 7px 10px;
+      min-width: 48px;
       font-size: 12px;
       font-weight: 900;
       cursor: pointer;
@@ -222,15 +230,15 @@
 
     .data-status {
       justify-self: center;
-      min-width: 128px;
-      max-width: 210px;
+      width: 142px;
+      max-width: 100%;
       height: 30px;
       border-radius: 999px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 7px;
-      padding: 0 12px;
+      padding: 0 10px;
       border: 1px solid rgba(148,163,184,0.18);
       background: rgba(15,23,42,0.72);
       box-shadow: inset 0 0 18px rgba(56,189,248,0.07);
@@ -284,11 +292,7 @@
     }
 
     .nickname-line {
-      padding: 10px 14px;
-      margin: 2px 0 12px;
-      color: rgba(226,232,240,0.68);
-      font-size: 12px;
-      letter-spacing: 0.04em;
+      display: none !important;
     }
 
     .room-list {
@@ -330,12 +334,7 @@
     }
 
     .room-meta {
-      margin-top: 6px;
-      font-size: 12px;
-      color: rgba(226,232,240,0.58);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      display: none !important;
     }
 
     .room-badge {
@@ -359,13 +358,14 @@
 
     .room-subbar {
       flex-shrink: 0;
-      height: 34px;
+      min-height: 0;
+      height: 0;
       display: flex;
       align-items: center;
       gap: 8px;
       padding: 0 14px;
-      background: rgba(2,6,23,0.35);
-      border-bottom: 1px solid rgba(56,189,248,0.10);
+      background: transparent;
+      border-bottom: 0;
       color: rgba(226,232,240,0.62);
       font-size: 12px;
       overflow: hidden;
@@ -643,6 +643,33 @@
       transform: scale(0.96);
       opacity: 0.84;
     }
+
+    @media (max-width: 420px) {
+      .app-header {
+        grid-template-columns: 50px minmax(122px, 1fr) max-content;
+        gap: 5px;
+        padding-left: calc(8px + env(safe-area-inset-left, 0px));
+        padding-right: calc(8px + env(safe-area-inset-right, 0px));
+      }
+      .app-logo {
+        width: 34px;
+        height: 34px;
+      }
+      .data-status {
+        width: 136px;
+        font-size: 12px;
+        padding: 0 8px;
+      }
+      .header-btn {
+        min-width: 46px;
+        padding: 7px 9px;
+        font-size: 12px;
+      }
+      .header-right {
+        gap: 5px;
+      }
+    }
+
   </style>
   <!-- keyboard-layout-fixed: top header stays fixed while input method opens -->
 </head>
@@ -704,13 +731,13 @@
 
   <div class="app-body">
     <div class="screen" id="lobbyScreen">
-      <div class="nickname-line" id="nicknameLine">昵称：未设置</div>
+      <div class="nickname-line" id="nicknameLine"></div>
       <div class="room-list" id="roomList"></div>
     </div>
 
     <div class="chat-shell" id="chatShell">
       <div class="room-subbar">
-        <span id="roomInfoText">房间</span>
+        <span id="roomInfoText" style="display:none;"></span>
         <span class="history-tip" id="historyTip"></span>
       </div>
       <div class="chat-box" id="chatBox"></div>
@@ -1172,7 +1199,7 @@
   }
 
   function updateNicknameLine() {
-    nicknameLine.textContent = "昵称：" + (state.displayName || "未设置");
+    nicknameLine.textContent = "";
   }
 
   function openApp() {
@@ -1863,7 +1890,7 @@
 
       const meta = document.createElement("div");
       meta.className = "room-meta";
-      meta.textContent = room.noPassword ? "默认大厅 · 点击进入" : "建立者：" + (room.createdBy || "未知");
+      meta.textContent = "";
 
       const badge = document.createElement("div");
       badge.className = "room-badge";
