@@ -6,8 +6,6 @@
   <title>Calculator</title>
 
   <link rel="apple-touch-icon" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
-  <link rel="apple-touch-icon-precomposed" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
   <link rel="icon" type="image/png" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
 
   <meta name="theme-color" content="#111827" />
@@ -22,8 +20,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    html,
-    body {
+    html, body {
       margin: 0;
       padding: 0;
       width: 100%;
@@ -50,8 +47,8 @@
       justify-content: center;
       padding: 22px;
       background:
-        radial-gradient(circle at top, rgba(55, 65, 81, 0.92), transparent 34%),
-        radial-gradient(circle at bottom, rgba(15, 23, 42, 1), #020617 72%);
+        radial-gradient(circle at top, rgba(55,65,81,0.92), transparent 34%),
+        radial-gradient(circle at bottom, rgba(15,23,42,1), #020617 72%);
     }
 
     .logo {
@@ -59,15 +56,14 @@
       height: 72px;
       border-radius: 18px;
       object-fit: cover;
-      box-shadow: 0 18px 44px rgba(0,0,0,0.35);
       margin-bottom: 22px;
       background: #111827;
+      box-shadow: 0 18px 44px rgba(0,0,0,0.35);
     }
 
     .title {
       font-size: 22px;
       font-weight: 900;
-      letter-spacing: 0.03em;
       margin-bottom: 8px;
     }
 
@@ -143,11 +139,6 @@
       cursor: pointer;
     }
 
-    .btn:active {
-      transform: scale(0.98);
-      opacity: 0.86;
-    }
-
     .log {
       width: min(92vw, 390px);
       height: 132px;
@@ -169,8 +160,8 @@
   <div class="app">
     <img class="logo" src="https://china-xxoo.github.io/vx/apple-touch-icon.png" alt="logo" />
 
-    <div class="title">EMQX 后台检测</div>
-    <div class="sub-title">GitHub Pages 打开页面，检测手机能不能连接免费 MQTT 实时后台。</div>
+    <div class="title">私有 EMQX 后台检测</div>
+    <div class="sub-title">GitHub Pages 打开页面，检测手机能不能连接你的私有 MQTT 实时后台。</div>
 
     <div class="status-card">
       <div class="big-dot" id="statusDot"></div>
@@ -186,9 +177,12 @@
   </div>
 
   <script>
-    const MQTT_WS_URL = "wss://broker.emqx.io:8084/mqtt";
+    const MQTT_WS_URL = "wss://afa67eee.ala.cn-hangzhou.emqxsl.cn:8084/mqtt";
+    const MQTT_USERNAME = "vx_user";
+    const MQTT_PASSWORD = "vx_2026_chat_private_520_xx";
+
     const CLIENT_ID = "vx_web_" + Math.random().toString(16).slice(2) + "_" + Date.now();
-    const TEST_TOPIC = "vx/test/" + CLIENT_ID;
+    const TEST_TOPIC = "vx/private/test/" + CLIENT_ID;
 
     let ws = null;
     let reconnectTimer = null;
@@ -199,7 +193,11 @@
 
     function log(text) {
       const box = document.getElementById("logBox");
-      const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      const time = new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
       box.innerHTML = "[" + time + "] " + text + "<br>" + box.innerHTML;
     }
 
@@ -213,19 +211,19 @@
       if (type === "connected") {
         dot.classList.add("green");
         text.textContent = "后台已连接";
-        descEl.textContent = desc || "MQTT WebSocket 已连接，实时通道可用。";
+        descEl.textContent = desc || "私有 EMQX MQTT WebSocket 已连接。";
         return;
       }
 
       if (type === "connecting") {
         dot.classList.add("yellow");
         text.textContent = "后台连接中";
-        descEl.textContent = desc || "正在连接 EMQX MQTT 后台...";
+        descEl.textContent = desc || "正在连接私有 EMQX MQTT 后台...";
         return;
       }
 
       text.textContent = "后台未连接";
-      descEl.textContent = desc || "当前设备无法连接 EMQX MQTT 后台。";
+      descEl.textContent = desc || "当前设备无法连接私有 EMQX MQTT 后台。";
     }
 
     function encodeString(str) {
@@ -258,17 +256,19 @@
       const variableHeader = [
         ...encodeString("MQTT"),
         4,
-        2,
+        0xC2,
         0,
         30
       ];
 
       const payload = [
-        ...encodeString(CLIENT_ID)
+        ...encodeString(CLIENT_ID),
+        ...encodeString(MQTT_USERNAME),
+        ...encodeString(MQTT_PASSWORD)
       ];
 
       sendPacket(0x10, [...variableHeader, ...payload]);
-      log("发送 CONNECT");
+      log("发送 CONNECT：用户名密码认证");
     }
 
     function sendSubscribe(topic) {
@@ -306,7 +306,10 @@
         multiplier *= 128;
       } while ((encodedByte & 128) !== 0);
 
-      return { value, bytesUsed: pos - index, nextIndex: pos };
+      return {
+        value,
+        nextIndex: pos
+      };
     }
 
     function decodeString(bytes, index) {
@@ -327,13 +330,21 @@
       let index = rem.nextIndex;
 
       if (type === 2) {
+        const returnCode = bytes[index + 1];
+
+        if (returnCode !== 0) {
+          setStatus("disconnected", "认证失败，CONNACK 返回码：" + returnCode);
+          log("CONNACK 失败，返回码：" + returnCode);
+          return;
+        }
+
         connected = true;
         log("CONNACK，连接成功");
 
         sendSubscribe(TEST_TOPIC);
 
         setTimeout(function () {
-          sendPublish(TEST_TOPIC, "hello-" + Date.now());
+          sendPublish(TEST_TOPIC, "hello-private-" + Date.now());
         }, 500);
 
         pingTimer = setInterval(sendPing, 15000);
@@ -406,7 +417,7 @@
       };
 
       ws.onerror = function () {
-        setStatus("disconnected", "连接出错。当前网络可能无法访问 EMQX WSS。");
+        setStatus("disconnected", "连接出错。当前网络可能无法访问私有 EMQX WSS。");
         log("WebSocket error");
       };
 
@@ -419,7 +430,7 @@
 
       setTimeout(function () {
         if (!receivedSelfTest) {
-          setStatus("disconnected", "未收到测试消息，连接可能不可用。");
+          setStatus("disconnected", "未收到测试消息，可能认证失败或连接不可用。");
         }
       }, 8000);
     }
