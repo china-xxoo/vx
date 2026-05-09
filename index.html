@@ -23,11 +23,14 @@
     })();
   </script>
 
-  <link rel="icon" type="image/png" href="./apple-touch-icon.png?v=iconfix-005" />
-  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=iconfix-005" />
-  <link rel="apple-touch-icon-precomposed" href="./apple-touch-icon.png?v=iconfix-005" />
+  <link rel="icon" type="image/png" href="/vx/apple-touch-icon.png?v=20260509" />
+  <link rel="shortcut icon" type="image/png" href="/vx/apple-touch-icon.png?v=20260509" />
+  <link rel="apple-touch-icon" href="/vx/apple-touch-icon.png?v=20260509" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/vx/apple-touch-icon.png?v=20260509" />
+  <link rel="apple-touch-icon-precomposed" href="/vx/apple-touch-icon.png?v=20260509" />
 
   <meta name="theme-color" content="#111827" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Calculator" />
@@ -827,6 +830,37 @@
       right: 12px;
     }
 
+
+    .app-toast {
+      display: none;
+      position: absolute;
+      left: 50%;
+      top: calc(68px + env(safe-area-inset-top));
+      transform: translateX(-50%);
+      max-width: min(78vw, 320px);
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(17,24,39,0.84);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      z-index: 120;
+      box-shadow: 0 10px 28px rgba(15,23,42,0.22);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .app-toast.success {
+      background: rgba(22, 163, 74, 0.88);
+    }
+
+    .app-toast.new {
+      background: rgba(17,24,39,0.88);
+    }
+
   </style>
 </head>
 
@@ -866,7 +900,7 @@
 
   <div class="top-header wechat-header" id="lobbyHeader" style="display:none;">
     <span class="app-title-with-logo">
-      <img class="app-logo" src="./apple-touch-icon.png?v=iconfix-005" alt="logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+      <img class="app-logo" src="/vx/apple-touch-icon.png?v=20260509" alt="logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
       <span class="app-logo-fallback">C</span>
     </span>
     <button class="header-text-btn header-new" onclick="openCreateRoomModal()">新建</button>
@@ -893,6 +927,8 @@
   <div class="chat-box" id="chatBox" style="display:none;"></div>
 
   <div class="status" id="status"></div>
+
+  <div class="app-toast" id="appToast"></div>
 
   <div class="send-area" id="sendArea" style="display:none;">
     <input id="messageInput" placeholder="输入消息..." />
@@ -1003,6 +1039,9 @@
     idleTimer: null,
     lastRenderHash: "",
     lastRoomsHash: "",
+    loadedMessageIds: new Set(),
+    roomLoadedOnce: false,
+    toastTimer: null,
     rooms: []
   };
 
@@ -1027,6 +1066,7 @@
   const sendArea = document.getElementById("sendArea");
   const messageInput = document.getElementById("messageInput");
   const statusEl = document.getElementById("status");
+  const appToast = document.getElementById("appToast");
 
   function updateDisplay() {
     const showText = (calcExpression || "0")
@@ -1676,6 +1716,9 @@
 
     state.currentRoom = null;
     state.lastRenderHash = "";
+    state.loadedMessageIds = new Set();
+    state.roomLoadedOnce = false;
+    hideToast();
 
     loadRooms();
     state.lobbyTimer = setInterval(loadRooms, 500);
@@ -1711,6 +1754,7 @@
     closeAdminModal();
     closeSettingsModal();
     closeCreateRoomModal();
+    hideToast();
 
     showRandomFakeCalculation();
   }
@@ -1740,6 +1784,29 @@
 
     statusEl.style.display = "block";
     statusEl.textContent = text;
+  }
+
+  function hideToast() {
+    clearTimeout(state.toastTimer);
+    state.toastTimer = null;
+
+    if (!appToast) return;
+    appToast.style.display = "none";
+    appToast.textContent = "";
+    appToast.className = "app-toast";
+  }
+
+  function showToast(text, type = "info", duration = 1600) {
+    if (!appToast) return;
+
+    clearTimeout(state.toastTimer);
+    appToast.textContent = text;
+    appToast.className = "app-toast " + type;
+    appToast.style.display = "block";
+
+    state.toastTimer = setTimeout(function() {
+      hideToast();
+    }, duration);
   }
 
   async function githubFetch(path, options = {}) {
@@ -2110,6 +2177,9 @@
     };
 
     state.lastRenderHash = "";
+    state.loadedMessageIds = new Set();
+    state.roomLoadedOnce = false;
+    hideToast();
 
     roomTitle.textContent = room.roomName || getRoomNo(room);
     roomHeader.style.display = "flex";
@@ -2198,7 +2268,22 @@
       }
 
       messages.sort((a, b) => a.time - b.time);
+
+      const previousIds = state.loadedMessageIds || new Set();
+      const newOtherCount = messages.filter(msg => {
+        return msg.senderId !== state.senderId && !previousIds.has(String(msg.id));
+      }).length;
+
+      const shouldNotifyNewMessages = state.roomLoadedOnce && newOtherCount > 0;
+
       renderMessages(messages);
+
+      state.loadedMessageIds = new Set(messages.map(msg => String(msg.id)));
+      state.roomLoadedOnce = true;
+
+      if (shouldNotifyNewMessages) {
+        showToast("新消息" + newOtherCount + "条", "new", 2200);
+      }
 
     } catch (e) {
       setStatus(e.message);
@@ -2296,6 +2381,7 @@
         throw new Error("发送失败：" + res.status);
       }
 
+      showToast("发送成功", "success", 1400);
       await loadMessages();
 
     } catch (e) {
@@ -2416,6 +2502,8 @@
       }
 
       state.lastRenderHash = "";
+      state.loadedMessageIds = new Set();
+      state.roomLoadedOnce = false;
       chatBox.innerHTML = "";
       closeAdminModal();
       setStatus("");
