@@ -918,9 +918,9 @@
 
 <script>
   const DEFAULT_ENCRYPTED_CONFIG = {
-  "salt": "NZXC7FpoB6P5d3a+sAh+cA==",
-  "iv": "bpda/WHBHwpEYb3A",
-  "data": "XXO5E9WV/urZEMIjvqXhiiikuRyJvUw4Fp1DYXFSkftWmNUtx45yvGhPAQ1sJAY8utOFLLExLxiWWlYoMF4Iae9fP4QWXACSe1i8yNU16VsYIsDPv74NrJa8aPUcanefp1tckgBloaPl59rO6+ixX/5kqb4on2vkCFodo2RPvai29yicRc7lhBmDIMgTF4norFVPPFrEDk8WpnxkzvM9nq35s24eVG+m10yUGCnW8tfGjhN0r+kCLpc="
+  "salt": "kGnDMg1d0ZqAiN2+FCO+lQ==",
+  "iv": "AiwUQfKWhpJmzpsC",
+  "data": "FoMZjID5hyydqxxDHZLqmGo7FVH6SEYl6bsitzm3eGipoURDmBsD9VJGYr7Uv7L1UYxkX+7Lr0k1rpOt6osNrtl2BoYYDcimq7JuNvN1Bm7z99NrHBgT0VES5AWGTAf+RbIdlJj1CN4mpr+G3+ze/SeI8Tw5QithsmuPTxba8EopUYRdf3u/yM/YRLWblGVYLNK73obNYgxjiUhPY5gu9/smJYIN18yfjq2ap+gB9mU3r9mIvcBKyk+jfbTQW7M="
 };
 
 const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131edda6730f5845";
@@ -1423,7 +1423,22 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
   }
 
   async function tryUnlock() {
-    const candidates = getUnlockCodeCandidates(unlockInput);
+    // 解锁时不要只依赖 unlockInput。
+    // 有些安卓/按钮输入会把 ÷ 显示成 ÷，但内部计算表达式是 /。
+    // 所以这里同时尝试：原始暗号输入、计算器表达式、屏幕显示文本。
+    const rawInputs = [unlockInput, calcExpression, display ? display.textContent : ""];
+    const candidates = [];
+    const used = new Set();
+
+    rawInputs.forEach(rawInput => {
+      getUnlockCodeCandidates(rawInput).forEach(code => {
+        if (!used.has(code)) {
+          used.add(code);
+          candidates.push(code);
+        }
+      });
+    });
+
     for (const code of candidates) {
       try {
         const result = await decryptConfig(code);
