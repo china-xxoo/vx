@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
   <title>Calculator</title>
 
-  <link rel="manifest" href="/vx/manifest.webmanifest?v=pwa-nosound-emergency10-20260509" />
-  <link rel="icon" type="image/png" sizes="192x192" href="/vx/vx-logo-192.png?v=pwa-nosound-emergency10-20260509" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/vx/vx-logo-512.png?v=pwa-nosound-emergency10-20260509" />
-  <link rel="shortcut icon" type="image/png" href="/vx/vx-logo-192.png?v=pwa-nosound-emergency10-20260509" />
-  <link rel="apple-touch-icon" href="/vx/vx-logo-180.png?v=pwa-nosound-emergency10-20260509" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/vx/vx-logo-180.png?v=pwa-nosound-emergency10-20260509" />
-  <link rel="apple-touch-icon-precomposed" href="/vx/vx-logo-180.png?v=pwa-nosound-emergency10-20260509" />
+  <link rel="manifest" href="/vx/manifest.webmanifest?v=pwa-default-hall-24h-20260509" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/vx/vx-logo-192.png?v=pwa-default-hall-24h-20260509" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/vx/vx-logo-512.png?v=pwa-default-hall-24h-20260509" />
+  <link rel="shortcut icon" type="image/png" href="/vx/vx-logo-192.png?v=pwa-default-hall-24h-20260509" />
+  <link rel="apple-touch-icon" href="/vx/vx-logo-180.png?v=pwa-default-hall-24h-20260509" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/vx/vx-logo-180.png?v=pwa-default-hall-24h-20260509" />
+  <link rel="apple-touch-icon-precomposed" href="/vx/vx-logo-180.png?v=pwa-default-hall-24h-20260509" />
 
   <meta name="theme-color" content="#020617" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -939,6 +939,9 @@
   const PRESENCE_HEARTBEAT_MS = 8000;
   const PRESENCE_TTL_MS = 24000;
   const TYPING_STOP_MS = 1800;
+  // 默认大厅历史策略：只保留当天/最近 24 小时内的记录；每天 24:00 自动清理过期 Gist。
+  const DEFAULT_ROOM_RETENTION_MS = 24 * 60 * 60 * 1000;
+  const DEFAULT_ROOM_PURGE_INTERVAL_MS = 60 * 1000;
 
   const DEFAULT_PUBLIC_ROOM = {
     type: "room",
@@ -951,6 +954,109 @@
     commentId: null,
     version: 3
   };
+
+
+  function isDefaultPublicRoomId(roomId) {
+    return String(roomId || "") === DEFAULT_PUBLIC_ROOM.roomId;
+  }
+
+  function getTodayStartTime() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
+
+  function getDefaultRoomCutoffTime() {
+    // 双重限制：不早于今天 00:00，也不早于当前时间往前 24 小时。
+    // 这样默认大厅在每天 24:00 后会自动清掉上一天内容，同时也不会保留超过 24 小时的内容。
+    return Math.max(getTodayStartTime(), Date.now() - DEFAULT_ROOM_RETENTION_MS);
+  }
+
+  function isDefaultRoomMessageActive(msgOrWrapper) {
+    if (!msgOrWrapper || !isDefaultPublicRoomId(msgOrWrapper.roomId)) return true;
+    const t = Number(msgOrWrapper.time || 0);
+    return Number.isFinite(t) && t >= getDefaultRoomCutoffTime();
+  }
+
+  function cleanupDefaultRoomLocalCache() {
+    const roomId = DEFAULT_PUBLIC_ROOM.roomId;
+    try {
+      const key = roomCacheKey(roomId);
+      const arr = JSON.parse(localStorage.getItem(key) || "[]");
+      if (!Array.isArray(arr)) return;
+      const kept = arr.filter(isDefaultRoomMessageActive);
+      if (kept.length !== arr.length) {
+        localStorage.setItem(key, JSON.stringify(kept));
+        setLatestRoomCount(roomId, kept.length);
+        localStorage.setItem(roomLastReadCountKey(roomId), String(Math.min(getStoredNumber(roomLastReadCountKey(roomId), kept.length), kept.length)));
+        if (state.currentRoom && state.currentRoom.roomId === roomId) {
+          state.roomSeen = new Set();
+          kept.forEach(m => state.roomSeen.add(getMessageKey(m)));
+          renderAllMessages(kept);
+          markRoomRead(roomId);
+        }
+      }
+    } catch (e) {}
+  }
+
+  function removeExpiredDefaultRoomPendingItems() {
+    try {
+      const arr = getPendingGist();
+      const kept = arr.filter(item => {
+        if (!item || !isDefaultPublicRoomId(item.roomId)) return true;
+        return Number(item.time || 0) >= getDefaultRoomCutoffTime();
+      });
+      if (kept.length !== arr.length) setPendingGist(kept);
+    } catch (e) {}
+  }
+
+  async function purgeExpiredDefaultRoomMessages(silent = true) {
+    if (!appConfig) return;
+    const roomId = DEFAULT_PUBLIC_ROOM.roomId;
+    cleanupDefaultRoomLocalCache();
+    removeExpiredDefaultRoomPendingItems();
+
+    try {
+      const comments = await fetchAllComments();
+      const ids = [];
+
+      for (const c of comments) {
+        if (typeof c.body !== "string" || !c.body.startsWith(MSG_PREFIX)) continue;
+        try {
+          const wrapper = JSON.parse(c.body.slice(MSG_PREFIX.length));
+          if (wrapper.roomId === roomId && !isDefaultRoomMessageActive(wrapper)) {
+            ids.push(c.id);
+          }
+        } catch (e) {}
+      }
+
+      for (const id of ids) {
+        try { await deleteGistComment(id); } catch (e) {}
+      }
+
+      if (ids.length) {
+        localStorage.removeItem(roomLastCommentKey(roomId));
+        mqttPublishJson(roomTopic(roomId), { type: "defaultRoomExpiredPurged", roomId, time: Date.now() });
+        mqttPublishJson(roomsTopic(), { type: "roomsUpdate", time: Date.now() });
+        if (!silent) showToast("大厅过期记录已清理");
+      }
+    } catch (e) {
+      if (!silent) showToast("大厅清理失败");
+    }
+  }
+
+  function scheduleDefaultRoomMidnightAutoClear() {
+    clearTimeout(state.defaultRoomPurgeTimer);
+    const now = new Date();
+    const next = new Date(now);
+    next.setHours(24, 0, 5, 0);
+    const delay = Math.max(5000, next.getTime() - now.getTime());
+
+    state.defaultRoomPurgeTimer = setTimeout(async () => {
+      await purgeExpiredDefaultRoomMessages(true);
+      scheduleDefaultRoomMidnightAutoClear();
+    }, delay);
+  }
 
   let calcExpression = "";
   let unlockInput = "";
@@ -970,6 +1076,7 @@
     lobbyTimer: null,
     gistRetryTimer: null,
     idleTimer: null,
+    defaultRoomPurgeTimer: null,
     lastRoomsHash: "",
     roomSeen: new Set(),
     onlineClients: {},
@@ -1100,15 +1207,15 @@
       isFakeResult = false;
     }
 
+    // 密码输入优先：允许连续输入 + - × ÷ 等符号。
+    // 不再自动替换前一个运算符，避免输入暗语时符号被吞掉。
     unlockInput += secretOp;
 
-    if (!calcExpression || calcExpression === "Error") {
-      updateDisplay();
-      return;
+    if (calcExpression === "Error") {
+      calcExpression = "";
     }
 
-    const last = calcExpression.slice(-1);
-    calcExpression = "+-*/%".includes(last) ? calcExpression.slice(0, -1) + op : calcExpression + op;
+    calcExpression += op;
     updateDisplay();
   }
 
@@ -1166,22 +1273,31 @@
 
       if (!calcExpression) return;
       const last = calcExpression.slice(-1);
-      if ("+-*/%".includes(last)) return;
+      if ("+-*/%".includes(last)) {
+        calcExpression = "Error";
+        unlockInput = "";
+        showToast("输入有误");
+        updateDisplay();
+        return;
+      }
 
       if (!/^[0-9+\-*/%. ]+$/.test(calcExpression)) {
         calcExpression = "Error";
         unlockInput = "";
+        showToast("输入有误");
         updateDisplay();
         return;
       }
 
       const result = Function('"use strict"; return (' + calcExpression + ')')();
       calcExpression = isFinite(result) ? String(Number(result.toFixed(8))) : "Error";
+      if (calcExpression === "Error") showToast("输入有误");
       unlockInput = "";
       updateDisplay();
     } catch (e) {
       calcExpression = "Error";
       unlockInput = "";
+      showToast("输入有误");
       updateDisplay();
     }
   }
@@ -1287,6 +1403,8 @@
         const result = await decryptConfig(code);
         appConfig = result.config;
         activeUnlockCode = code;
+        scheduleDefaultRoomMidnightAutoClear();
+        setTimeout(() => purgeExpiredDefaultRoomMessages(true), 1200);
         openApp();
         return true;
       } catch (e) {}
@@ -1562,7 +1680,16 @@
   function loadRoomCache(roomId) {
     try {
       const arr = JSON.parse(localStorage.getItem(roomCacheKey(roomId)) || "[]");
-      return Array.isArray(arr) ? arr : [];
+      if (!Array.isArray(arr)) return [];
+      if (!isDefaultPublicRoomId(roomId)) return arr;
+
+      const kept = arr.filter(isDefaultRoomMessageActive);
+      if (kept.length !== arr.length) {
+        localStorage.setItem(roomCacheKey(roomId), JSON.stringify(kept));
+        setLatestRoomCount(roomId, kept.length);
+        localStorage.setItem(roomLastReadCountKey(roomId), String(Math.min(getStoredNumber(roomLastReadCountKey(roomId), kept.length), kept.length)));
+      }
+      return kept;
     } catch (e) {
       return [];
     }
@@ -1573,6 +1700,7 @@
     const unique = [];
     const seen = new Set();
     for (const msg of sorted) {
+      if (isDefaultPublicRoomId(roomId) && !isDefaultRoomMessageActive(msg)) continue;
       const id = getMessageKey(msg);
       if (seen.has(id)) continue;
       seen.add(id);
@@ -1580,7 +1708,11 @@
     }
     const clipped = unique.slice(-MAX_CACHE_MESSAGES);
     localStorage.setItem(roomCacheKey(roomId), JSON.stringify(clipped));
-    setLatestRoomCount(roomId, Math.max(getLatestRoomCount(roomId), clipped.length));
+    if (isDefaultPublicRoomId(roomId)) {
+      setLatestRoomCount(roomId, clipped.length);
+    } else {
+      setLatestRoomCount(roomId, Math.max(getLatestRoomCount(roomId), clipped.length));
+    }
   }
 
   function getMessageKey(msg) {
@@ -1633,6 +1765,7 @@
 
   function appendMessageIfNew(msg, source) {
     if (!state.currentRoom || msg.roomId !== state.currentRoom.roomId) return false;
+    if (isDefaultPublicRoomId(msg.roomId) && !isDefaultRoomMessageActive(msg)) return false;
     const id = getMessageKey(msg);
     if (state.roomSeen.has(id)) return false;
 
@@ -1672,6 +1805,11 @@
     roomInfoText.textContent = (room.roomName || getRoomNo(room)) + " · 建立者：" + (room.createdBy || "System");
     roomTitleBtn.textContent = "【" + (room.roomName || getRoomNo(room)) + "】";
 
+    if (isDefaultPublicRoomId(room.roomId)) {
+      cleanupDefaultRoomLocalCache();
+      setTimeout(() => purgeExpiredDefaultRoomMessages(true), 300);
+    }
+
     initSeenFromCache(room.roomId);
     const cached = loadRoomCache(room.roomId);
     renderAllMessages(cached);
@@ -1707,6 +1845,10 @@
           const raw = c.body.slice(MSG_PREFIX.length);
           const wrapper = JSON.parse(raw);
           if (wrapper.roomId !== roomId) continue;
+          if (isDefaultPublicRoomId(roomId) && !isDefaultRoomMessageActive(wrapper)) {
+            setTimeout(() => deleteGistComment(c.id).catch(() => {}), 0);
+            continue;
+          }
           items.push({ commentId: c.id, updatedAt: c.updated_at, wrapper });
         } catch (e) {}
       }
@@ -1798,7 +1940,7 @@
         id: msg.messageId,
         roomId: state.currentRoom.roomId,
         body: MSG_PREFIX + JSON.stringify(wrapper),
-        time: Date.now(),
+        time: msg.time,
         attempts: 0
       });
       flushPendingGistMessages();
@@ -1836,6 +1978,9 @@
 
     const remain = [];
     for (const item of arr) {
+      if (item && isDefaultPublicRoomId(item.roomId) && Number(item.time || 0) < getDefaultRoomCutoffTime()) {
+        continue;
+      }
       try {
         const res = await postGistComment(item.body);
         localStorage.setItem(roomLastCommentKey(item.roomId), String(res.id));
@@ -2453,7 +2598,7 @@
       return;
     }
 
-    if (obj.type === "roomCleared" && obj.roomId === state.currentRoom.roomId) {
+    if ((obj.type === "roomCleared" || obj.type === "defaultRoomExpiredPurged") && obj.roomId === state.currentRoom.roomId) {
       localStorage.removeItem(roomCacheKey(obj.roomId));
       localStorage.removeItem(roomLastCommentKey(obj.roomId));
       setLatestRoomCount(obj.roomId, 0);
@@ -2525,6 +2670,8 @@
     if (!document.hidden && appConfig) {
       connectMQTT();
       flushPendingGistMessages();
+      if (isDefaultPublicRoomId(DEFAULT_PUBLIC_ROOM.roomId)) cleanupDefaultRoomLocalCache();
+      if (state.currentRoom && isDefaultPublicRoomId(state.currentRoom.roomId)) setTimeout(() => purgeExpiredDefaultRoomMessages(true), 300);
       if (state.currentRoom) syncRoomHistoryFromGist(state.currentRoom.roomId, state.currentRoom.roomSecret);
       else loadRooms(true);
     }
@@ -2534,7 +2681,7 @@
   function registerAndroidPWAServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
     window.addEventListener("load", function() {
-      navigator.serviceWorker.register("/vx/service-worker.js?v=pwa-nosound-emergency10-20260509", {
+      navigator.serviceWorker.register("/vx/service-worker.js?v=pwa-default-hall-24h-20260509", {
         scope: "/vx/"
       }).then(function(reg) {
         if (reg && reg.update) reg.update();
