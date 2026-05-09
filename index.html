@@ -2,33 +2,41 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content" />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Calculator</title>
 
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <link rel="icon" type="image/png" href="/vx/vx-logo-180.png?v=fast-lazy-20260509" />
-  <link rel="shortcut icon" type="image/png" href="/vx/vx-logo-180.png?v=fast-lazy-20260509" />
-  <link rel="apple-touch-icon" href="/vx/vx-logo-180.png?v=logo-final-20260509" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/vx/vx-logo-180.png?v=logo-final-20260509" />
-  <link rel="apple-touch-icon-precomposed" href="/vx/vx-logo-180.png?v=logo-final-20260509" />
-  <link rel="manifest" href="/vx/manifest.webmanifest?v=logo-final-20260509" />
-<meta name="theme-color" content="#020617" />
+  <link rel="manifest" href="/vx/manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="/vx/vx-logo-180.png" />
+  <link rel="shortcut icon" type="image/png" href="/vx/vx-logo-180.png" />
+  <link rel="apple-touch-icon" href="/vx/vx-logo-180.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/vx/vx-logo-180.png" />
+  <link rel="apple-touch-icon-precomposed" href="/vx/vx-logo-180.png" />
+
+  <meta name="theme-color" content="#020617" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Calculator" />
-  <meta name="screen-orientation" content="portrait" />
-  <meta name="full-screen" content="yes" />
-  <meta name="browsermode" content="application" />
-  <meta name="x5-fullscreen" content="true" />
-  <meta name="x5-page-mode" content="app" />
-  <meta name="x5-orientation" content="portrait" />
-  <meta name="msapplication-tap-highlight" content="no" />
 
   <style>
+    :root {
+      --app-height: 100dvh;
+      --top-safe: env(safe-area-inset-top, 0px);
+      --bottom-safe: env(safe-area-inset-bottom, 0px);
+      --keyboard-offset: 0px;
+      --bg0: #020617;
+      --bg1: #07111f;
+      --line: rgba(125, 211, 252, 0.22);
+      --cyan: #38bdf8;
+      --blue: #2563eb;
+      --violet: #8b5cf6;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e5f4ff;
+      --muted: rgba(226, 232, 240, 0.66);
+    }
+
     * {
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
@@ -40,30 +48,38 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #111827;
       overflow: hidden;
       overscroll-behavior: none;
-      position: fixed;
-      inset: 0;
       touch-action: manipulation;
+      background: var(--bg0);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     body {
-      -webkit-overflow-scrolling: auto;
+      position: fixed;
+      inset: 0;
+    }
+
+    button,
+    input {
+      font-family: inherit;
     }
 
     .calculator {
       width: 100%;
-      height: 100vh;
-      height: 100dvh;
-      background:
-        radial-gradient(circle at top, #1f2937 0%, #111827 48%, #060b15 100%);
-      color: white;
+      height: var(--app-height);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      padding: 18px;
+      padding: calc(16px + var(--top-safe)) 18px calc(16px + var(--bottom-safe));
+      background:
+        radial-gradient(circle at 50% -10%, rgba(56, 189, 248, 0.16), transparent 38%),
+        radial-gradient(circle at 15% 28%, rgba(139, 92, 246, 0.13), transparent 34%),
+        radial-gradient(circle at bottom, rgba(15, 23, 42, 0.96), #020617 72%);
+      color: white;
+      overflow: hidden;
     }
 
     .display {
@@ -77,7 +93,7 @@
       word-break: break-all;
       text-align: right;
       color: #f9fafb;
-      text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+      text-shadow: 0 2px 18px rgba(56,189,248,0.22);
       line-height: 1.1;
     }
 
@@ -85,34 +101,34 @@
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
-      padding-bottom: 18px;
+      padding-bottom: 6px;
     }
 
     .btn {
       height: 72px;
-      border: none;
-      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 23px;
       font-size: 28px;
       color: #f9fafb;
-      background: linear-gradient(180deg, #374151 0%, #1f2937 100%);
+      background: linear-gradient(180deg, rgba(55,65,81,0.94), rgba(15,23,42,0.96));
       box-shadow:
         inset 0 1px 0 rgba(255,255,255,0.08),
-        0 8px 18px rgba(0,0,0,0.28);
+        0 10px 24px rgba(0,0,0,0.26);
       cursor: pointer;
     }
 
     .btn:active {
       transform: scale(0.96);
-      opacity: 0.92;
+      opacity: 0.88;
     }
 
     .operator {
-      background: linear-gradient(180deg, #f59e0b 0%, #ea580c 100%);
+      background: linear-gradient(180deg, #f59e0b, #ea580c);
       color: white;
     }
 
     .function {
-      background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
+      background: linear-gradient(180deg, #cbd5e1, #94a3b8);
       color: #111827;
     }
 
@@ -122,265 +138,246 @@
 
     .chat-app {
       display: none;
-      position: relative;
+      position: fixed;
+      inset: 0;
       width: 100%;
-      height: 100vh;
-      height: 100dvh;
-      background: #eef2f7;
-      flex-direction: column;
+      height: var(--app-height);
       overflow: hidden;
-      overscroll-behavior: none;
+      flex-direction: column;
+      background:
+        linear-gradient(rgba(56,189,248,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,189,248,0.035) 1px, transparent 1px),
+        radial-gradient(circle at 12% 8%, rgba(59,130,246,0.22), transparent 30%),
+        radial-gradient(circle at 88% 18%, rgba(139,92,246,0.20), transparent 32%),
+        radial-gradient(circle at 50% 100%, rgba(14,165,233,0.13), transparent 38%),
+        #020617;
+      background-size: 34px 34px, 34px 34px, auto, auto, auto, auto;
+      color: var(--text);
     }
 
-    .top-header,
-    .chat-header {
-      height: 56px;
-      background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid #e5e7eb;
+    .app-header {
+      height: calc(58px + var(--top-safe));
+      padding: var(--top-safe) 12px 0;
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: 112px 1fr 132px;
+      align-items: center;
+      gap: 8px;
+      background: rgba(2, 6, 23, 0.72);
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.24);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      z-index: 20;
+    }
+
+    .header-left,
+    .header-right {
       display: flex;
       align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .header-right {
+      justify-content: flex-end;
+    }
+
+    .app-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      object-fit: cover;
+      display: block;
+      box-shadow: 0 0 18px rgba(56,189,248,0.26);
+    }
+
+    .header-btn {
+      border: 1px solid rgba(56,189,248,0.28);
+      background: rgba(15, 23, 42, 0.66);
+      color: #dff7ff;
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: inset 0 0 18px rgba(56,189,248,0.06);
+    }
+
+    .header-btn:active {
+      transform: scale(0.97);
+      opacity: 0.86;
+    }
+
+    .data-status {
+      justify-self: center;
+      min-width: 128px;
+      max-width: 210px;
+      height: 30px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
       justify-content: center;
-      font-weight: 800;
-      font-size: 17px;
-      position: relative;
-      color: #111827;
+      gap: 7px;
+      padding: 0 12px;
+      border: 1px solid rgba(148,163,184,0.18);
+      background: rgba(15,23,42,0.72);
+      box-shadow: inset 0 0 18px rgba(56,189,248,0.07);
+      color: rgba(226, 232, 240, 0.92);
+      font-size: 12px;
+      font-weight: 900;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--red);
+      box-shadow: 0 0 10px rgba(239,68,68,0.9);
       flex-shrink: 0;
     }
 
-    .header-left {
-      position: absolute;
-      left: 12px;
-      border: none;
-      background: #f3f4f6;
-      color: #111827;
-      border-radius: 999px;
-      padding: 7px 12px;
-      font-size: 13px;
-      cursor: pointer;
+    .data-status.connected .status-dot {
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(34,197,94,0.95);
     }
 
-    .panic-btn {
-      position: absolute;
-      right: 12px;
-      border: none;
-      background: #111827;
-      color: white;
-      border-radius: 999px;
-      padding: 7px 12px;
-      font-size: 13px;
-      cursor: pointer;
+    .data-status.connecting .status-dot {
+      background: var(--yellow);
+      box-shadow: 0 0 12px rgba(245,158,11,0.95);
     }
 
-    .admin-btn {
-      position: absolute;
-      right: 122px;
-      border: none;
-      background: #f3f4f6;
-      color: #111827;
-      border-radius: 999px;
-      padding: 7px 10px;
-      font-size: 12px;
-      cursor: pointer;
+    .app-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     .screen {
       display: none;
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
-      padding: 18px;
-      background:
-        radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 28%),
-        radial-gradient(circle at top right, rgba(168,85,247,0.10), transparent 30%),
-        #eef2f7;
+      -webkit-overflow-scrolling: touch;
+      padding: 14px 14px calc(120px + var(--bottom-safe));
     }
 
-    .card {
-      background: rgba(255,255,255,0.94);
-      border-radius: 22px;
-      padding: 16px;
-      margin-bottom: 14px;
-      box-shadow: 0 10px 30px rgba(15,23,42,0.08);
-      border: 1px solid rgba(255,255,255,0.75);
+    .nickname-line {
+      padding: 10px 14px;
+      margin: 2px 0 12px;
+      color: rgba(226,232,240,0.68);
+      font-size: 12px;
+      letter-spacing: 0.04em;
     }
 
-    .card h2,
-    .card h3 {
-      margin: 0 0 10px;
-      color: #111827;
-    }
-
-    .card p {
-      margin: 6px 0 12px;
-      color: #6b7280;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .input {
-      width: 100%;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      padding: 13px 14px;
-      font-size: 15px;
-      outline: none;
-      margin-bottom: 10px;
-      background: white;
-    }
-
-    .input:focus {
-      border-color: #111827;
-      box-shadow: 0 0 0 3px rgba(17,24,39,0.08);
-    }
-
-    .main-btn {
-      width: 100%;
-      border: none;
-      background: #111827;
-      color: white;
-      border-radius: 14px;
-      padding: 13px 14px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .small-btn {
-      border: none;
-      background: #111827;
-      color: white;
-      border-radius: 999px;
-      padding: 9px 15px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .room-item {
-      position: relative;
-      overflow: hidden;
-      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-      border-radius: 24px;
-      padding: 18px;
-      margin-bottom: 12px;
-      min-height: 142px;
+    .room-list {
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      box-shadow: 0 12px 30px rgba(15,23,42,0.08);
-      border: 1px solid rgba(255,255,255,0.8);
-    }
-
-    .room-item::before {
-      content: "";
-      position: absolute;
-      width: 120px;
-      height: 120px;
-      right: -42px;
-      bottom: -50px;
-      background: radial-gradient(circle, rgba(17,24,39,0.10), transparent 70%);
-      border-radius: 50%;
-    }
-
-    .room-topline {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
       gap: 10px;
-      z-index: 1;
     }
 
-    .room-corner {
+    .room-row {
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      background:
+        radial-gradient(circle at 0% 0%, rgba(56,189,248,0.10), transparent 36%),
+        linear-gradient(135deg, rgba(15,23,42,0.86), rgba(2,6,23,0.72));
+      border-radius: 20px;
+      padding: 15px;
+      min-height: 78px;
       display: flex;
-      flex-direction: column;
-      gap: 5px;
-      align-items: flex-end;
-      max-width: 45%;
-      font-size: 11px;
-      color: #6b7280;
-      text-align: right;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow:
+        0 14px 30px rgba(0,0,0,0.20),
+        inset 0 0 22px rgba(56,189,248,0.035);
+      cursor: pointer;
     }
 
-    .room-tag {
-      background: #f3f4f6;
-      border-radius: 999px;
-      padding: 5px 8px;
-      max-width: 100%;
+    .room-main {
+      min-width: 0;
+    }
+
+    .room-name {
+      font-size: 17px;
+      font-weight: 950;
+      color: #effbff;
+      letter-spacing: 0.03em;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .room-tag.free {
-      background: #ecfdf5;
-      color: #047857;
-      font-weight: 800;
-    }
-
-    .room-tag.locked {
-      background: #fff7ed;
-      color: #c2410c;
-      font-weight: 800;
-    }
-
-    .room-number-label {
+    .room-meta {
+      margin-top: 6px;
       font-size: 12px;
-      color: #6b7280;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      z-index: 1;
+      color: rgba(226,232,240,0.58);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    .room-number {
-      font-size: 42px;
-      line-height: 1;
+    .room-badge {
+      flex-shrink: 0;
+      border: 1px solid rgba(56,189,248,0.26);
+      color: #93e8ff;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
       font-weight: 900;
-      color: #111827;
-      letter-spacing: 0.04em;
-      margin-top: 8px;
-      z-index: 1;
+      background: rgba(56,189,248,0.08);
     }
 
-    .room-bottom {
+    .chat-shell {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .room-subbar {
+      flex-shrink: 0;
+      height: 34px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-top: 18px;
-      z-index: 1;
-    }
-
-    .room-meta {
+      gap: 8px;
+      padding: 0 14px;
+      background: rgba(2,6,23,0.35);
+      border-bottom: 1px solid rgba(56,189,248,0.10);
+      color: rgba(226,232,240,0.62);
       font-size: 12px;
-      color: #6b7280;
-      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
     }
 
-    .empty {
-      background: #fff7ed;
-      color: #c2410c;
-      padding: 12px;
-      border-radius: 14px;
-      font-size: 14px;
-      line-height: 1.5;
+    .history-tip {
+      display: none;
+      margin-left: auto;
+      color: rgba(147, 232, 255, 0.9);
+      font-weight: 800;
     }
 
     .chat-box {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
-      padding: 14px;
-      background: #f7f7f8;
+      -webkit-overflow-scrolling: touch;
+      padding: 14px 12px 110px;
     }
 
     .msg-wrap {
       display: flex;
       flex-direction: column;
       margin-bottom: 12px;
+      max-width: 100%;
     }
 
     .msg-wrap.me {
@@ -393,1476 +390,242 @@
 
     .meta {
       font-size: 11px;
-      color: #888;
-      margin-bottom: 4px;
-      padding: 0 5px;
+      color: rgba(226,232,240,0.48);
+      margin-bottom: 5px;
+      padding: 0 6px;
+      max-width: 80%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .bubble {
       max-width: 78%;
-      padding: 10px 13px;
-      border-radius: 16px;
+      padding: 11px 13px;
+      border-radius: 17px;
       font-size: 15px;
       line-height: 1.45;
       word-break: break-word;
+      border: 1px solid rgba(148,163,184,0.14);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.16);
     }
 
     .me .bubble {
-      background: #111827;
+      background: linear-gradient(135deg, rgba(37,99,235,0.94), rgba(14,165,233,0.86));
       color: white;
-      border-top-right-radius: 4px;
+      border-top-right-radius: 5px;
+      box-shadow: 0 0 22px rgba(37,99,235,0.22);
     }
 
     .other .bubble {
-      background: white;
-      color: #111827;
-      border-top-left-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
-
-    .status {
-      display: none;
-      background: #fff7ed;
-      color: #c2410c;
-      padding: 8px 12px;
-      font-size: 12px;
-      border-top: 1px solid #fed7aa;
+      background: rgba(15, 23, 42, 0.82);
+      color: #e5f4ff;
+      border-top-left-radius: 5px;
     }
 
     .send-area {
-      display: flex;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: var(--keyboard-offset);
+      min-height: calc(62px + var(--bottom-safe));
+      padding: 9px 10px calc(9px + var(--bottom-safe));
+      display: none;
       gap: 8px;
-      padding: 10px;
-      background: white;
-      border-top: 1px solid #e5e7eb;
-      flex-shrink: 0;
+      background: rgba(2, 6, 23, 0.82);
+      border-top: 1px solid rgba(56,189,248,0.16);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      z-index: 18;
     }
 
     .send-area input {
       flex: 1;
-      border: 1px solid #ddd;
+      min-width: 0;
+      border: 1px solid rgba(56,189,248,0.18);
+      background: rgba(15,23,42,0.86);
+      color: var(--text);
       border-radius: 999px;
       padding: 12px 14px;
       font-size: 15px;
       outline: none;
     }
 
+    .send-area input::placeholder {
+      color: rgba(226,232,240,0.42);
+    }
+
     .send-area button {
       border: none;
       border-radius: 999px;
-      background: #111827;
-      color: white;
       padding: 0 18px;
-      font-size: 15px;
+      color: white;
+      background: linear-gradient(135deg, #2563eb, #06b6d4);
+      font-size: 14px;
+      font-weight: 900;
       cursor: pointer;
+      box-shadow: 0 0 18px rgba(14,165,233,0.28);
     }
 
     .modal-mask {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.45);
+      z-index: 80;
       align-items: center;
       justify-content: center;
       padding: 18px;
-      z-index: 99;
+      background: rgba(0,0,0,0.42);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
     .modal {
-      width: 100%;
-      max-width: 380px;
-      background: white;
-      border-radius: 20px;
+      width: min(90vw, 330px);
+      border: 1px solid rgba(56,189,248,0.22);
+      border-radius: 24px;
+      background: rgba(2, 6, 23, 0.92);
+      box-shadow: 0 26px 72px rgba(0,0,0,0.44), inset 0 0 22px rgba(56,189,248,0.045);
       padding: 18px;
+      color: var(--text);
     }
 
     .modal h3 {
-      margin: 0 0 8px;
-      color: #111827;
+      margin: 0 0 14px;
+      font-size: 18px;
+      letter-spacing: 0.04em;
     }
 
-    .modal p {
-      margin: 0 0 12px;
-      color: #6b7280;
-      font-size: 14px;
+    .input {
+      width: 100%;
+      border: 1px solid rgba(56,189,248,0.20);
+      background: rgba(15,23,42,0.85);
+      color: var(--text);
+      border-radius: 15px;
+      padding: 13px 14px;
+      outline: none;
+      font-size: 15px;
+      margin-bottom: 10px;
     }
 
     .modal-actions {
       display: flex;
       gap: 8px;
-    }
-
-    .modal-actions button {
-      flex: 1;
-      border: none;
-      border-radius: 14px;
-      padding: 12px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    .cancel-btn {
-      background: #f3f4f6;
-      color: #111827;
-    }
-
-    .confirm-btn {
-      background: #111827;
-      color: white;
-    }
-
-    .danger-btn {
-      background: #dc2626 !important;
-      color: white !important;
-    }
-
-    .secondary-btn {
-      background: #f3f4f6 !important;
-      color: #111827 !important;
-    }
-
-    .notice {
-      background: #fff7ed;
-      color: #c2410c;
-      padding: 12px;
-      border-radius: 14px;
-      font-size: 14px;
-      line-height: 1.5;
-      margin-bottom: 12px;
-    }
-
-    .nickname-ok {
-      background: #ecfdf5;
-      color: #047857;
-    }
-
-    .split-line {
-      height: 1px;
-      background: #e5e7eb;
-      margin: 16px 0;
+      margin-top: 8px;
     }
 
     .modal-actions.vertical {
       flex-direction: column;
     }
 
-    .modal-actions.vertical button {
-      width: 100%;
+    .modal-actions button {
+      flex: 1;
+      border: none;
+      border-radius: 15px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
     }
 
-    .tiny-text {
-      font-size: 12px;
-      color: #9ca3af;
-      margin-top: 8px;
-      line-height: 1.4;
+    .cancel-btn {
+      background: rgba(148,163,184,0.14);
+      color: var(--text);
     }
 
-
-    .app-title-with-logo {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      min-width: 0;
+    .confirm-btn {
+      background: linear-gradient(135deg, #2563eb, #06b6d4);
+      color: white;
     }
 
-    .app-logo {
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
-      object-fit: cover;
-      display: block;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    .danger-btn {
+      background: rgba(220,38,38,0.82);
+      color: white;
     }
 
-    .app-logo-fallback {
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
-      background: #111827;
-      color: #fff;
+    .toast {
+      position: fixed;
+      top: calc(70px + var(--top-safe));
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      z-index: 110;
       display: none;
-      align-items: center;
-      justify-content: center;
+      padding: 9px 14px;
+      border-radius: 999px;
+      color: white;
+      background: rgba(15,23,42,0.82);
+      border: 1px solid rgba(56,189,248,0.22);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.32);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       font-size: 13px;
       font-weight: 900;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-    }
-
-
-    /* WeChat-like lobby layout */
-    .top-header.wechat-header {
-      height: 52px;
-      background: #f7f7f7;
-      border-bottom: 1px solid #dcdcdc;
-      font-weight: 700;
-    }
-
-    .header-text-btn {
-      position: absolute;
-      border: none;
-      background: transparent;
-      color: #111827;
-      font-size: 15px;
-      font-weight: 700;
-      padding: 8px 6px;
-      cursor: pointer;
-    }
-
-    .header-text-btn:active {
-      opacity: 0.5;
-    }
-
-    .header-exit {
-      left: 12px;
-    }
-
-    .header-new {
-      right: 168px;
-    }
-
-    .header-settings {
-      right: 122px;
-    }
-
-    #lobbyScreen.wechat-screen {
-      padding: 0;
-      background: #ededed;
-    }
-
-    .wechat-notice {
-      margin: 10px 12px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      font-size: 13px;
-      line-height: 1.45;
-      background: #fff7ed;
-      color: #c2410c;
-    }
-
-    .wechat-notice.nickname-ok {
-      background: #ecfdf5;
-      color: #047857;
-    }
-
-    .wechat-list {
-      background: #ffffff;
-      border-top: 1px solid #e5e5e5;
-      border-bottom: 1px solid #e5e5e5;
-    }
-
-    .wechat-room-button {
-      width: 100%;
-      min-height: 72px;
-      border: none;
-      background: #ffffff;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      cursor: pointer;
-      text-align: left;
-      position: relative;
-      font-family: inherit;
-    }
-
-    .wechat-room-button::after {
-      content: "";
-      position: absolute;
-      left: 74px;
-      right: 0;
-      bottom: 0;
-      height: 1px;
-      background: #eeeeee;
-    }
-
-    .wechat-room-button:active {
-      background: #f2f2f2;
-    }
-
-    .wechat-avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 10px;
-      background: linear-gradient(145deg, #22c55e, #16a34a);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      font-weight: 800;
-      flex-shrink: 0;
-    }
-
-    .wechat-avatar.locked {
-      background: linear-gradient(145deg, #111827, #374151);
-    }
-
-    .wechat-room-main {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .wechat-room-title-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 5px;
-    }
-
-    .wechat-room-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #111827;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .wechat-room-time {
-      font-size: 11px;
-      color: #9ca3af;
-      flex-shrink: 0;
-    }
-
-    .wechat-room-sub {
-      font-size: 13px;
-      color: #8a8a8a;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .chat-creator-bar {
-      display: none;
-      background: #f7f7f7;
-      color: #6b7280;
-      font-size: 12px;
-      padding: 7px 12px;
-      border-bottom: 1px solid #e5e7eb;
-      flex-shrink: 0;
-      text-align: center;
     }
 
     .emergency-bar {
       display: none;
-      position: absolute;
+      position: fixed;
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
-      width: min(78vw, 330px);
-      padding: 0;
-      background: transparent;
-      border: none;
-      flex-shrink: 0;
-      z-index: 30;
+      z-index: 60;
       pointer-events: none;
     }
 
     .emergency-close-btn {
-      width: 100%;
-      border: 1px solid rgba(255,255,255,0.32);
-      border-radius: 999px;
-      background: rgba(220, 38, 38, 0.72);
-      color: #ffffff;
-      padding: 12px 14px;
-      font-size: 14px;
-      font-weight: 900;
-      letter-spacing: 0.02em;
-      cursor: pointer;
-      box-shadow: 0 14px 34px rgba(220,38,38,0.30);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      pointer-events: auto;
-    }
-
-    .emergency-close-btn:active {
-      transform: scale(0.98);
-      opacity: 0.86;
-    }
-
-    .meta-name {
-      font-weight: 800;
-      color: #4b5563;
-    }
-
-    .modal-mask.sheet-mask {
-      align-items: flex-end;
-      padding: 0;
-    }
-
-    .modal-mask.sheet-mask .modal {
-      max-width: none;
-      width: 100%;
-      border-radius: 18px 18px 0 0;
-      padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
-      box-shadow: 0 -12px 30px rgba(0,0,0,0.18);
-    }
-
-    .compact-modal {
-      max-width: 320px;
-      padding: 16px;
-    }
-
-    .compact-modal h3 {
-      margin-bottom: 10px;
-      font-size: 17px;
-    }
-
-    .current-name-line {
-      font-size: 13px;
-      color: #6b7280;
-      margin-bottom: 10px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      background: #f3f4f6;
-    }
-
-    .chat-header .admin-btn {
-      right: 12px;
-    }
-
-
-    .app-toast {
-      display: none;
-      position: absolute;
-      left: 50%;
-      top: calc(68px + env(safe-area-inset-top));
-      transform: translateX(-50%);
-      max-width: min(78vw, 320px);
-      padding: 9px 14px;
-      border-radius: 999px;
-      background: rgba(17,24,39,0.84);
-      color: #ffffff;
-      font-size: 13px;
-      font-weight: 800;
-      text-align: center;
-      z-index: 120;
-      box-shadow: 0 10px 28px rgba(15,23,42,0.22);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      pointer-events: none;
-      white-space: nowrap;
-    }
-
-    .app-toast.success {
-      background: rgba(22, 163, 74, 0.88);
-    }
-
-    .app-toast.new {
-      background: rgba(17,24,39,0.88);
-    }
-
-
-
-    .mqtt-status-pill {
-      position: absolute;
-      right: 10px;
-      top: calc(env(safe-area-inset-top, 0px) + 12px);
-      z-index: 80;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      height: 28px;
-      min-width: 96px;
-      padding: 0 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.94);
-      border: 1px solid rgba(229,231,235,0.9);
-      color: #111827;
-      font-size: 11px;
-      font-weight: 900;
-      box-shadow: 0 6px 18px rgba(15,23,42,0.12);
-      pointer-events: none;
-      white-space: nowrap;
-    }
-
-    .mqtt-dot {
-      width: 8px;
-      height: 8px;
+      width: 116px;
+      height: 116px;
+      border: 1px solid rgba(255,255,255,0.24);
       border-radius: 50%;
-      background: #ef4444;
-      box-shadow: 0 0 7px rgba(239,68,68,0.70);
-    }
-
-    .mqtt-dot.green {
-      background: #22c55e;
-      box-shadow: 0 0 7px rgba(34,197,94,0.80);
-    }
-
-    .mqtt-dot.yellow {
-      background: #f59e0b;
-      box-shadow: 0 0 7px rgba(245,158,11,0.80);
-    }
-
-    .settings-mini-modal {
-      max-width: 300px;
-      border-radius: 18px;
-      padding: 16px;
-    }
-
-    .settings-mini-modal h3 {
-      margin: 0 0 12px;
-      font-size: 17px;
-      line-height: 1.2;
-    }
-
-    .settings-mini-modal .input {
-      margin-bottom: 12px;
-    }
-
-    .create-mini-modal p {
-      display: none;
-    }
-
-  
-
-    /* ===== Cyber / Tech UI Override ===== */
-    :root {
-      --tech-bg: #020617;
-      --tech-panel: rgba(15, 23, 42, 0.72);
-      --tech-panel-strong: rgba(15, 23, 42, 0.88);
-      --tech-line: rgba(34, 211, 238, 0.28);
-      --tech-line-strong: rgba(34, 211, 238, 0.62);
-      --tech-blue: #38bdf8;
-      --tech-cyan: #22d3ee;
-      --tech-green: #22c55e;
-      --tech-red: #ef4444;
-      --tech-violet: #8b5cf6;
-      --tech-text: #e5f6ff;
-      --tech-muted: rgba(203, 213, 225, 0.72);
-    }
-
-    .chat-app {
       background:
-        radial-gradient(circle at 14% 0%, rgba(56, 189, 248, 0.26), transparent 32%),
-        radial-gradient(circle at 92% 12%, rgba(139, 92, 246, 0.22), transparent 32%),
-        linear-gradient(135deg, #020617 0%, #07111f 48%, #020617 100%);
-      color: var(--tech-text);
-    }
-
-    .chat-app::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(34,211,238,0.055) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(34,211,238,0.045) 1px, transparent 1px);
-      background-size: 28px 28px;
-      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.80), rgba(0,0,0,0.18));
-      z-index: 0;
-    }
-
-    .chat-app::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: linear-gradient(180deg, rgba(255,255,255,0.035), transparent 7%, transparent 92%, rgba(34,211,238,0.045));
-      z-index: 0;
-    }
-
-    .top-header,
-    .chat-header,
-    .screen,
-    .chat-box,
-    .send-area,
-    .status,
-    .chat-creator-bar,
-    .emergency-bar,
-    .modal-mask {
-      position: relative;
-      z-index: 1;
-    }
-
-    .top-header.wechat-header,
-    .chat-header {
-      height: 56px;
-      background: rgba(2, 6, 23, 0.72);
-      border-bottom: 1px solid var(--tech-line);
-      color: var(--tech-text);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      box-shadow: 0 10px 28px rgba(2, 6, 23, 0.38), inset 0 -1px 0 rgba(125,211,252,0.08);
-    }
-
-    .top-header.wechat-header::before,
-    .chat-header::before {
-      content: "";
-      position: absolute;
-      left: 18px;
-      right: 18px;
-      bottom: -1px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(34,211,238,0.78), transparent);
-    }
-
-    .app-title-with-logo {
-      padding: 5px 10px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.64);
-      border: 1px solid rgba(34, 211, 238, 0.22);
-      box-shadow: inset 0 0 16px rgba(34,211,238,0.08), 0 0 16px rgba(34,211,238,0.08);
-    }
-
-    .app-logo {
-      width: 27px;
-      height: 27px;
-      border-radius: 9px;
-      box-shadow: 0 0 16px rgba(34,211,238,0.42), 0 6px 18px rgba(2,6,23,0.45);
-    }
-
-    .header-text-btn,
-    .header-left,
-    .admin-btn,
-    .small-btn,
-    .main-btn,
-    .send-area button,
-    .confirm-btn {
-      background: linear-gradient(135deg, rgba(14,165,233,0.96), rgba(139,92,246,0.92)) !important;
-      color: #ffffff !important;
-      border: 1px solid rgba(125, 211, 252, 0.32) !important;
-      box-shadow: 0 8px 22px rgba(14,165,233,0.20), inset 0 1px 0 rgba(255,255,255,0.24);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
-
-    .header-text-btn {
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 13px;
-      letter-spacing: 0.02em;
-    }
-
-    .header-new {
-      right: 202px;
-    }
-
-    .header-settings {
-      right: 154px;
-    }
-
-    .chat-header .admin-btn {
-      right: 138px;
-      padding: 6px 11px;
-      border-radius: 999px;
-    }
-
-    .header-left {
-      background: rgba(15, 23, 42, 0.76) !important;
-      color: var(--tech-text) !important;
-    }
-
-    .mqtt-status-pill {
-      position: absolute;
-      right: 10px;
-      top: calc(env(safe-area-inset-top, 0px) + 11px);
-      z-index: 180;
-      height: 30px;
-      min-width: 128px;
-      padding: 0 12px;
-      border-radius: 999px;
-      background: rgba(2, 6, 23, 0.74);
-      border: 1px solid rgba(34, 211, 238, 0.42);
-      color: #e0f2fe;
-      font-size: 12px;
-      letter-spacing: 0.04em;
-      font-weight: 900;
+        radial-gradient(circle at 35% 25%, rgba(255,255,255,0.18), transparent 30%),
+        rgba(220, 38, 38, 0.25);
+      color: #fff;
+      cursor: pointer;
       box-shadow:
-        0 0 18px rgba(34, 211, 238, 0.18),
-        inset 0 0 18px rgba(34, 211, 238, 0.08),
-        0 10px 28px rgba(2, 6, 23, 0.42);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-
-    .mqtt-status-pill::before {
-      content: "";
-      position: absolute;
-      inset: -1px;
-      border-radius: inherit;
-      background: linear-gradient(90deg, rgba(34,211,238,0.55), rgba(139,92,246,0.38), rgba(34,211,238,0.55));
-      opacity: 0.28;
-      z-index: -1;
-    }
-
-    .mqtt-dot {
-      width: 9px;
-      height: 9px;
-      background: var(--tech-red);
-      box-shadow: 0 0 9px rgba(239,68,68,0.95), 0 0 18px rgba(239,68,68,0.42);
-    }
-
-    .mqtt-dot.green {
-      background: var(--tech-green);
-      box-shadow: 0 0 10px rgba(34,197,94,1), 0 0 22px rgba(34,197,94,0.55);
-    }
-
-    .mqtt-dot.yellow {
-      background: #f59e0b;
-      box-shadow: 0 0 10px rgba(245,158,11,1), 0 0 22px rgba(245,158,11,0.52);
-    }
-
-    #lobbyScreen.wechat-screen,
-    .screen {
-      background: transparent !important;
-      padding-top: 12px;
-    }
-
-    .wechat-notice {
-      margin: 12px 14px;
-      border-radius: 16px;
-      background: rgba(15, 23, 42, 0.68) !important;
-      color: var(--tech-muted) !important;
-      border: 1px solid rgba(34, 211, 238, 0.20);
-      box-shadow: inset 0 0 20px rgba(34,211,238,0.045), 0 10px 28px rgba(2,6,23,0.20);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-
-    .wechat-notice.nickname-ok {
-      color: #bbf7d0 !important;
-      border-color: rgba(34,197,94,0.28);
-    }
-
-    .wechat-list {
-      margin: 0 12px 18px;
-      background: transparent;
-      border: none;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .wechat-room-button {
-      min-height: 76px;
-      border-radius: 20px;
-      background:
-        linear-gradient(135deg, rgba(15,23,42,0.84), rgba(30,41,59,0.66)) !important;
-      border: 1px solid rgba(34,211,238,0.18);
-      box-shadow:
-        0 14px 34px rgba(2,6,23,0.34),
-        inset 0 1px 0 rgba(255,255,255,0.07),
-        inset 0 0 24px rgba(34,211,238,0.035);
-      overflow: hidden;
+        0 0 28px rgba(239,68,68,0.32),
+        0 12px 34px rgba(0,0,0,0.26),
+        inset 0 0 18px rgba(255,255,255,0.08);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-    }
-
-    .wechat-room-button::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 12px;
-      bottom: 12px;
-      width: 3px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, var(--tech-cyan), var(--tech-violet));
-      box-shadow: 0 0 14px rgba(34,211,238,0.65);
-    }
-
-    .wechat-room-button::after {
-      display: none;
-    }
-
-    .wechat-room-button:active {
-      background: rgba(15,23,42,0.96) !important;
-      transform: scale(0.992);
-    }
-
-    .wechat-avatar {
-      border-radius: 16px;
-      background: linear-gradient(135deg, rgba(34,211,238,0.95), rgba(59,130,246,0.88));
-      box-shadow: 0 0 20px rgba(34,211,238,0.24), inset 0 1px 0 rgba(255,255,255,0.22);
-    }
-
-    .wechat-avatar.locked {
-      background: linear-gradient(135deg, rgba(139,92,246,0.95), rgba(2,132,199,0.88));
-    }
-
-    .wechat-room-title {
-      color: var(--tech-text);
-      letter-spacing: 0.02em;
-    }
-
-    .wechat-room-sub,
-    .wechat-room-time {
-      color: var(--tech-muted);
-    }
-
-    .chat-creator-bar {
-      background: rgba(2,6,23,0.72);
-      color: var(--tech-muted);
-      border-bottom: 1px solid rgba(34,211,238,0.18);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-
-    .chat-box {
-      background: transparent;
-      padding: 16px 14px 18px;
-    }
-
-    .meta {
-      color: rgba(203,213,225,0.70);
-    }
-
-    .meta-name {
-      color: #93c5fd;
-      text-shadow: 0 0 12px rgba(59,130,246,0.32);
-    }
-
-    .bubble {
-      border: 1px solid rgba(148,163,184,0.16);
-      box-shadow: 0 10px 24px rgba(2,6,23,0.20);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-
-    .me .bubble {
-      background: linear-gradient(135deg, rgba(14,165,233,0.95), rgba(37,99,235,0.88));
-      color: #ffffff;
-      border-color: rgba(125,211,252,0.34);
-    }
-
-    .other .bubble {
-      background: rgba(15,23,42,0.78);
-      color: #e2e8f0;
-      border-color: rgba(34,211,238,0.15);
-    }
-
-    .send-area {
-      background: rgba(2,6,23,0.82);
-      border-top: 1px solid rgba(34,211,238,0.18);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
-    }
-
-    .send-area input,
-    .input {
-      background: rgba(15,23,42,0.78) !important;
-      border: 1px solid rgba(34,211,238,0.22) !important;
-      color: var(--tech-text) !important;
-      box-shadow: inset 0 0 18px rgba(34,211,238,0.045);
-    }
-
-    .send-area input::placeholder,
-    .input::placeholder {
-      color: rgba(203,213,225,0.42);
-    }
-
-    .modal-mask {
-      background: rgba(2,6,23,0.62);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
-
-    .modal,
-    .settings-mini-modal,
-    .modal-mask.sheet-mask .modal {
-      background: rgba(15,23,42,0.92) !important;
-      color: var(--tech-text);
-      border: 1px solid rgba(34,211,238,0.28);
-      box-shadow: 0 24px 80px rgba(2,6,23,0.52), inset 0 0 24px rgba(34,211,238,0.045);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-    }
-
-    .modal h3,
-    .card h3,
-    .card h2 {
-      color: var(--tech-text) !important;
-    }
-
-    .modal p,
-    .card p,
-    .current-name-line {
-      color: var(--tech-muted) !important;
-    }
-
-    .current-name-line {
-      background: rgba(2,6,23,0.48);
-      border: 1px solid rgba(34,211,238,0.14);
-    }
-
-    .cancel-btn,
-    .secondary-btn {
-      background: rgba(30,41,59,0.92) !important;
-      color: #e2e8f0 !important;
-      border: 1px solid rgba(148,163,184,0.20) !important;
-    }
-
-    .danger-btn,
-    .emergency-close-btn {
-      background: rgba(220, 38, 38, 0.68) !important;
-      border: 1px solid rgba(254,202,202,0.38) !important;
-      box-shadow: 0 0 22px rgba(220,38,38,0.28), 0 14px 34px rgba(2,6,23,0.36);
-    }
-
-    .app-toast {
-      background: rgba(15,23,42,0.88);
-      border: 1px solid rgba(34,211,238,0.28);
-      box-shadow: 0 0 22px rgba(34,211,238,0.18), 0 12px 34px rgba(2,6,23,0.36);
-    }
-
-    .status {
-      background: rgba(127,29,29,0.72);
-      color: #fecaca;
-      border-top: 1px solid rgba(248,113,113,0.28);
-    }
-
-    @media (max-width: 380px) {
-      .mqtt-status-pill {
-        min-width: 116px;
-        font-size: 11px;
-        padding: 0 9px;
-      }
-
-      .header-new {
-        right: 190px;
-      }
-
-      .header-settings {
-        right: 143px;
-      }
-    }
-
-
-    /* ===== Hotfix 2026-05-09: modal, emergency, logo, nickname prompt ===== */
-    #nicknameNotice {
-      display: none !important;
-    }
-
-    .modal-mask,
-    .modal-mask.sheet-mask {
-      position: fixed !important;
-      inset: 0 !important;
-      z-index: 1000 !important;
-      align-items: center !important;
-      justify-content: center !important;
-      padding: 18px !important;
-    }
-
-    .modal-mask[style*="display: flex"],
-    .modal-mask[style*="display:flex"] {
-      display: flex !important;
-    }
-
-    .settings-mini-modal {
-      width: min(82vw, 270px) !important;
-      max-width: 270px !important;
-      border-radius: 18px !important;
-      padding: 14px !important;
-    }
-
-    .settings-mini-modal h3 {
-      font-size: 15px !important;
-      margin: 0 0 10px !important;
-      text-align: center !important;
-    }
-
-    .settings-mini-modal .input {
-      height: 42px !important;
-      margin-bottom: 10px !important;
-      text-align: center !important;
-    }
-
-    .settings-mini-modal .modal-actions button {
-      padding: 10px !important;
-      font-size: 13px !important;
-    }
-
-    .emergency-bar {
-      display: none;
-      position: fixed !important;
-      left: 50% !important;
-      top: 50% !important;
-      transform: translate(-50%, -50%) !important;
-      width: min(74vw, 310px) !important;
-      z-index: 850 !important;
-      pointer-events: none !important;
-      background: transparent !important;
-      border: none !important;
-    }
-
-    .emergency-close-btn {
-      pointer-events: auto !important;
-      background: rgba(220, 38, 38, 0.72) !important;
-      color: #fff !important;
-      border: 1px solid rgba(255,255,255,0.35) !important;
-      box-shadow: 0 0 24px rgba(220,38,38,0.42), 0 18px 44px rgba(2,6,23,0.46) !important;
-      backdrop-filter: blur(12px) !important;
-      -webkit-backdrop-filter: blur(12px) !important;
-    }
-
-    .top-header .header-text-btn,
-    .chat-header .header-left,
-    .chat-header .admin-btn {
-      z-index: 230 !important;
-      pointer-events: auto !important;
-    }
-
-    .mqtt-status-pill {
-      pointer-events: none !important;
-      z-index: 220 !important;
-    }
-
-    .header-new {
-      right: 210px !important;
-    }
-
-    .header-settings {
-      right: 154px !important;
-    }
-
-    .app-title-with-logo {
-      min-width: 42px !important;
-      min-height: 34px !important;
-    }
-
-    .app-logo {
-      display: block !important;
-      width: 28px !important;
-      height: 28px !important;
-      object-fit: cover !important;
-      background: rgba(15,23,42,0.7) !important;
-    }
-
-    @media (max-width: 380px) {
-      .header-new { right: 200px !important; }
-      .header-settings { right: 146px !important; }
-      .mqtt-status-pill { min-width: 118px !important; padding: 0 8px !important; font-size: 11px !important; }
-    }
-
-  
-
-    /* ===== Final layout fix: logo left, status center, new/settings right ===== */
-    .chat-app {
-      --keyboard-inset: 0px;
-    }
-
-    .top-header.wechat-header,
-    .chat-header {
-      position: relative !important;
-      height: 56px !important;
-      min-height: 56px !important;
-      padding: 0 126px 0 60px !important;
-      overflow: visible !important;
-    }
-
-    .app-title-with-logo {
-      position: absolute !important;
-      left: 12px !important;
-      top: 50% !important;
-      transform: translateY(-50%) !important;
-      width: 38px !important;
-      height: 38px !important;
-      min-width: 38px !important;
-      min-height: 38px !important;
-      padding: 4px !important;
-      border-radius: 14px !important;
-      z-index: 260 !important;
-    }
-
-    .app-logo {
-      display: block !important;
-      width: 30px !important;
-      height: 30px !important;
-      border-radius: 10px !important;
-      object-fit: cover !important;
-      background: transparent !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-    }
-
-    .app-logo-fallback {
-      display: none !important;
-    }
-
-    .mqtt-status-pill {
-      position: absolute !important;
-      left: 50% !important;
-      right: auto !important;
-      top: calc(env(safe-area-inset-top, 0px) + 13px) !important;
-      transform: translateX(-50%) !important;
-      z-index: 255 !important;
-      min-width: 112px !important;
-      height: 30px !important;
-      padding: 0 10px !important;
-      pointer-events: none !important;
-      white-space: nowrap !important;
-    }
-
-    .header-new {
-      right: 72px !important;
-      top: 50% !important;
-      transform: translateY(-50%) !important;
-      z-index: 270 !important;
-    }
-
-    .header-settings {
-      right: 12px !important;
-      top: 50% !important;
-      transform: translateY(-50%) !important;
-      z-index: 270 !important;
-    }
-
-    .chat-header #roomTitle {
-      display: none !important;
-    }
-
-    .chat-header .header-left {
-      left: 12px !important;
-      top: 50% !important;
-      transform: translateY(-50%) !important;
-      z-index: 270 !important;
-    }
-
-    .chat-header .admin-btn {
-      right: 12px !important;
-      top: 50% !important;
-      transform: translateY(-50%) !important;
-      z-index: 270 !important;
-    }
-
-    .chat-creator-bar {
-      text-align: center !important;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      padding-left: 14px !important;
-      padding-right: 14px !important;
-    }
-
-    .send-area {
-      will-change: transform;
-      transform: translateY(calc(-1 * var(--keyboard-inset, 0px))) !important;
-      transition: transform 0.18s ease;
-      z-index: 260 !important;
-    }
-
-    .chat-box {
-      padding-bottom: calc(18px + var(--keyboard-inset, 0px)) !important;
-    }
-
-    .chat-app.keyboard-open .top-header,
-    .chat-app.keyboard-open .chat-header,
-    .chat-app.keyboard-open .mqtt-status-pill {
-      transform: none;
-    }
-
-    @media (max-width: 380px) {
-      .mqtt-status-pill {
-        min-width: 104px !important;
-        font-size: 10px !important;
-        padding: 0 8px !important;
-      }
-      .header-new { right: 66px !important; padding: 6px 9px !important; }
-      .header-settings { right: 10px !important; padding: 6px 9px !important; }
-    }
-
-  
-
-    /* ===== FINAL FIX: logo, emergency two-line button, message alignment ===== */
-    .app-title-with-logo {
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      overflow: hidden !important;
-      background: rgba(255,255,255,0.06) !important;
-      border: 1px solid rgba(34,211,238,0.22) !important;
-      box-shadow: 0 0 18px rgba(34,211,238,0.22) !important;
-    }
-
-    .app-logo {
-      display: block !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-      width: 30px !important;
-      height: 30px !important;
-      min-width: 30px !important;
-      min-height: 30px !important;
-      object-fit: contain !important;
-      border-radius: 9px !important;
-      background: transparent !important;
-    }
-
-    .app-logo-fallback,
-    .logo-fallback {
-      display: none !important;
-    }
-
-    .emergency-bar {
-      display: none;
-      position: fixed !important;
-      left: 50% !important;
-      top: 50% !important;
-      transform: translate(-50%, -50%) !important;
-      width: auto !important;
-      z-index: 900 !important;
-      pointer-events: none !important;
-      background: transparent !important;
-      border: none !important;
-    }
-
-    .emergency-close-btn {
-      pointer-events: auto !important;
-      width: 116px !important;
-      height: 116px !important;
-      min-width: 116px !important;
-      min-height: 116px !important;
-      padding: 0 !important;
-      border-radius: 50% !important;
-      border: 1px solid rgba(255, 255, 255, 0.28) !important;
-      background:
-        radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.24), transparent 30%),
-        linear-gradient(145deg, rgba(248, 113, 113, 0.72), rgba(153, 27, 27, 0.58)) !important;
-      color: #ffffff !important;
-      cursor: pointer !important;
-      box-shadow:
-        0 0 32px rgba(239, 68, 68, 0.52),
-        0 16px 44px rgba(2, 6, 23, 0.46),
-        inset 0 0 18px rgba(255, 255, 255, 0.10) !important;
-      backdrop-filter: blur(15px) !important;
-      -webkit-backdrop-filter: blur(15px) !important;
-
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 7px !important;
-      text-align: center !important;
-      line-height: 1 !important;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-    }
-
-    .emergency-close-btn .emergency-main,
-    .emergency-close-btn .emergency-sub {
-      display: block !important;
-      width: 100% !important;
-      text-align: center !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      transform: translateX(0.04em) !important;
-    }
-
-    .emergency-close-btn .emergency-main {
-      font-size: 18px !important;
-      font-weight: 950 !important;
-      letter-spacing: 0.08em !important;
-      line-height: 1 !important;
-      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.28) !important;
-    }
-
-    .emergency-close-btn .emergency-sub {
-      font-size: 13px !important;
-      font-weight: 850 !important;
-      letter-spacing: 0.12em !important;
-      line-height: 1 !important;
-      opacity: 0.94 !important;
-      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.24) !important;
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0;
+      gap: 6px;
+    }
+
+    .emergency-main,
+    .emergency-sub {
+      display: block;
+      width: 100%;
+      text-align: center;
+      white-space: nowrap;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.42);
+    }
+
+    .emergency-main {
+      font-size: 18px;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      line-height: 1;
+    }
+
+    .emergency-sub {
+      font-size: 13px;
+      font-weight: 850;
+      letter-spacing: 0.12em;
+      line-height: 1;
+      opacity: 0.94;
     }
 
     .emergency-close-btn:active {
-      transform: scale(0.96) !important;
-      opacity: 0.84 !important;
+      transform: scale(0.96);
+      opacity: 0.84;
     }
-
-    .msg-wrap {
-      display: flex !important;
-      flex-direction: column !important;
-      width: 100% !important;
-      margin-bottom: 12px !important;
-    }
-
-    .msg-wrap.me {
-      align-items: flex-end !important;
-      text-align: right !important;
-    }
-
-    .msg-wrap.other {
-      align-items: flex-start !important;
-      text-align: left !important;
-    }
-
-    .msg-wrap.me .meta {
-      text-align: right !important;
-      align-self: flex-end !important;
-    }
-
-    .msg-wrap.other .meta {
-      text-align: left !important;
-      align-self: flex-start !important;
-    }
-
-    .msg-wrap.me .bubble {
-      align-self: flex-end !important;
-      margin-left: auto !important;
-      margin-right: 0 !important;
-      border-top-right-radius: 6px !important;
-    }
-
-    .msg-wrap.other .bubble {
-      align-self: flex-start !important;
-      margin-left: 0 !important;
-      margin-right: auto !important;
-      border-top-left-radius: 6px !important;
-    }
-
-
-    /* ===== Lazy staged loading after calculator unlock ===== */
-    .stage-loader {
-      position: absolute;
-      inset: 0;
-      z-index: 120;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 28px;
-      background:
-        radial-gradient(circle at 50% 35%, rgba(34, 211, 238, 0.14), transparent 35%),
-        rgba(2, 6, 23, 0.84);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-    }
-
-    .stage-loader.show {
-      display: flex;
-    }
-
-    .stage-panel {
-      width: min(86vw, 360px);
-      border-radius: 26px;
-      padding: 26px 22px 22px;
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.86));
-      border: 1px solid rgba(125, 211, 252, 0.28);
-      box-shadow:
-        0 0 36px rgba(34, 211, 238, 0.18),
-        0 24px 70px rgba(0, 0, 0, 0.44),
-        inset 0 0 26px rgba(255, 255, 255, 0.04);
-      text-align: center;
-      color: #e5f3ff;
-    }
-
-    .stage-ring {
-      width: 76px;
-      height: 76px;
-      margin: 0 auto 18px;
-      border-radius: 50%;
-      border: 2px solid rgba(34, 211, 238, 0.18);
-      border-top-color: rgba(34, 211, 238, 0.95);
-      border-right-color: rgba(129, 140, 248, 0.82);
-      animation: stageSpin 0.9s linear infinite;
-      box-shadow: 0 0 30px rgba(34, 211, 238, 0.28);
-    }
-
-    @keyframes stageSpin {
-      to { transform: rotate(360deg); }
-    }
-
-    .stage-title {
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      margin-bottom: 8px;
-    }
-
-    .stage-sub {
-      font-size: 13px;
-      color: rgba(226, 232, 240, 0.70);
-      line-height: 1.5;
-      min-height: 20px;
-    }
-
-    .stage-bar {
-      height: 5px;
-      width: 100%;
-      overflow: hidden;
-      border-radius: 999px;
-      margin-top: 18px;
-      background: rgba(148, 163, 184, 0.20);
-    }
-
-    .stage-bar span {
-      display: block;
-      height: 100%;
-      width: 38%;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #22d3ee, #818cf8, #22c55e);
-      box-shadow: 0 0 16px rgba(34, 211, 238, 0.55);
-      animation: stageSlide 1.25s ease-in-out infinite;
-    }
-
-    @keyframes stageSlide {
-      0% { transform: translateX(-120%); }
-      100% { transform: translateX(280%); }
-    }
-
-    .room-list-loading {
-      margin: 18px 14px;
-      padding: 18px 16px;
-      border-radius: 18px;
-      color: rgba(226, 232, 240, 0.72);
-      text-align: center;
-      background: rgba(15, 23, 42, 0.42);
-      border: 1px solid rgba(125, 211, 252, 0.18);
-      box-shadow: inset 0 0 18px rgba(34, 211, 238, 0.05);
-    }
-
-
-    /* ===== Android/PWA app-mode lock: calculator loads first, page never feels scrollable ===== */
-    :root {
-      --app-height: 100dvh;
-      --keyboard-inset: 0px;
-    }
-
-    html,
-    body {
-      height: var(--app-height) !important;
-      min-height: var(--app-height) !important;
-      max-height: var(--app-height) !important;
-      overflow: hidden !important;
-      overscroll-behavior: none !important;
-      touch-action: manipulation !important;
-    }
-
-    body {
-      position: fixed !important;
-      inset: 0 !important;
-      width: 100vw !important;
-    }
-
-    .calculator,
-    .chat-app {
-      height: var(--app-height) !important;
-      min-height: var(--app-height) !important;
-      max-height: var(--app-height) !important;
-      overflow: hidden !important;
-      overscroll-behavior: none !important;
-    }
-
-    .top-header,
-    .chat-header {
-      flex: 0 0 56px !important;
-    }
-
-    .screen,
-    .chat-box {
-      overscroll-behavior: contain !important;
-    }
-
-    .chat-app.keyboard-open .top-header,
-    .chat-app.keyboard-open .chat-header {
-      position: relative !important;
-      top: 0 !important;
-      flex: 0 0 56px !important;
-    }
-
   </style>
 </head>
 
@@ -1899,73 +662,61 @@
 </div>
 
 <div class="chat-app" id="chatApp">
+  <div class="app-header">
+    <div class="header-left">
+      <img class="app-logo" src="/vx/vx-logo-180.png" alt="logo" />
+      <button class="header-btn" id="backBtn" onclick="backToLobby()" style="display:none;">房间</button>
+    </div>
 
-  <div class="mqtt-status-pill" id="mqttStatusPill"><span class="mqtt-dot" id="mqttDot"></span><span id="mqttText">数据已断开</span></div>
+    <div class="data-status" id="dataStatus">
+      <span class="status-dot"></span>
+      <span id="dataStatusText">数据已断开</span>
+    </div>
 
-  <div class="top-header wechat-header" id="lobbyHeader" style="display:none;">
-    <span class="app-title-with-logo">
-      <img class="app-logo" src="/vx/vx-logo-180.png?v=fast-lazy-20260509" alt="logo" />
-    </span>
-    <button class="header-text-btn header-new" onclick="openCreateRoomModal()">新建</button>
-    <button class="header-text-btn header-settings" onclick="openSettingsModal()">设置</button>
+    <div class="header-right" id="lobbyActions">
+      <button class="header-btn" onclick="openCreateRoomModal()">新建</button>
+      <button class="header-btn" onclick="openSettingsModal()">设置</button>
+    </div>
+
+    <div class="header-right" id="roomActions" style="display:none;">
+      <button class="header-btn" onclick="openAdminModal()">管理</button>
+      <button class="header-btn" onclick="openSettingsModal()">设置</button>
+    </div>
   </div>
 
-  <div class="screen wechat-screen" id="lobbyScreen">
-    <div id="nicknameNotice" class="wechat-notice" style="display:none;"></div>
-    <div id="roomList" class="wechat-list"></div>
+  <div class="app-body">
+    <div class="screen" id="lobbyScreen">
+      <div class="nickname-line" id="nicknameLine">昵称：未设置</div>
+      <div class="room-list" id="roomList"></div>
+    </div>
+
+    <div class="chat-shell" id="chatShell">
+      <div class="room-subbar">
+        <span id="roomInfoText">房间</span>
+        <span class="history-tip" id="historyTip"></span>
+      </div>
+      <div class="chat-box" id="chatBox"></div>
+    </div>
   </div>
 
-  <div class="chat-header" id="roomHeader" style="display:none;">
-    <button class="header-left" onclick="backToLobby()">房间</button>
-    <span id="roomTitle">聊天室</span>
-    <button class="admin-btn" onclick="openAdminModal()">管理</button>
+  <div class="send-area" id="sendArea">
+    <input id="messageInput" placeholder="输入消息..." autocomplete="off" />
+    <button onclick="sendMessage()">发送</button>
   </div>
 
-  <div class="chat-creator-bar" id="roomCreatorBar"></div>
   <div class="emergency-bar" id="emergencyBar">
     <button class="emergency-close-btn" onclick="emergencyClose()">
       <span class="emergency-main">有内鬼</span>
       <span class="emergency-sub">紧急关闭</span>
     </button>
   </div>
-  <div class="chat-box" id="chatBox" style="display:none;"></div>
-
-  <div class="status" id="status"></div>
-
-  <div class="app-toast" id="appToast"></div>
-
-  <div class="stage-loader" id="stageLoader" aria-live="polite">
-    <div class="stage-panel">
-      <div class="stage-ring"></div>
-      <div class="stage-title" id="stageTitle">正在准备</div>
-      <div class="stage-sub" id="stageSub">分步加载中...</div>
-      <div class="stage-bar"><span></span></div>
-    </div>
-  </div>
-
-  <div class="send-area" id="sendArea" style="display:none;">
-    <input id="messageInput" placeholder="输入消息..." />
-    <button onclick="sendMessage()">发送</button>
-  </div>
-
 </div>
 
-<div class="modal-mask sheet-mask" id="createRoomModal">
-  <div class="modal create-mini-modal">
-    <h3>新建聊天室</h3>
-    <p>房间名限制：最多 5 个汉字或 8 个英文；不能和已有聊天室重名。</p>
-    <input class="input" id="newRoomName" placeholder="房间名称，例如：好友 / Work" maxlength="16" />
-    <input class="input" id="newRoomPassword" placeholder="房间密码，至少 4 位" type="password" />
-    <div class="modal-actions">
-      <button class="cancel-btn" onclick="closeCreateRoomModal()">取消</button>
-      <button class="confirm-btn" onclick="createRoom()">创建</button>
-    </div>
-  </div>
-</div>
+<div class="toast" id="toast"></div>
 
-<div class="modal-mask sheet-mask" id="settingsModal">
-  <div class="modal settings-mini-modal">
-    <h3 id="currentNameLine">昵称：未设置</h3>
+<div class="modal-mask" id="settingsModal">
+  <div class="modal">
+    <h3>设置昵称</h3>
     <input class="input" id="nameInput" placeholder="输入昵称" />
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeSettingsModal()">取消</button>
@@ -1974,11 +725,22 @@
   </div>
 </div>
 
-<div class="modal-mask sheet-mask" id="joinModal">
+<div class="modal-mask" id="createRoomModal">
+  <div class="modal">
+    <h3>新建房间</h3>
+    <input class="input" id="newRoomName" placeholder="房间名称：5个汉字或8个英文以内" />
+    <input class="input" id="newRoomPassword" placeholder="房间密码，至少4位" type="password" />
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeCreateRoomModal()">取消</button>
+      <button class="confirm-btn" onclick="createRoom()">创建</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="joinModal">
   <div class="modal">
     <h3>进入房间</h3>
-    <p id="joinRoomText"></p>
-    <input class="input" id="joinRoomPassword" placeholder="输入房间密码或管理密码" type="password" />
+    <input class="input" id="joinRoomPassword" placeholder="房间密码或管理密码" type="password" />
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeJoinModal()">取消</button>
       <button class="confirm-btn" onclick="confirmJoinRoom()">进入</button>
@@ -1986,10 +748,9 @@
   </div>
 </div>
 
-<div class="modal-mask sheet-mask" id="adminModal">
+<div class="modal-mask" id="adminModal">
   <div class="modal">
     <h3>房间管理</h3>
-    <p>输入管理密码后，可以清空当前房间聊天记录；自建房间还可以直接删除房间。</p>
     <input class="input" id="adminPassword" placeholder="管理密码" type="password" />
     <div class="modal-actions vertical">
       <button class="confirm-btn" onclick="clearCurrentRoomMessagesWithAdmin()">清空当前房间聊天</button>
@@ -2007,20 +768,18 @@
   };
 
   const ADMIN_PASSWORD_HASH = "21bc5b04f12d8ba253d1ff68ad358622606c8034be1fdeb99f8d31a0691a1b8e";
-
   const API = "https://api.github.com";
-
   const ROOM_PREFIX = "ENC_ROOM_META_V1:";
   const MSG_PREFIX = "ENC_ROOM_MSG_V1:";
 
   const MQTT_WS_URL = "wss://afa67eee.ala.cn-hangzhou.emqxsl.cn:8084/mqtt";
   const MQTT_USERNAME = "vx_user";
   const MQTT_PASSWORD = "vx_2026_chat_private_520_xx";
-  const MQTT_KEEPALIVE_SECONDS = 30;
-  const MQTT_RECONNECT_MS = 5000;
-  const GIST_LOBBY_FALLBACK_MS = 5000;
-  const GIST_CHAT_FALLBACK_MS = 2000;
-  const GIST_IDLE_REFRESH_MS = 30000;
+  const MQTT_PREFIX = "vx/app/calcchat/v1";
+  const LOBBY_FALLBACK_MS = 8000;
+  const ROOM_FALLBACK_MS = 6000;
+  const GIST_RETRY_MS = 3500;
+  const MAX_CACHE_MESSAGES = 800;
 
   const DEFAULT_PUBLIC_ROOM = {
     type: "room",
@@ -2030,46 +789,38 @@
     createdBy: "System",
     createdAt: 0,
     noPassword: true,
-    commentId: null
+    commentId: null,
+    version: 3
   };
 
   let calcExpression = "";
   let unlockInput = "";
   let isFakeResult = false;
-
+  let cTapTime = 0;
   let appConfig = null;
   let activeUnlockCode = "";
   let pendingRoom = null;
+  let packetId = 1;
 
-  let lastClearTapAt = 0;
-  let clearTapCount = 0;
-  let stableAppHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-
-  let mqtt = {
-    ws: null,
-    connected: false,
-    connecting: false,
-    packetId: 1,
-    reconnectTimer: null,
-    pingTimer: null,
-    topicPrefix: "",
-    clientId: "",
-    subscribedRooms: new Set()
-  };
-
-  let state = {
+  const state = {
     senderId: localStorage.getItem("vx_sender_id") || crypto.randomUUID(),
     displayName: localStorage.getItem("vx_display_name") || "",
     currentRoom: null,
+    rooms: [],
     timer: null,
     lobbyTimer: null,
+    gistRetryTimer: null,
     idleTimer: null,
-    lastRenderHash: "",
     lastRoomsHash: "",
-    loadedMessageIds: new Set(),
-    roomLoadedOnce: false,
-    toastTimer: null,
-    rooms: []
+    roomSeen: new Set(),
+    mqtt: {
+      ws: null,
+      connected: false,
+      reconnectTimer: null,
+      pingTimer: null,
+      clientId: "vx_" + Math.random().toString(16).slice(2) + "_" + Date.now(),
+      activeTopic: null
+    }
   };
 
   localStorage.setItem("vx_sender_id", state.senderId);
@@ -2077,129 +828,72 @@
   const calculator = document.getElementById("calculator");
   const chatApp = document.getElementById("chatApp");
   const display = document.getElementById("display");
-
-  const lobbyHeader = document.getElementById("lobbyHeader");
   const lobbyScreen = document.getElementById("lobbyScreen");
-  const roomHeader = document.getElementById("roomHeader");
-  const roomTitle = document.getElementById("roomTitle");
   const roomList = document.getElementById("roomList");
-  const nicknameNotice = document.getElementById("nicknameNotice");
-  const settingsModal = document.getElementById("settingsModal");
-  const createRoomModal = document.getElementById("createRoomModal");
-  const roomCreatorBar = document.getElementById("roomCreatorBar");
-  const emergencyBar = document.getElementById("emergencyBar");
-
+  const nicknameLine = document.getElementById("nicknameLine");
+  const chatShell = document.getElementById("chatShell");
   const chatBox = document.getElementById("chatBox");
   const sendArea = document.getElementById("sendArea");
   const messageInput = document.getElementById("messageInput");
-  const statusEl = document.getElementById("status");
-  const appToast = document.getElementById("appToast");
-  const stageLoader = document.getElementById("stageLoader");
-  const stageTitle = document.getElementById("stageTitle");
-  const stageSub = document.getElementById("stageSub");
-  const mqttDot = document.getElementById("mqttDot");
-  const mqttText = document.getElementById("mqttText");
+  const dataStatus = document.getElementById("dataStatus");
+  const dataStatusText = document.getElementById("dataStatusText");
+  const backBtn = document.getElementById("backBtn");
+  const lobbyActions = document.getElementById("lobbyActions");
+  const roomActions = document.getElementById("roomActions");
+  const roomInfoText = document.getElementById("roomInfoText");
+  const historyTip = document.getElementById("historyTip");
+  const emergencyBar = document.getElementById("emergencyBar");
+  const toastEl = document.getElementById("toast");
+
+  function updateAppHeight() {
+    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty("--app-height", h + "px");
+
+    if (window.visualViewport) {
+      const keyboard = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
+      document.documentElement.style.setProperty("--keyboard-offset", keyboard + "px");
+    }
+  }
+
+  updateAppHeight();
+  window.addEventListener("resize", updateAppHeight);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", updateAppHeight);
+    window.visualViewport.addEventListener("scroll", updateAppHeight);
+  }
+
+  document.addEventListener("touchmove", function(e) {
+    const scrollable = e.target.closest(".screen, .chat-box, .modal");
+    if (!scrollable) e.preventDefault();
+  }, { passive: false });
 
   function updateDisplay() {
-    const showText = (calcExpression || "0")
-      .replaceAll("*", "×")
-      .replaceAll("/", "÷");
-
+    const showText = (calcExpression || "0").replaceAll("*", "×").replaceAll("/", "÷");
     display.textContent = showText;
   }
 
-  function setStableAppHeight(force) {
-    const active = document.activeElement;
-    const keyboardLikelyOpen = active && /^(INPUT|TEXTAREA)$/.test(active.tagName);
-    const h = window.innerHeight || document.documentElement.clientHeight || stableAppHeight || 0;
-
-    if (force || !stableAppHeight || h > stableAppHeight || !keyboardLikelyOpen) {
-      stableAppHeight = h;
-    }
-
-    if (stableAppHeight) {
-      document.documentElement.style.setProperty("--app-height", stableAppHeight + "px");
-    }
-  }
-
-  function requestAndroidFullscreen() {
-    try {
-      const isStandalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
-      if (isStandalone || document.fullscreenElement) return;
-
-      const el = document.documentElement;
-      const fn = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-      if (fn) {
-        const result = fn.call(el);
-        if (result && result.catch) result.catch(function() {});
-      }
-    } catch (e) {}
-  }
-
-  function activateAppMode() {
-    setStableAppHeight(true);
-    window.scrollTo(0, 0);
-    document.documentElement.style.overscrollBehavior = "none";
-    document.body.style.overscrollBehavior = "none";
-    document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.inset = "0";
-  }
-
-  async function forceRefreshHtml() {
-    calcExpression = "更新中";
-    unlockInput = "";
-    isFakeResult = true;
-    updateDisplay();
-
-    try {
-      disconnectMQTT && disconnectMQTT();
-    } catch (e) {}
-
-    try {
-      if ("caches" in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map(function(key) { return caches.delete(key); }));
-      }
-    } catch (e) {}
-
-    try {
-      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(function(reg) { return reg.unregister(); }));
-      }
-    } catch (e) {}
-
-    const url = new URL(window.location.href);
-    url.searchParams.set("_html", String(Date.now()));
-    window.location.replace(url.toString());
-  }
-
   function showRandomFakeCalculation() {
-    const examples = [
-      "128+256=384",
-      "96÷3=32",
-      "45×7=315",
-      "980-275=705",
-      "36×12=432",
-      "720÷8=90",
-      "58+349=407",
-      "1500-680=820",
-      "24×19=456",
-      "999÷9=111",
-      "375+425=800",
-      "64×8=512",
-      "144÷12=12",
-      "870-239=631"
-    ];
-
-    calcExpression = examples[Math.floor(Math.random() * examples.length)]
-      .replaceAll("×", "*")
-      .replaceAll("÷", "/");
-
+    const examples = ["128+256=384","96÷3=32","45×7=315","980-275=705","36×12=432","720÷8=90","58+349=407","1500-680=820"];
+    calcExpression = examples[Math.floor(Math.random() * examples.length)].replaceAll("×", "*").replaceAll("÷", "/");
     unlockInput = "";
     isFakeResult = true;
     updateDisplay();
+  }
+
+  function triggerHardReload() {
+    display.textContent = "更新中";
+    try {
+      localStorage.setItem("vx_force_reload_at", String(Date.now()));
+      if ("caches" in window) {
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).finally(() => {
+          location.replace(location.pathname + "?v=" + Date.now());
+        });
+      } else {
+        location.replace(location.pathname + "?v=" + Date.now());
+      }
+    } catch (e) {
+      location.replace(location.pathname + "?v=" + Date.now());
+    }
   }
 
   function appendNumber(num) {
@@ -2208,26 +902,15 @@
       isFakeResult = false;
     }
 
-    if (calcExpression === "0" || calcExpression === "Error") {
-      calcExpression = num;
-    } else {
-      calcExpression += num;
-    }
-
+    calcExpression = (calcExpression === "0" || calcExpression === "Error") ? num : calcExpression + num;
     unlockInput += num;
     updateDisplay();
   }
 
   function appendOperator(op) {
     let secretOp = op;
-
-    if (op === "*") {
-      secretOp = "✖️";
-    }
-
-    if (op === "/") {
-      secretOp = "÷";
-    }
+    if (op === "*") secretOp = "✖️";
+    if (op === "/") secretOp = "÷";
 
     if (isFakeResult) {
       calcExpression = "";
@@ -2242,13 +925,7 @@
     }
 
     const last = calcExpression.slice(-1);
-
-    if ("+-*/%".includes(last)) {
-      calcExpression = calcExpression.slice(0, -1) + op;
-    } else {
-      calcExpression += op;
-    }
-
+    calcExpression = "+-*/%".includes(last) ? calcExpression.slice(0, -1) + op : calcExpression + op;
     updateDisplay();
   }
 
@@ -2257,11 +934,7 @@
       calcExpression = "";
       isFakeResult = false;
     }
-
-    if (calcExpression === "Error") {
-      calcExpression = "";
-    }
-
+    if (calcExpression === "Error") calcExpression = "";
     calcExpression += ".";
     unlockInput += ".";
     updateDisplay();
@@ -2269,21 +942,11 @@
 
   function clearCalc() {
     const now = Date.now();
-
-    if (now - lastClearTapAt <= 650) {
-      clearTapCount += 1;
-    } else {
-      clearTapCount = 1;
-    }
-
-    lastClearTapAt = now;
-
-    if (clearTapCount >= 2) {
-      clearTapCount = 0;
-      forceRefreshHtml();
+    if (now - cTapTime < 650) {
+      triggerHardReload();
       return;
     }
-
+    cTapTime = now;
     calcExpression = "";
     unlockInput = "";
     isFakeResult = false;
@@ -2298,7 +961,6 @@
       updateDisplay();
       return;
     }
-
     calcExpression = calcExpression.slice(0, -1);
     unlockInput = unlockInput.slice(0, -1);
     updateDisplay();
@@ -2315,24 +977,13 @@
       }
 
       if (unlockInput) {
-        activateAppMode();
-        requestAndroidFullscreen();
         const unlocked = await tryUnlock();
-
-        if (unlocked) {
-          return;
-        }
+        if (unlocked) return;
       }
 
-      if (!calcExpression) {
-        return;
-      }
-
+      if (!calcExpression) return;
       const last = calcExpression.slice(-1);
-
-      if ("+-*/%".includes(last)) {
-        return;
-      }
+      if ("+-*/%".includes(last)) return;
 
       if (!/^[0-9+\-*/%. ]+$/.test(calcExpression)) {
         calcExpression = "Error";
@@ -2342,16 +993,9 @@
       }
 
       const result = Function('"use strict"; return (' + calcExpression + ')')();
-
-      if (!isFinite(result)) {
-        calcExpression = "Error";
-      } else {
-        calcExpression = String(Number(result.toFixed(8)));
-      }
-
+      calcExpression = isFinite(result) ? String(Number(result.toFixed(8))) : "Error";
       unlockInput = "";
       updateDisplay();
-
     } catch (e) {
       calcExpression = "Error";
       unlockInput = "";
@@ -2362,248 +1006,132 @@
   function toBase64(buffer) {
     const bytes = new Uint8Array(buffer);
     let binary = "";
-
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
     return btoa(binary);
   }
 
   function fromBase64(base64) {
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
-
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
     return bytes;
   }
 
   async function deriveKey(password, salt) {
     const encoder = new TextEncoder();
-
-    const baseKey = await crypto.subtle.importKey(
-      "raw",
-      encoder.encode(password),
-      "PBKDF2",
-      false,
-      ["deriveKey"]
-    );
-
+    const baseKey = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveKey"]);
     return crypto.subtle.deriveKey(
-      {
-        name: "PBKDF2",
-        salt: salt,
-        iterations: 180000,
-        hash: "SHA-256"
-      },
+      { name: "PBKDF2", salt: salt, iterations: 180000, hash: "SHA-256" },
       baseKey,
-      {
-        name: "AES-GCM",
-        length: 256
-      },
+      { name: "AES-GCM", length: 256 },
       false,
       ["encrypt", "decrypt"]
     );
   }
 
   async function deriveKeyFromText(password, saltText) {
-    const salt = new TextEncoder().encode(saltText);
-    return deriveKey(password, salt);
+    return deriveKey(password, new TextEncoder().encode(saltText));
   }
 
   async function encryptPayload(obj, password, saltText) {
     const encoder = new TextEncoder();
     const key = await deriveKeyFromText(password, saltText);
     const iv = crypto.getRandomValues(new Uint8Array(12));
-
-    const encrypted = await crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv: iv
-      },
-      key,
-      encoder.encode(JSON.stringify(obj))
-    );
-
-    return {
-      iv: toBase64(iv),
-      data: toBase64(encrypted)
-    };
+    const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoder.encode(JSON.stringify(obj)));
+    return { iv: toBase64(iv), data: toBase64(encrypted) };
   }
 
   async function decryptPayload(payload, password, saltText) {
     const decoder = new TextDecoder();
     const key = await deriveKeyFromText(password, saltText);
-
-    const iv = fromBase64(payload.iv);
-    const data = fromBase64(payload.data);
-
-    const decrypted = await crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: iv
-      },
-      key,
-      data
-    );
-
+    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromBase64(payload.iv) }, key, fromBase64(payload.data));
     return JSON.parse(decoder.decode(decrypted));
   }
 
   function getEncryptedConfigCandidates() {
     const list = [];
-
     const saved = localStorage.getItem("vx_custom_encrypted_config");
-
     if (saved) {
       try {
         const customConfig = JSON.parse(saved);
-
-        if (
-          customConfig &&
-          customConfig.salt &&
-          customConfig.iv &&
-          customConfig.data
-        ) {
-          list.push({
-            type: "custom",
-            config: customConfig
-          });
+        if (customConfig && customConfig.salt && customConfig.iv && customConfig.data) {
+          list.push({ type: "custom", config: customConfig });
         }
       } catch (e) {}
     }
-
-    list.push({
-      type: "default",
-      config: DEFAULT_ENCRYPTED_CONFIG
-    });
-
+    list.push({ type: "default", config: DEFAULT_ENCRYPTED_CONFIG });
     return list;
   }
 
   async function decryptOneConfig(encryptedConfig, unlockCode) {
     const decoder = new TextDecoder();
-
-    const salt = fromBase64(encryptedConfig.salt);
-    const iv = fromBase64(encryptedConfig.iv);
-    const data = fromBase64(encryptedConfig.data);
-
-    const key = await deriveKey(unlockCode, salt);
-
+    const key = await deriveKey(unlockCode, fromBase64(encryptedConfig.salt));
     const decrypted = await crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: iv
-      },
+      { name: "AES-GCM", iv: fromBase64(encryptedConfig.iv) },
       key,
-      data
+      fromBase64(encryptedConfig.data)
     );
-
     return JSON.parse(decoder.decode(decrypted));
   }
 
   async function decryptConfig(unlockCode) {
     const candidates = getEncryptedConfigCandidates();
-
     let lastError = null;
-
     for (const item of candidates) {
       try {
-        const config = await decryptOneConfig(item.config, unlockCode);
-
-        return {
-          config: config,
-          type: item.type
-        };
+        return { config: await decryptOneConfig(item.config, unlockCode), type: item.type };
       } catch (e) {
         lastError = e;
       }
     }
-
     throw lastError || new Error("密码错误");
-  }
-
-  async function encryptConfigWithUnlockCode(config, unlockCode) {
-    const encoder = new TextEncoder();
-
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-
-    const key = await deriveKey(unlockCode, salt);
-
-    const encrypted = await crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv: iv
-      },
-      key,
-      encoder.encode(JSON.stringify(config))
-    );
-
-    return {
-      salt: toBase64(salt),
-      iv: toBase64(iv),
-      data: toBase64(encrypted)
-    };
   }
 
   function getUnlockCodeCandidates(input) {
     const variants = new Set();
-
     variants.add(input);
     variants.add(input.replace(/(\*|×|✖️|✖)/g, "✖️"));
     variants.add(input.replace(/(\*|×|✖️|✖)/g, "×"));
     variants.add(input.replace(/(\*|×|✖️|✖)/g, "*"));
     variants.add(input.replace(/(\*|×|✖️|✖)/g, "✖"));
-
     return Array.from(variants);
   }
 
   async function tryUnlock() {
     const candidates = getUnlockCodeCandidates(unlockInput);
-
     for (const code of candidates) {
       try {
         const result = await decryptConfig(code);
-
         appConfig = result.config;
         activeUnlockCode = code;
-
         openApp();
         return true;
-
       } catch (e) {}
     }
-
-    if (unlockInput.length > 40) {
-      unlockInput = "";
-    }
-
+    if (unlockInput.length > 40) unlockInput = "";
     return false;
   }
 
-  function generateRoomNo() {
-    return String(Math.floor(100000 + Math.random() * 900000));
+  function showToast(text, ms = 1500) {
+    toastEl.textContent = text;
+    toastEl.style.display = "block";
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(() => {
+      toastEl.style.display = "none";
+    }, ms);
   }
 
-  function getRoomNo(room) {
-    if (room.roomNo) return room.roomNo;
-
-    const text = String(room.roomId || "");
-    let sum = 0;
-
-    for (let i = 0; i < text.length; i++) {
-      sum = (sum + text.charCodeAt(i) * (i + 1)) % 900000;
+  function setDataStatus(type) {
+    dataStatus.className = "data-status";
+    if (type === "connected") {
+      dataStatus.classList.add("connected");
+      dataStatusText.textContent = "数据连接中";
+    } else if (type === "connecting") {
+      dataStatus.classList.add("connecting");
+      dataStatusText.textContent = "数据连接中";
+    } else {
+      dataStatusText.textContent = "数据已断开";
     }
-
-    return String(100000 + sum).slice(0, 6);
-  }
-
-  function getDefaultRoomPassword() {
-    return String(appConfig.chatSecret || "default") + "::default-no-password-room-v1";
   }
 
   function hasNickname() {
@@ -2612,291 +1140,44 @@
 
   function requireNickname() {
     if (hasNickname()) return true;
-    alert("请先设置昵称");
     openSettingsModal();
     return false;
   }
 
-  function makeRoomSecret() {
-    const bytes = crypto.getRandomValues(new Uint8Array(32));
-    return toBase64(bytes) + "::" + crypto.randomUUID();
+  function updateNicknameLine() {
+    nicknameLine.textContent = "昵称：" + (state.displayName || "未设置");
   }
 
-  async function encryptAdminRoomSecret(roomId, roomSecret) {
-    return encryptPayload(
-      {
-        ok: true,
-        roomId: roomId,
-        roomSecret: roomSecret,
-        admin: true
-      },
-      appConfig.chatSecret,
-      "vx-room-admin:" + roomId
-    );
-  }
-
-  async function decryptAdminRoomSecret(room) {
-    if (!room.adminSecret) return null;
-
-    const data = await decryptPayload(
-      room.adminSecret,
-      appConfig.chatSecret,
-      "vx-room-admin:" + room.roomId
-    );
-
-    if (!data.ok || data.roomId !== room.roomId || !data.roomSecret) return null;
-    return data.roomSecret;
-  }
-
-  function updateNicknameNotice() {
-    if (!nicknameNotice) return;
-    nicknameNotice.style.display = "none";
-    nicknameNotice.textContent = "";
-  }
-
-  function hideAllScreens() {
-    lobbyHeader.style.display = "none";
-    lobbyScreen.style.display = "none";
-    roomHeader.style.display = "none";
-    roomCreatorBar.style.display = "none";
-    emergencyBar.style.display = "none";
-    chatBox.style.display = "none";
-    sendArea.style.display = "none";
-    setStatus("");
-  }
-
-  async function openApp() {
-    // 第一步只显示 App 外壳，不马上做大量网络请求，避免进入后卡住。
-    activateAppMode();
+  function openApp() {
     calculator.style.display = "none";
     chatApp.style.display = "flex";
-
-    clearInterval(state.timer);
-    clearInterval(state.lobbyTimer);
-    clearTimeout(state.idleTimer);
-
-    state.currentRoom = null;
-    state.lastRenderHash = "";
-    state.lastRoomsHash = "";
-    state.loadedMessageIds = new Set();
-    state.roomLoadedOnce = false;
-
-    hideAllScreens();
-    lobbyHeader.style.display = "flex";
-    lobbyScreen.style.display = "block";
     emergencyBar.style.display = "block";
-    if (roomList) {
-      roomList.innerHTML = '<div class="room-list-loading">正在准备房间列表...</div>';
-    }
-
-    showStage("正在打开安全界面", "第 1 步 / 4：计算器已完成，开始加载聊天外壳");
-    await nextFrame();
-
-    showStage("正在启动实时通道", "第 2 步 / 4：连接 EMQX 数据后台");
-    setTimeout(connectMQTT, 80);
-    await sleep(160);
-
-    showStage("正在读取房间数据", "第 3 步 / 4：从 Gist 拉取房间列表");
+    updateNicknameLine();
     showLobby();
-  }
-
-  function openSettingsModal() {
-    document.getElementById("nameInput").value = state.displayName || "";
-    const currentNameLine = document.getElementById("currentNameLine");
-    if (currentNameLine) {
-      currentNameLine.textContent = "昵称：" + (state.displayName || "未设置");
-    }
-    settingsModal.style.display = "flex";
     resetIdleTimer();
-  }
-
-  function closeSettingsModal() {
-    settingsModal.style.display = "none";
-  }
-
-  function openCreateRoomModal() {
-    if (!requireNickname()) return;
-    document.getElementById("newRoomName").value = "";
-    document.getElementById("newRoomPassword").value = "";
-    createRoomModal.style.display = "flex";
-    resetIdleTimer();
-  }
-
-  function closeCreateRoomModal() {
-    createRoomModal.style.display = "none";
-  }
-
-  function getRoomNameWeight(name) {
-    let weight = 0;
-    for (const ch of name) {
-      if (/[^\x00-\xff]/.test(ch)) {
-        weight += 1.6;
-      } else {
-        weight += 1;
-      }
-    }
-    return weight;
-  }
-
-  function normalizeRoomName(name) {
-    return String(name || "").trim().toLowerCase();
-  }
-
-  function validateRoomName(roomName) {
-    if (!roomName) {
-      alert("请输入房间名称");
-      return false;
-    }
-
-    if (getRoomNameWeight(roomName) > 8) {
-      alert("房间名太长：最多 5 个汉字或 8 个英文。混合名称也不能超过同等长度。");
-      return false;
-    }
-
-    const target = normalizeRoomName(roomName);
-    const duplicate = state.rooms.some(room => normalizeRoomName(room.roomName) === target);
-
-    if (duplicate) {
-      alert("房间名称已存在，请换一个名称。");
-      return false;
-    }
-
-    return true;
-  }
-
-  function saveName() {
-    const name = document.getElementById("nameInput").value.trim();
-
-    if (!name) {
-      alert("请输入昵称");
-      return;
-    }
-
-    state.displayName = name;
-    localStorage.setItem("vx_display_name", name);
-    updateNicknameNotice();
-    const currentNameLine = document.getElementById("currentNameLine");
-    if (currentNameLine) {
-      currentNameLine.textContent = "昵称：" + state.displayName;
-    }
-    closeSettingsModal();
-  }
-
-  function resetName() {
-    localStorage.removeItem("vx_display_name");
-    state.displayName = "";
-    document.getElementById("nameInput").value = "";
-    updateNicknameNotice();
-  }
-
-  async function changeUnlockCode() {
-    const newCode = document.getElementById("newUnlockCode").value.trim();
-    const confirmCode = document.getElementById("confirmUnlockCode").value.trim();
-
-    if (!newCode || !confirmCode) {
-      alert("请输入新的进入密码并再次确认");
-      return;
-    }
-
-    if (newCode !== confirmCode) {
-      alert("两次输入的进入密码不一致");
-      return;
-    }
-
-    if (!/^[0-9+\-*/×÷.%✖️✖\uFE0F]{4,40}$/.test(newCode)) {
-      alert("进入密码只能使用数字和基础运算符，例如 123456✖️");
-      return;
-    }
-
-    if (!appConfig) {
-      alert("当前配置未解锁，请重新进入");
-      return;
-    }
-
-    try {
-      const newEncryptedConfig = await encryptConfigWithUnlockCode(appConfig, newCode);
-
-      localStorage.setItem(
-        "vx_custom_encrypted_config",
-        JSON.stringify(newEncryptedConfig)
-      );
-
-      activeUnlockCode = newCode;
-
-      document.getElementById("newUnlockCode").value = "";
-      document.getElementById("confirmUnlockCode").value = "";
-
-      alert("进入密码已修改。下次可以使用新密码，也可以继续使用原始永久备用密码。");
-
-    } catch (e) {
-      alert("修改失败：" + e.message);
-    }
-  }
-
-  function showLobby() {
-    hideAllScreens();
-
-    lobbyHeader.style.display = "flex";
-    lobbyScreen.style.display = "block";
-    emergencyBar.style.display = "block";
-
-    updateNicknameNotice();
-
-    clearInterval(state.timer);
-    clearInterval(state.lobbyTimer);
-
-    state.currentRoom = null;
-    state.lastRenderHash = "";
-    state.loadedMessageIds = new Set();
-    state.roomLoadedOnce = false;
-    hideToast();
-
-    if (roomList && !state.rooms.length) {
-      roomList.innerHTML = '<div class="room-list-loading">正在加载房间列表...</div>';
-    }
-    loadRooms();
-    state.lobbyTimer = setInterval(loadRooms, getLobbyRefreshMs());
-
-    resetIdleTimer();
-  }
-
-  function resetIdleTimer() {
-    clearTimeout(state.idleTimer);
-
-    state.idleTimer = setTimeout(function() {
-      lockChat();
-    }, 60000);
+    requestIdleCallbackSafe(() => {
+      connectMQTT();
+      loadRooms();
+      startGistRetryLoop();
+      flushPendingGistMessages();
+    });
   }
 
   function lockChat() {
-    chatApp.style.display = "none";
-    calculator.style.display = "flex";
-
+    disconnectMQTT();
     clearInterval(state.timer);
     clearInterval(state.lobbyTimer);
+    clearInterval(state.gistRetryTimer);
     clearTimeout(state.idleTimer);
-
-    state.timer = null;
-    state.lobbyTimer = null;
-    state.idleTimer = null;
     state.currentRoom = null;
-    disconnectMQTT();
     appConfig = null;
     activeUnlockCode = "";
     unlockInput = "";
-
-    closeJoinModal();
-    closeAdminModal();
-    closeSettingsModal();
-    closeCreateRoomModal();
-    hideToast();
-    hideStage();
-
+    closeAllModals();
+    chatApp.style.display = "none";
+    emergencyBar.style.display = "none";
+    calculator.style.display = "flex";
     showRandomFakeCalculation();
-  }
-
-  function panicExit() {
-    lockChat();
   }
 
   function emergencyClose() {
@@ -2905,140 +1186,154 @@
     lockChat();
   }
 
+  function resetIdleTimer() {
+    clearTimeout(state.idleTimer);
+    state.idleTimer = setTimeout(lockChat, 60000);
+  }
+
+  ["pointerdown", "keydown", "input", "touchstart"].forEach(eventName => {
+    document.addEventListener(eventName, () => {
+      if (appConfig) resetIdleTimer();
+    }, { passive: true });
+  });
+
+  function requestIdleCallbackSafe(fn) {
+    if ("requestIdleCallback" in window) requestIdleCallback(fn, { timeout: 500 });
+    else setTimeout(fn, 80);
+  }
+
+  function showLobby() {
+    closeJoinModal();
+    backBtn.style.display = "none";
+    lobbyActions.style.display = "flex";
+    roomActions.style.display = "none";
+    lobbyScreen.style.display = "block";
+    chatShell.style.display = "none";
+    sendArea.style.display = "none";
+    state.currentRoom = null;
+    state.roomSeen = new Set();
+    unsubscribeActiveRoomTopic();
+    updateNicknameLine();
+    clearInterval(state.lobbyTimer);
+    state.lobbyTimer = setInterval(() => {
+      if (!state.mqtt.connected && appConfig) loadRooms(true);
+    }, LOBBY_FALLBACK_MS);
+    loadRooms(true);
+  }
+
   function backToLobby() {
-    mqttLeaveCurrentRoom();
     chatBox.innerHTML = "";
     messageInput.value = "";
     showLobby();
   }
 
-  function setStatus(text) {
-    if (!text) {
-      statusEl.style.display = "none";
-      statusEl.textContent = "";
+  function showChat() {
+    backBtn.style.display = "inline-flex";
+    lobbyActions.style.display = "none";
+    roomActions.style.display = "flex";
+    lobbyScreen.style.display = "none";
+    chatShell.style.display = "flex";
+    sendArea.style.display = "flex";
+  }
+
+  function openSettingsModal() {
+    document.getElementById("nameInput").value = state.displayName || "";
+    document.getElementById("settingsModal").style.display = "flex";
+  }
+
+  function closeSettingsModal() {
+    document.getElementById("settingsModal").style.display = "none";
+  }
+
+  function saveName() {
+    const name = document.getElementById("nameInput").value.trim();
+    if (!name) {
+      showToast("请输入昵称");
+      return;
+    }
+    state.displayName = name;
+    localStorage.setItem("vx_display_name", name);
+    updateNicknameLine();
+    closeSettingsModal();
+    showToast("已保存");
+  }
+
+  function openCreateRoomModal() {
+    if (!requireNickname()) return;
+    document.getElementById("newRoomName").value = "";
+    document.getElementById("newRoomPassword").value = "";
+    document.getElementById("createRoomModal").style.display = "flex";
+  }
+
+  function closeCreateRoomModal() {
+    document.getElementById("createRoomModal").style.display = "none";
+  }
+
+  function openJoinModal(roomId) {
+    if (!requireNickname()) return;
+    pendingRoom = state.rooms.find(r => r.roomId === roomId);
+    if (!pendingRoom) return;
+
+    if (pendingRoom.noPassword) {
+      openRoom(pendingRoom, getDefaultRoomPassword(), { accessType: "default" });
       return;
     }
 
-    statusEl.style.display = "block";
-    statusEl.textContent = text;
+    document.getElementById("joinRoomPassword").value = "";
+    document.getElementById("joinModal").style.display = "flex";
   }
 
-  function hideToast() {
-    clearTimeout(state.toastTimer);
-    state.toastTimer = null;
-
-    if (!appToast) return;
-    appToast.style.display = "none";
-    appToast.textContent = "";
-    appToast.className = "app-toast";
+  function closeJoinModal() {
+    pendingRoom = null;
+    document.getElementById("joinModal").style.display = "none";
   }
 
-
-  function nextFrame() {
-    return new Promise(resolve => requestAnimationFrame(() => resolve()));
+  function openAdminModal() {
+    document.getElementById("adminPassword").value = "";
+    document.getElementById("adminModal").style.display = "flex";
   }
 
-  function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  function closeAdminModal() {
+    document.getElementById("adminModal").style.display = "none";
   }
 
-  function showStage(title, sub) {
-    if (!stageLoader) return;
-    if (stageTitle) stageTitle.textContent = title || "正在加载";
-    if (stageSub) stageSub.textContent = sub || "请稍候...";
-    stageLoader.classList.add("show");
+  function closeAllModals() {
+    closeSettingsModal();
+    closeCreateRoomModal();
+    closeJoinModal();
+    closeAdminModal();
   }
 
-  function hideStage() {
-    if (!stageLoader) return;
-    stageLoader.classList.remove("show");
+  function validateRoomName(name) {
+    const value = name.trim();
+    if (!value) return false;
+    if (/[\u4e00-\u9fff]/.test(value)) return value.length <= 5;
+    return value.length <= 8;
   }
 
-  function showToast(text, type = "info", duration = 1600) {
-    if (!appToast) return;
-
-    clearTimeout(state.toastTimer);
-    appToast.textContent = text;
-    appToast.className = "app-toast " + type;
-    appToast.style.display = "block";
-
-    state.toastTimer = setTimeout(function() {
-      hideToast();
-    }, duration);
+  function isDuplicateRoomName(name) {
+    return state.rooms.some(r => String(r.roomName || "").trim().toLowerCase() === name.trim().toLowerCase());
   }
 
-  async function githubFetch(path, options = {}) {
-    const headers = {
-      "Accept": "application/vnd.github+json",
-      "Authorization": "Bearer " + appConfig.token,
-      "X-GitHub-Api-Version": "2022-11-28",
-      ...(options.headers || {})
-    };
-
-    return fetch(API + path, {
-      ...options,
-      headers
-    });
+  function generateRoomNo() {
+    return String(Math.floor(100000 + Math.random() * 900000));
   }
 
-  function parseLastPage(linkHeader) {
-    if (!linkHeader) return null;
-
-    const parts = linkHeader.split(",");
-
-    for (const part of parts) {
-      if (part.includes('rel="last"')) {
-        const match = part.match(/[?&]page=(\d+)/);
-        if (match) return Number(match[1]);
-      }
-    }
-
-    return null;
+  function getRoomNo(room) {
+    if (room.roomNo) return room.roomNo;
+    const text = String(room.roomId || "");
+    let sum = 0;
+    for (let i = 0; i < text.length; i++) sum = (sum + text.charCodeAt(i) * (i + 1)) % 900000;
+    return String(100000 + sum).slice(0, 6);
   }
 
-  async function fetchCommentsPage(page) {
-    const res = await githubFetch(
-      `/gists/${appConfig.gistId}/comments?per_page=100&page=${page}`
-    );
-
-    if (!res.ok) {
-      throw new Error("读取失败：" + res.status);
-    }
-
-    return {
-      data: await res.json(),
-      link: res.headers.get("link")
-    };
+  function getDefaultRoomPassword() {
+    return String(appConfig.chatSecret || "default") + "::default-no-password-room-v1";
   }
 
-  async function fetchLatestComments() {
-    const first = await fetchCommentsPage(1);
-    const lastPage = parseLastPage(first.link);
-
-    if (lastPage && lastPage > 1) {
-      const last = await fetchCommentsPage(lastPage);
-      return last.data;
-    }
-
-    return first.data;
-  }
-
-  async function fetchAllCommentsForRooms() {
-    const first = await fetchCommentsPage(1);
-    const lastPage = parseLastPage(first.link);
-
-    let all = first.data;
-
-    if (lastPage && lastPage > 1) {
-      const maxPage = lastPage;
-
-      for (let p = 2; p <= maxPage; p++) {
-        const page = await fetchCommentsPage(p);
-        all = all.concat(page.data);
-      }
-    }
-
-    return all;
+  function makeRoomSecret() {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    return toBase64(bytes) + "::" + crypto.randomUUID();
   }
 
   async function encryptRoomMeta(meta) {
@@ -3049,6 +1344,17 @@
     return decryptPayload(payload, appConfig.chatSecret, "vx-room-meta-v1");
   }
 
+  async function encryptAdminRoomSecret(roomId, roomSecret) {
+    return encryptPayload({ ok: true, roomId, roomSecret, admin: true }, appConfig.chatSecret, "vx-room-admin:" + roomId);
+  }
+
+  async function decryptAdminRoomSecret(room) {
+    if (!room.adminSecret) return null;
+    const data = await decryptPayload(room.adminSecret, appConfig.chatSecret, "vx-room-admin:" + room.roomId);
+    if (!data.ok || data.roomId !== room.roomId || !data.roomSecret) return null;
+    return data.roomSecret;
+  }
+
   async function createRoom() {
     if (!requireNickname()) return;
 
@@ -3056,27 +1362,28 @@
     const roomPassword = document.getElementById("newRoomPassword").value.trim();
 
     if (!validateRoomName(roomName)) {
+      showToast("房间名限5个汉字或8个英文");
+      return;
+    }
+
+    await loadRooms(false);
+
+    if (isDuplicateRoomName(roomName)) {
+      showToast("房间名已存在");
       return;
     }
 
     if (roomPassword.length < 4) {
-      alert("房间密码至少 4 位");
+      showToast("密码至少4位");
       return;
     }
 
-    resetIdleTimer();
-
     try {
       const roomId = crypto.randomUUID();
-      const roomNo = generateRoomNo();
       const roomSecret = makeRoomSecret();
 
       const check = await encryptPayload(
-        {
-          ok: true,
-          roomId: roomId,
-          roomSecret: roomSecret
-        },
+        { ok: true, roomId, roomSecret },
         roomPassword,
         "vx-room-check:" + roomId
       );
@@ -3085,200 +1392,42 @@
 
       const meta = {
         type: "room",
-        roomId: roomId,
-        roomNo: roomNo,
-        roomName: roomName,
+        roomId,
+        roomNo: generateRoomNo(),
+        roomName,
         createdBy: state.displayName,
         createdAt: Date.now(),
         noPassword: false,
-        check: check,
-        adminSecret: adminSecret,
-        version: 2
+        check,
+        adminSecret,
+        version: 3
       };
 
       const encryptedMeta = await encryptRoomMeta(meta);
+      const comment = await postGistComment(ROOM_PREFIX + JSON.stringify(encryptedMeta));
+      meta.commentId = comment.id;
 
-      const res = await githubFetch(`/gists/${appConfig.gistId}/comments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          body: ROOM_PREFIX + JSON.stringify(encryptedMeta)
-        })
-      });
-
-      if (!res.ok) {
-        throw new Error("创建房间失败：" + res.status);
-      }
-
-      const createdComment = await res.json();
-      meta.commentId = createdComment.id;
-
-      document.getElementById("newRoomName").value = "";
-      document.getElementById("newRoomPassword").value = "";
       closeCreateRoomModal();
-      mqttPublishRoomsUpdate();
-
+      await loadRooms(false);
+      mqttPublishJson(roomsTopic(), { type: "roomsUpdate", time: Date.now() });
+      showToast("房间已创建");
       openRoom(meta, roomSecret, { accessType: "owner" });
-
     } catch (e) {
-      alert(e.message);
+      showToast("创建失败");
+      console.error(e);
     }
-  }
-
-  async function loadRooms() {
-    if (!appConfig) return;
-
-    try {
-      const comments = await fetchAllCommentsForRooms();
-
-      const roomComments = comments.filter(c =>
-        typeof c.body === "string" && c.body.startsWith(ROOM_PREFIX)
-      );
-
-      const roomsHash = roomComments.map(c => c.id + ":" + c.updated_at).join("|");
-
-      if (roomsHash === state.lastRoomsHash && state.rooms.length) return;
-
-      state.lastRoomsHash = roomsHash;
-
-      const rooms = [];
-
-      rooms.push({ ...DEFAULT_PUBLIC_ROOM });
-
-      for (const c of roomComments) {
-        try {
-          const raw = c.body.slice(ROOM_PREFIX.length);
-          const payload = JSON.parse(raw);
-          const room = await decryptRoomMeta(payload);
-
-          if (room && room.type === "room" && room.roomId) {
-            room.commentId = c.id;
-            room.noPassword = !!room.noPassword;
-            rooms.push(room);
-          }
-        } catch (e) {}
-      }
-
-      const defaultRoom = rooms.shift();
-      rooms.sort((a, b) => b.createdAt - a.createdAt);
-      state.rooms = [defaultRoom].concat(rooms);
-
-      renderRooms();
-      hideStage();
-
-    } catch (e) {
-      hideStage();
-      roomList.innerHTML = `<div class="empty">${e.message}</div>`;
-    }
-  }
-
-  function getRoomAvatarText(room) {
-    const name = String(room.roomName || "聊天室").trim();
-    return name.slice(0, 1) || "聊";
-  }
-
-  function renderRooms() {
-    roomList.innerHTML = "";
-
-    state.rooms.forEach(room => {
-      const btn = document.createElement("button");
-      btn.className = "wechat-room-button";
-      btn.onclick = function() {
-        openJoinModal(room.roomId);
-      };
-
-      const avatar = document.createElement("div");
-      avatar.className = "wechat-avatar" + (room.noPassword ? "" : " locked");
-      avatar.textContent = getRoomAvatarText(room);
-
-      const main = document.createElement("div");
-      main.className = "wechat-room-main";
-
-      const titleRow = document.createElement("div");
-      titleRow.className = "wechat-room-title-row";
-
-      const title = document.createElement("div");
-      title.className = "wechat-room-title";
-      title.textContent = "【" + room.roomName + "】";
-
-      const time = document.createElement("div");
-      time.className = "wechat-room-time";
-
-      if (room.noPassword) {
-        time.textContent = "大厅";
-      } else {
-        time.textContent = new Date(room.createdAt).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit"
-        });
-      }
-
-      titleRow.appendChild(title);
-      titleRow.appendChild(time);
-
-      const sub = document.createElement("div");
-      sub.className = "wechat-room-sub";
-
-      if (room.noPassword) {
-        sub.textContent = "默认聊天大厅 · 直接进入";
-      } else {
-        sub.textContent = "建立者：" + (room.createdBy || "未知") + " · 房间密码 / 管理密码进入";
-      }
-
-      main.appendChild(titleRow);
-      main.appendChild(sub);
-
-      btn.appendChild(avatar);
-      btn.appendChild(main);
-      roomList.appendChild(btn);
-    });
-  }
-
-  function openJoinModal(roomId) {
-    if (!requireNickname()) return;
-
-    pendingRoom = state.rooms.find(r => r.roomId === roomId);
-
-    if (!pendingRoom) return;
-
-    if (pendingRoom.noPassword) {
-      const password = getDefaultRoomPassword();
-      openRoom(pendingRoom, password, { accessType: "default" });
-      return;
-    }
-
-    document.getElementById("joinRoomText").textContent =
-      "房间号：" + getRoomNo(pendingRoom) + " ｜ 名称：" + pendingRoom.roomName + "。可输入房间密码或管理密码。";
-
-    document.getElementById("joinRoomPassword").value = "";
-    document.getElementById("joinModal").style.display = "flex";
-
-    resetIdleTimer();
-  }
-
-  function closeJoinModal() {
-    pendingRoom = null;
-    document.getElementById("joinModal").style.display = "none";
   }
 
   async function confirmJoinRoom() {
     const password = document.getElementById("joinRoomPassword").value.trim();
-
     if (!pendingRoom || !password) {
-      alert("请输入房间密码或管理密码");
+      showToast("请输入密码");
       return;
     }
 
     try {
       try {
-        const check = await decryptPayload(
-          pendingRoom.check,
-          password,
-          "vx-room-check:" + pendingRoom.roomId
-        );
-
+        const check = await decryptPayload(pendingRoom.check, password, "vx-room-check:" + pendingRoom.roomId);
         if (check.ok && check.roomId === pendingRoom.roomId) {
           const roomSecret = check.roomSecret || password;
           const room = pendingRoom;
@@ -3289,36 +1438,125 @@
       } catch (e) {}
 
       const isAdmin = await checkAdminPassword(password);
-
       if (isAdmin) {
-        const room = pendingRoom;
-        let adminRoomSecret = await decryptAdminRoomSecret(room);
-        let legacyAdminNoSecret = false;
-
-        if (!adminRoomSecret) {
-          adminRoomSecret = "__ADMIN_LEGACY_NO_ROOM_SECRET__";
-          legacyAdminNoSecret = true;
+        const roomSecret = await decryptAdminRoomSecret(pendingRoom);
+        if (!roomSecret) {
+          showToast("旧房间缺少管理密钥");
+          return;
         }
-
+        const room = pendingRoom;
         closeJoinModal();
-        openRoom(room, adminRoomSecret, {
-          accessType: "admin",
-          adminMode: true,
-          canSend: !legacyAdminNoSecret,
-          legacyAdminNoSecret: legacyAdminNoSecret
-        });
+        openRoom(room, roomSecret, { accessType: "admin", adminMode: true });
         return;
       }
 
-      alert("密码错误");
-
+      showToast("密码错误");
     } catch (e) {
-      alert("密码错误");
+      showToast("进入失败");
     }
   }
 
-  function openRoom(room, roomPassword, options = {}) {
-    hideAllScreens();
+  function roomCacheKey(roomId) {
+    return "vx_room_cache_v4_" + roomId;
+  }
+
+  function roomLastCommentKey(roomId) {
+    return "vx_room_last_gist_comment_v4_" + roomId;
+  }
+
+  function pendingKey() {
+    return "vx_pending_gist_v4";
+  }
+
+  function loadRoomCache(roomId) {
+    try {
+      const arr = JSON.parse(localStorage.getItem(roomCacheKey(roomId)) || "[]");
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveRoomCache(roomId, messages) {
+    const sorted = [...messages].sort((a, b) => a.time - b.time);
+    const unique = [];
+    const seen = new Set();
+    for (const msg of sorted) {
+      const id = getMessageKey(msg);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      unique.push(msg);
+    }
+    const clipped = unique.slice(-MAX_CACHE_MESSAGES);
+    localStorage.setItem(roomCacheKey(roomId), JSON.stringify(clipped));
+  }
+
+  function getMessageKey(msg) {
+    if (msg.messageId) return msg.messageId;
+    return [msg.roomId || "", msg.senderId || "", msg.senderName || "", msg.text || "", msg.time || ""].join("_");
+  }
+
+  function initSeenFromCache(roomId) {
+    state.roomSeen = new Set();
+    const cached = loadRoomCache(roomId);
+    cached.forEach(m => state.roomSeen.add(getMessageKey(m)));
+  }
+
+  function addMessageToCache(roomId, msg) {
+    const cached = loadRoomCache(roomId);
+    const id = getMessageKey(msg);
+    if (cached.some(m => getMessageKey(m) === id)) return;
+    cached.push(msg);
+    saveRoomCache(roomId, cached);
+  }
+
+  function renderAllMessages(messages) {
+    chatBox.innerHTML = "";
+    const sorted = [...messages].sort((a, b) => a.time - b.time);
+    sorted.forEach(renderMessage);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function renderMessage(msg) {
+    const id = getMessageKey(msg);
+    const isMe = msg.senderId === state.senderId;
+
+    const wrap = document.createElement("div");
+    wrap.className = "msg-wrap " + (isMe ? "me" : "other");
+    wrap.dataset.messageId = id;
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const time = new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    meta.textContent = (msg.senderName || "未命名") + " · " + time;
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = msg.text || "";
+
+    wrap.appendChild(meta);
+    wrap.appendChild(bubble);
+    chatBox.appendChild(wrap);
+  }
+
+  function appendMessageIfNew(msg, source) {
+    if (!state.currentRoom || msg.roomId !== state.currentRoom.roomId) return false;
+    const id = getMessageKey(msg);
+    if (state.roomSeen.has(id)) return false;
+
+    state.roomSeen.add(id);
+    addMessageToCache(msg.roomId, msg);
+    renderMessage(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    if (source === "mqtt" && msg.senderId !== state.senderId) {
+      showToast("新消息1条");
+    }
+    return true;
+  }
+
+  async function openRoom(room, roomSecret, options = {}) {
+    showChat();
 
     clearInterval(state.lobbyTimer);
     clearInterval(state.timer);
@@ -3327,254 +1565,296 @@
       roomId: room.roomId,
       roomNo: getRoomNo(room),
       roomName: room.roomName,
-      password: roomPassword,
+      roomSecret,
       noPassword: !!room.noPassword,
       commentId: room.commentId || null,
-      createdBy: room.createdBy || "System",
       adminMode: !!options.adminMode,
-      accessType: options.accessType || "room",
-      canSend: options.canSend !== false,
-      legacyAdminNoSecret: !!options.legacyAdminNoSecret
+      accessType: options.accessType || "room"
     };
 
-    state.lastRenderHash = "";
-    state.loadedMessageIds = new Set();
-    state.roomLoadedOnce = false;
-    hideToast();
+    roomInfoText.textContent = (room.roomName || getRoomNo(room)) + " · 建立者：" + (room.createdBy || "System");
 
-    roomTitle.textContent = room.roomName || getRoomNo(room);
-    roomHeader.style.display = "flex";
-    roomCreatorBar.textContent = (room.noPassword ? "聊天大厅" : "房间：" + (room.roomName || getRoomNo(room))) + " · 建立者：" + (room.createdBy || "System");
-    roomCreatorBar.style.display = "block";
-    emergencyBar.style.display = "block";
-    chatBox.style.display = "block";
-    sendArea.style.display = state.currentRoom.canSend ? "flex" : "none";
+    initSeenFromCache(room.roomId);
+    const cached = loadRoomCache(room.roomId);
+    renderAllMessages(cached);
 
-    chatBox.innerHTML = '<div class="room-list-loading">正在加载聊天记录...</div>';
-    showStage("正在进入房间", "第 4 步 / 4：读取当前房间聊天记录");
+    subscribeRoomTopic(room.roomId);
 
-    mqttSubscribeCurrentRoom();
-    loadMessages();
-    state.timer = setInterval(loadMessages, getChatRefreshMs());
+    historyTip.style.display = "inline";
+    historyTip.textContent = "正在检查历史记录...";
 
-    if (state.currentRoom.legacyAdminNoSecret) {
-      setStatus("这个旧房间没有管理密钥，管理密码可进入管理和删除，但无法解密显示旧消息。建议清空或删除后重建。 ");
-    }
+    requestIdleCallbackSafe(async () => {
+      await syncRoomHistoryFromGist(room.roomId, roomSecret);
+    });
 
-    resetIdleTimer();
-  }
-
-  async function encryptRoomMessage(obj) {
-    return encryptPayload(
-      obj,
-      state.currentRoom.password,
-      "vx-room-msg:" + state.currentRoom.roomId
-    );
-  }
-
-  async function decryptRoomMessage(payload) {
-    return decryptPayload(
-      payload,
-      state.currentRoom.password,
-      "vx-room-msg:" + state.currentRoom.roomId
-    );
-  }
-
-  async function loadMessages() {
-    if (!appConfig || !state.currentRoom) return;
-
-    try {
-      if (!state.currentRoom.legacyAdminNoSecret) {
-        setStatus("");
+    clearInterval(state.timer);
+    state.timer = setInterval(() => {
+      if (!state.mqtt.connected && state.currentRoom) {
+        syncRoomHistoryFromGist(state.currentRoom.roomId, state.currentRoom.roomSecret);
       }
+    }, ROOM_FALLBACK_MS);
+  }
 
-      const comments = await fetchAllCommentsForRooms();
-      const currentRoomId = state.currentRoom.roomId;
+  async function syncRoomHistoryFromGist(roomId, roomSecret) {
+    try {
+      const comments = await fetchAllComments();
+      const items = [];
 
-      const encryptedComments = comments.filter(c => {
-        if (typeof c.body !== "string") return false;
-        if (!c.body.startsWith(MSG_PREFIX)) return false;
-
+      for (const c of comments) {
+        if (typeof c.body !== "string" || !c.body.startsWith(MSG_PREFIX)) continue;
         try {
           const raw = c.body.slice(MSG_PREFIX.length);
           const wrapper = JSON.parse(raw);
-          return wrapper.roomId === currentRoomId;
-        } catch (e) {
-          return false;
-        }
-      });
-
-      const renderHash = encryptedComments
-        .map(c => c.id + ":" + c.updated_at)
-        .join("|");
-
-      if (renderHash === state.lastRenderHash) return;
-
-      state.lastRenderHash = renderHash;
-
-      const messages = [];
-
-      for (const c of encryptedComments) {
-        try {
-          const raw = c.body.slice(MSG_PREFIX.length);
-          const wrapper = JSON.parse(raw);
-          const msg = await decryptRoomMessage(wrapper.payload);
-
-          messages.push({
-            id: c.id,
-            senderId: msg.senderId,
-            senderName: msg.senderName,
-            text: msg.text,
-            time: msg.time
-          });
+          if (wrapper.roomId !== roomId) continue;
+          items.push({ commentId: c.id, updatedAt: c.updated_at, wrapper });
         } catch (e) {}
       }
 
-      messages.sort((a, b) => a.time - b.time);
+      items.sort((a, b) => Number(a.commentId) - Number(b.commentId));
 
-      const previousIds = state.loadedMessageIds || new Set();
-      const newOtherCount = messages.filter(msg => {
-        return msg.senderId !== state.senderId && !previousIds.has(String(msg.id));
-      }).length;
+      const lastId = localStorage.getItem(roomLastCommentKey(roomId));
+      let slice = items;
 
-      const shouldNotifyNewMessages = state.roomLoadedOnce && newOtherCount > 0;
-
-      renderMessages(messages);
-
-      state.loadedMessageIds = new Set(messages.map(msg => String(msg.id)));
-      state.roomLoadedOnce = true;
-
-      hideStage();
-
-      if (shouldNotifyNewMessages) {
-        showToast("新消息" + newOtherCount + "条", "new", 2200);
+      if (lastId) {
+        const idx = items.findIndex(item => String(item.commentId) === String(lastId));
+        if (idx >= 0) {
+          slice = items.slice(idx + 1);
+        }
       }
 
+      if (slice.length > 0) {
+        historyTip.style.display = "inline";
+        historyTip.textContent = "发现历史记录 " + slice.length + " 条，加载中...";
+      }
+
+      let added = 0;
+      for (const item of slice) {
+        try {
+          const msg = await decryptPayload(item.wrapper.payload, roomSecret, "vx-room-msg:" + roomId);
+          if (appendMessageIfNew(msg, "gist")) added++;
+        } catch (e) {}
+      }
+
+      if (items.length) {
+        localStorage.setItem(roomLastCommentKey(roomId), String(items[items.length - 1].commentId));
+      }
+
+      if (added > 0) {
+        showToast("补充历史" + added + "条");
+      }
+
+      historyTip.style.display = "none";
+      historyTip.textContent = "";
     } catch (e) {
-      hideStage();
-      setStatus(e.message);
+      historyTip.style.display = "none";
     }
-  }
-
-  function renderMessages(messages) {
-    chatBox.innerHTML = "";
-
-    messages.forEach(msg => {
-      const isMe = msg.senderId === state.senderId;
-
-      const wrap = document.createElement("div");
-      wrap.className = "msg-wrap " + (isMe ? "me" : "other");
-
-      const meta = document.createElement("div");
-      meta.className = "meta";
-
-      const time = new Date(msg.time).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-
-      const senderName = String(
-        msg.senderName ||
-        (isMe ? state.displayName : "未知用户") ||
-        "未命名"
-      ).trim() || "未命名";
-
-      meta.innerHTML = "";
-
-      const nameSpan = document.createElement("span");
-      nameSpan.className = "meta-name";
-      nameSpan.textContent = senderName;
-
-      const timeSpan = document.createElement("span");
-      timeSpan.textContent = " · " + time;
-
-      meta.appendChild(nameSpan);
-      meta.appendChild(timeSpan);
-
-      const bubble = document.createElement("div");
-      bubble.className = "bubble";
-      bubble.textContent = msg.text;
-
-      wrap.appendChild(meta);
-      wrap.appendChild(bubble);
-      chatBox.appendChild(wrap);
-    });
-
-    chatBox.scrollTop = chatBox.scrollHeight;
   }
 
   async function sendMessage() {
     const text = messageInput.value.trim();
-
-    if (!text) return;
-    if (!appConfig || !state.currentRoom) return;
+    if (!text || !state.currentRoom) return;
     if (!requireNickname()) return;
-    if (state.currentRoom.canSend === false) {
-      alert("当前是旧房间的管理模式，不能发送新消息。请清空或删除后重建房间。");
-      return;
-    }
 
-    resetIdleTimer();
+    const msg = {
+      type: "message",
+      messageId: state.currentRoom.roomId + "_" + state.senderId + "_" + Date.now() + "_" + Math.random().toString(16).slice(2),
+      roomId: state.currentRoom.roomId,
+      senderId: state.senderId,
+      senderName: state.displayName,
+      text,
+      time: Date.now()
+    };
 
     messageInput.value = "";
 
+    appendMessageIfNew(msg, "local");
+
     try {
-      const msg = {
-        senderId: state.senderId,
-        senderName: String(state.displayName || "未命名").trim() || "未命名",
-        text: text,
-        time: Date.now()
-      };
-
-      const encrypted = await encryptRoomMessage(msg);
-
+      const encrypted = await encryptPayload(msg, state.currentRoom.roomSecret, "vx-room-msg:" + state.currentRoom.roomId);
       const wrapper = {
+        type: "message",
         roomId: state.currentRoom.roomId,
-        payload: encrypted
+        messageId: msg.messageId,
+        payload: encrypted,
+        time: msg.time
       };
 
-      const res = await githubFetch(`/gists/${appConfig.gistId}/comments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          body: MSG_PREFIX + JSON.stringify(wrapper)
-        })
+      mqttPublishJson(roomTopic(state.currentRoom.roomId), wrapper);
+      enqueuePendingGist({
+        id: msg.messageId,
+        roomId: state.currentRoom.roomId,
+        body: MSG_PREFIX + JSON.stringify(wrapper),
+        time: Date.now(),
+        attempts: 0
       });
-
-      if (!res.ok) {
-        throw new Error("发送失败：" + res.status);
-      }
-
-      showToast("发送成功", "success", 1400);
-      mqttPublishRoomUpdate(state.currentRoom.roomId);
-      await loadMessages();
-
+      flushPendingGistMessages();
+      showToast("发送成功");
     } catch (e) {
-      setStatus(e.message);
+      showToast("发送失败");
     }
   }
 
-  function openAdminModal() {
-    document.getElementById("adminPassword").value = "";
-    document.getElementById("adminModal").style.display = "flex";
-    resetIdleTimer();
+  function getPendingGist() {
+    try {
+      const arr = JSON.parse(localStorage.getItem(pendingKey()) || "[]");
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
   }
 
-  function closeAdminModal() {
-    document.getElementById("adminModal").style.display = "none";
+  function setPendingGist(arr) {
+    localStorage.setItem(pendingKey(), JSON.stringify(arr.slice(-300)));
+  }
+
+  function enqueuePendingGist(item) {
+    const arr = getPendingGist();
+    if (!arr.some(x => x.id === item.id)) {
+      arr.push(item);
+      setPendingGist(arr);
+    }
+  }
+
+  async function flushPendingGistMessages() {
+    if (!appConfig) return;
+    let arr = getPendingGist();
+    if (!arr.length) return;
+
+    const remain = [];
+    for (const item of arr) {
+      try {
+        const res = await postGistComment(item.body);
+        localStorage.setItem(roomLastCommentKey(item.roomId), String(res.id));
+      } catch (e) {
+        item.attempts = (item.attempts || 0) + 1;
+        remain.push(item);
+      }
+    }
+    setPendingGist(remain);
+  }
+
+  function startGistRetryLoop() {
+    clearInterval(state.gistRetryTimer);
+    state.gistRetryTimer = setInterval(flushPendingGistMessages, GIST_RETRY_MS);
+  }
+
+  async function githubFetch(path, options = {}) {
+    const headers = {
+      "Accept": "application/vnd.github+json",
+      "Authorization": "Bearer " + appConfig.token,
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(options.headers || {})
+    };
+    return fetch(API + path, { ...options, headers });
+  }
+
+  async function postGistComment(body) {
+    const res = await githubFetch(`/gists/${appConfig.gistId}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body })
+    });
+    if (!res.ok) throw new Error("写入失败：" + res.status);
+    return res.json();
+  }
+
+  function parseLastPage(linkHeader) {
+    if (!linkHeader) return null;
+    const parts = linkHeader.split(",");
+    for (const part of parts) {
+      if (part.includes('rel="last"')) {
+        const match = part.match(/[?&]page=(\d+)/);
+        if (match) return Number(match[1]);
+      }
+    }
+    return null;
+  }
+
+  async function fetchCommentsPage(page) {
+    const res = await githubFetch(`/gists/${appConfig.gistId}/comments?per_page=100&page=${page}`);
+    if (!res.ok) throw new Error("读取失败：" + res.status);
+    return { data: await res.json(), link: res.headers.get("link") };
+  }
+
+  async function fetchAllComments() {
+    const first = await fetchCommentsPage(1);
+    const lastPage = parseLastPage(first.link);
+    let all = first.data;
+    if (lastPage && lastPage > 1) {
+      for (let p = 2; p <= lastPage; p++) {
+        const page = await fetchCommentsPage(p);
+        all = all.concat(page.data);
+      }
+    }
+    return all;
+  }
+
+  async function loadRooms(silent = false) {
+    if (!appConfig) return;
+    try {
+      const comments = await fetchAllComments();
+      const roomComments = comments.filter(c => typeof c.body === "string" && c.body.startsWith(ROOM_PREFIX));
+      const roomsHash = roomComments.map(c => c.id + ":" + c.updated_at).join("|");
+      if (roomsHash === state.lastRoomsHash && state.rooms.length) return;
+      state.lastRoomsHash = roomsHash;
+
+      const rooms = [{ ...DEFAULT_PUBLIC_ROOM }];
+      for (const c of roomComments) {
+        try {
+          const raw = c.body.slice(ROOM_PREFIX.length);
+          const payload = JSON.parse(raw);
+          const room = await decryptRoomMeta(payload);
+          if (room && room.type === "room" && room.roomId) {
+            room.commentId = c.id;
+            rooms.push(room);
+          }
+        } catch (e) {}
+      }
+
+      const defaultRoom = rooms.shift();
+      rooms.sort((a, b) => b.createdAt - a.createdAt);
+      state.rooms = [defaultRoom].concat(rooms);
+      renderRooms();
+    } catch (e) {
+      if (!silent) showToast("房间加载失败");
+    }
+  }
+
+  function renderRooms() {
+    roomList.innerHTML = "";
+    state.rooms.forEach(room => {
+      const div = document.createElement("div");
+      div.className = "room-row";
+      div.onclick = () => openJoinModal(room.roomId);
+
+      const main = document.createElement("div");
+      main.className = "room-main";
+
+      const name = document.createElement("div");
+      name.className = "room-name";
+      name.textContent = "【" + room.roomName + "】";
+
+      const meta = document.createElement("div");
+      meta.className = "room-meta";
+      meta.textContent = room.noPassword ? "默认大厅 · 点击进入" : "建立者：" + (room.createdBy || "未知");
+
+      const badge = document.createElement("div");
+      badge.className = "room-badge";
+      badge.textContent = room.noPassword ? "大厅" : "加密";
+
+      main.appendChild(name);
+      main.appendChild(meta);
+      div.appendChild(main);
+      div.appendChild(badge);
+      roomList.appendChild(div);
+    });
   }
 
   async function sha256Text(text) {
     const encoder = new TextEncoder();
     const data = encoder.encode(text);
     const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-
-    return hashArray
-      .map(byte => byte.toString(16).padStart(2, "0"))
-      .join("");
+    return Array.from(new Uint8Array(hashBuffer)).map(byte => byte.toString(16).padStart(2, "0")).join("");
   }
 
   async function checkAdminPassword(password) {
@@ -3584,38 +1864,23 @@
 
   async function requireAdminPassword() {
     const password = document.getElementById("adminPassword").value.trim();
-
     if (!password) {
-      alert("请输入管理密码");
+      showToast("请输入管理密码");
       return false;
     }
-
     const ok = await checkAdminPassword(password);
-
-    if (!ok) {
-      alert("管理密码错误");
-      return false;
-    }
-
-    return true;
+    if (!ok) showToast("管理密码错误");
+    return ok;
   }
 
   async function deleteGistComment(commentId) {
-    const res = await githubFetch(
-      `/gists/${appConfig.gistId}/comments/${commentId}`,
-      {
-        method: "DELETE"
-      }
-    );
-
-    if (!res.ok && res.status !== 204) {
-      throw new Error("删除评论失败：" + res.status);
-    }
+    const res = await githubFetch(`/gists/${appConfig.gistId}/comments/${commentId}`, { method: "DELETE" });
+    if (!res.ok && res.status !== 204) throw new Error("删除失败：" + res.status);
   }
 
   async function getCommentIdsForRoom(roomId, includeRoomMeta) {
-    const comments = await fetchAllCommentsForRooms();
-    const idsToDelete = [];
+    const comments = await fetchAllComments();
+    const ids = [];
 
     for (const c of comments) {
       if (typeof c.body !== "string") continue;
@@ -3625,10 +1890,7 @@
           const raw = c.body.slice(ROOM_PREFIX.length);
           const payload = JSON.parse(raw);
           const room = await decryptRoomMeta(payload);
-
-          if (room.roomId === roomId) {
-            idsToDelete.push(c.id);
-          }
+          if (room.roomId === roomId) ids.push(c.id);
         } catch (e) {}
       }
 
@@ -3636,146 +1898,83 @@
         try {
           const raw = c.body.slice(MSG_PREFIX.length);
           const wrapper = JSON.parse(raw);
-
-          if (wrapper.roomId === roomId) {
-            idsToDelete.push(c.id);
-          }
+          if (wrapper.roomId === roomId) ids.push(c.id);
         } catch (e) {}
       }
     }
 
-    return [...new Set(idsToDelete)];
+    return [...new Set(ids)];
   }
 
   async function clearCurrentRoomMessagesWithAdmin() {
     const ok = await requireAdminPassword();
-    if (!ok) return;
+    if (!ok || !state.currentRoom) return;
 
-    if (!state.currentRoom) {
-      alert("当前不在房间内");
-      return;
-    }
-
-    const confirmed = confirm("确定清空当前房间的聊天记录吗？此操作不可恢复。");
+    const confirmed = confirm("确定清空当前房间聊天记录吗？会删除该房间对应的 Gist 记录。");
     if (!confirmed) return;
 
     try {
-      setStatus("正在清空聊天记录...");
+      showToast("正在清空...");
+      const ids = await getCommentIdsForRoom(state.currentRoom.roomId, false);
+      for (const id of ids) await deleteGistComment(id);
 
-      const idsToDelete = await getCommentIdsForRoom(state.currentRoom.roomId, false);
-
-      for (const id of idsToDelete) {
-        await deleteGistComment(id);
-      }
-
-      state.lastRenderHash = "";
-      state.loadedMessageIds = new Set();
-      state.roomLoadedOnce = false;
+      localStorage.removeItem(roomCacheKey(state.currentRoom.roomId));
+      localStorage.removeItem(roomLastCommentKey(state.currentRoom.roomId));
+      state.roomSeen = new Set();
       chatBox.innerHTML = "";
-      closeAdminModal();
-      setStatus("");
-      alert("当前房间聊天记录已清空");
-      mqttPublishRoomUpdate(state.currentRoom.roomId, "messagesCleared");
-      await loadMessages();
 
+      mqttPublishJson(roomTopic(state.currentRoom.roomId), {
+        type: "roomCleared",
+        roomId: state.currentRoom.roomId,
+        time: Date.now()
+      });
+
+      closeAdminModal();
+      showToast("已清空");
     } catch (e) {
-      setStatus(e.message);
-      alert(e.message);
+      showToast("清空失败");
     }
   }
 
   async function deleteCurrentRoomWithAdmin() {
     const ok = await requireAdminPassword();
-    if (!ok) return;
-
-    if (!state.currentRoom) {
-      alert("当前不在房间内");
-      return;
-    }
+    if (!ok || !state.currentRoom) return;
 
     if (state.currentRoom.noPassword) {
-      alert("默认聊天大厅不可删除，但可以清空聊天记录。");
+      showToast("大厅不可删除");
       return;
     }
 
-    const confirmed = confirm("确定删除当前房间吗？该房间聊天记录也会一起删除，此操作不可恢复。");
+    const confirmed = confirm("确定删除当前房间吗？会删除房间和该房间所有 Gist 聊天记录。");
     if (!confirmed) return;
 
     try {
-      setStatus("正在删除房间...");
-
+      showToast("正在删除...");
       const roomId = state.currentRoom.roomId;
-      const uniqueIds = await getCommentIdsForRoom(roomId, true);
+      const ids = await getCommentIdsForRoom(roomId, true);
+      for (const id of ids) await deleteGistComment(id);
 
-      for (const id of uniqueIds) {
-        await deleteGistComment(id);
-      }
+      localStorage.removeItem(roomCacheKey(roomId));
+      localStorage.removeItem(roomLastCommentKey(roomId));
+
+      mqttPublishJson(roomsTopic(), { type: "roomsUpdate", time: Date.now() });
 
       closeAdminModal();
-
-      alert("房间已删除");
-      mqttPublishRoomUpdate(roomId, "roomDeleted");
-      mqttPublishRoomsUpdate();
-
-      chatBox.innerHTML = "";
-      messageInput.value = "";
-
+      showToast("房间已删除");
       showLobby();
-      await loadRooms();
-
+      await loadRooms(false);
     } catch (e) {
-      setStatus(e.message);
-      alert(e.message);
+      showToast("删除失败");
     }
   }
 
-
-  function setMQTTStatus(status) {
-    if (!mqttDot || !mqttText) return;
-
-    mqttDot.className = "mqtt-dot";
-
-    if (status === "connected") {
-      mqttDot.classList.add("green");
-      mqttText.textContent = "数据连接中";
-      return;
-    }
-
-    if (status === "connecting") {
-      mqttDot.classList.add("yellow");
-      mqttText.textContent = "数据连接中";
-      return;
-    }
-
-    mqttText.textContent = "数据已断开";
-  }
-
-  function getLobbyRefreshMs() {
-    return mqtt.connected ? GIST_IDLE_REFRESH_MS : GIST_LOBBY_FALLBACK_MS;
-  }
-
-  function getChatRefreshMs() {
-    return mqtt.connected ? GIST_IDLE_REFRESH_MS : GIST_CHAT_FALLBACK_MS;
-  }
-
-  function restartRefreshTimers() {
-    if (!chatApp || chatApp.style.display === "none") return;
-
-    if (state.currentRoom) {
-      clearInterval(state.timer);
-      state.timer = setInterval(loadMessages, getChatRefreshMs());
-    } else if (lobbyScreen && lobbyScreen.style.display !== "none") {
-      clearInterval(state.lobbyTimer);
-      state.lobbyTimer = setInterval(loadRooms, getLobbyRefreshMs());
-    }
-  }
-
-  function mqttEncodeString(str) {
-    const bytes = new TextEncoder().encode(String(str));
+  function encodeString(str) {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(str);
     return [bytes.length >> 8, bytes.length & 255, ...bytes];
   }
 
-  function mqttEncodeLength(length) {
+  function encodeLength(length) {
     const encoded = [];
     do {
       let digit = length % 128;
@@ -3786,362 +1985,239 @@
     return encoded;
   }
 
-  function mqttPacket(type, body) {
-    return new Uint8Array([type, ...mqttEncodeLength(body.length), ...body]);
+  function makePacket(type, body) {
+    return new Uint8Array([type, ...encodeLength(body.length), ...body]);
   }
 
   function mqttSendPacket(type, body) {
-    if (!mqtt.ws || mqtt.ws.readyState !== WebSocket.OPEN) return false;
-    mqtt.ws.send(mqttPacket(type, body));
+    const ws = state.mqtt.ws;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    ws.send(makePacket(type, body));
     return true;
   }
 
   function mqttSendConnect() {
-    const variableHeader = [
-      ...mqttEncodeString("MQTT"),
-      4,
-      0xC2,
-      0,
-      MQTT_KEEPALIVE_SECONDS
-    ];
-
+    const variableHeader = [...encodeString("MQTT"), 4, 0xC2, 0, 35];
     const payload = [
-      ...mqttEncodeString(mqtt.clientId),
-      ...mqttEncodeString(MQTT_USERNAME),
-      ...mqttEncodeString(MQTT_PASSWORD)
+      ...encodeString(state.mqtt.clientId),
+      ...encodeString(MQTT_USERNAME),
+      ...encodeString(MQTT_PASSWORD)
     ];
-
     mqttSendPacket(0x10, [...variableHeader, ...payload]);
   }
 
   function mqttSubscribe(topic) {
-    if (!mqtt.connected || !topic) return false;
-    const id = mqtt.packetId++;
-    const variableHeader = [id >> 8, id & 255];
-    const payload = [...mqttEncodeString(topic), 0];
-    return mqttSendPacket(0x82, [...variableHeader, ...payload]);
+    const id = packetId++;
+    mqttSendPacket(0x82, [id >> 8, id & 255, ...encodeString(topic), 0]);
   }
 
-  function mqttPublish(topic, data) {
-    if (!mqtt.connected || !topic) return false;
-    const payloadText = typeof data === "string" ? data : JSON.stringify(data);
-    const bytes = new TextEncoder().encode(payloadText);
-    const payload = [...mqttEncodeString(topic), ...bytes];
-    return mqttSendPacket(0x30, payload);
+  function mqttUnsubscribe(topic) {
+    if (!topic) return;
+    const id = packetId++;
+    mqttSendPacket(0xA2, [id >> 8, id & 255, ...encodeString(topic)]);
   }
 
   function mqttPing() {
     mqttSendPacket(0xC0, []);
   }
 
-  function mqttParseLength(bytes, index) {
+  function mqttPublishJson(topic, obj) {
+    if (!state.mqtt.connected) return false;
+    const payload = new TextEncoder().encode(JSON.stringify(obj));
+    mqttSendPacket(0x30, [...encodeString(topic), ...payload]);
+    return true;
+  }
+
+  function parseRemainingLength(bytes, index) {
     let multiplier = 1;
     let value = 0;
-    let pos = index;
     let encodedByte;
-
+    let pos = index;
     do {
       encodedByte = bytes[pos++];
       value += (encodedByte & 127) * multiplier;
       multiplier *= 128;
     } while ((encodedByte & 128) !== 0);
-
     return { value, nextIndex: pos };
   }
 
-  function mqttDecodeString(bytes, index) {
+  function decodeString(bytes, index) {
     const len = (bytes[index] << 8) + bytes[index + 1];
     const start = index + 2;
     const end = start + len;
-    return {
-      value: new TextDecoder().decode(bytes.slice(start, end)),
-      nextIndex: end
-    };
+    return { value: new TextDecoder().decode(bytes.slice(start, end)), nextIndex: end };
   }
 
-  async function ensureMqttTopicPrefix() {
-    if (mqtt.topicPrefix) return mqtt.topicPrefix;
-    if (!appConfig) return "";
-
-    const digest = await sha256Text(String(appConfig.gistId || "vx") + ":" + String(appConfig.chatSecret || "secret"));
-    mqtt.topicPrefix = "vx/private/" + digest.slice(0, 32);
-    return mqtt.topicPrefix;
+  function roomsTopic() {
+    return MQTT_PREFIX + "/rooms/update";
   }
 
-  async function connectMQTT() {
-    if (!appConfig) return;
+  function roomTopic(roomId) {
+    return MQTT_PREFIX + "/room/" + roomId + "/live";
+  }
 
-    disconnectMQTT(false);
-    setMQTTStatus("connecting");
+  function connectMQTT() {
+    if (state.mqtt.ws && state.mqtt.ws.readyState === WebSocket.OPEN) return;
+
+    clearTimeout(state.mqtt.reconnectTimer);
+    clearInterval(state.mqtt.pingTimer);
+    setDataStatus("connecting");
 
     try {
-      await ensureMqttTopicPrefix();
-      mqtt.clientId = "vx_web_" + state.senderId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 18) + "_" + Date.now();
-      mqtt.ws = new WebSocket(MQTT_WS_URL, "mqtt");
-      mqtt.ws.binaryType = "arraybuffer";
-      mqtt.connecting = true;
+      const ws = new WebSocket(MQTT_WS_URL, "mqtt");
+      ws.binaryType = "arraybuffer";
+      state.mqtt.ws = ws;
 
-      mqtt.ws.onopen = function() {
+      ws.onopen = () => {
         mqttSendConnect();
       };
 
-      mqtt.ws.onmessage = function(event) {
-        mqttHandlePacket(event.data);
+      ws.onmessage = (event) => {
+        handleMQTTPacket(event.data);
       };
 
-      mqtt.ws.onerror = function() {
-        setMQTTStatus("disconnected");
+      ws.onerror = () => {
+        state.mqtt.connected = false;
+        setDataStatus("disconnected");
       };
 
-      mqtt.ws.onclose = function() {
-        mqtt.connected = false;
-        mqtt.connecting = false;
-        clearInterval(mqtt.pingTimer);
-        setMQTTStatus("disconnected");
-        restartRefreshTimers();
-        scheduleMqttReconnect();
+      ws.onclose = () => {
+        state.mqtt.connected = false;
+        setDataStatus("disconnected");
+        clearInterval(state.mqtt.pingTimer);
+        state.mqtt.reconnectTimer = setTimeout(connectMQTT, 3000);
       };
     } catch (e) {
-      mqtt.connected = false;
-      mqtt.connecting = false;
-      setMQTTStatus("disconnected");
-      restartRefreshTimers();
-      scheduleMqttReconnect();
+      state.mqtt.connected = false;
+      setDataStatus("disconnected");
+      state.mqtt.reconnectTimer = setTimeout(connectMQTT, 3000);
     }
   }
 
-  function scheduleMqttReconnect() {
-    clearTimeout(mqtt.reconnectTimer);
-    if (!appConfig) return;
-    mqtt.reconnectTimer = setTimeout(connectMQTT, MQTT_RECONNECT_MS);
+  function disconnectMQTT() {
+    clearTimeout(state.mqtt.reconnectTimer);
+    clearInterval(state.mqtt.pingTimer);
+    try {
+      if (state.mqtt.ws) state.mqtt.ws.close();
+    } catch (e) {}
+    state.mqtt.ws = null;
+    state.mqtt.connected = false;
+    state.mqtt.activeTopic = null;
+    setDataStatus("disconnected");
   }
 
-  function disconnectMQTT(keepStatus = true) {
-    clearTimeout(mqtt.reconnectTimer);
-    clearInterval(mqtt.pingTimer);
-
-    if (mqtt.ws) {
-      try { mqtt.ws.close(); } catch (e) {}
-    }
-
-    mqtt.ws = null;
-    mqtt.connected = false;
-    mqtt.connecting = false;
-    mqtt.subscribedRooms = new Set();
-
-    if (!keepStatus) return;
-    setMQTTStatus("disconnected");
-  }
-
-  function mqttHandlePacket(arrayBuffer) {
+  function handleMQTTPacket(arrayBuffer) {
     const bytes = new Uint8Array(arrayBuffer);
     const type = bytes[0] >> 4;
-    const rem = mqttParseLength(bytes, 1);
+    const rem = parseRemainingLength(bytes, 1);
     let index = rem.nextIndex;
 
     if (type === 2) {
       const returnCode = bytes[index + 1];
-      if (returnCode !== 0) {
-        setMQTTStatus("disconnected");
-        try { mqtt.ws.close(); } catch (e) {}
-        return;
+      if (returnCode === 0) {
+        state.mqtt.connected = true;
+        setDataStatus("connected");
+        mqttSubscribe(roomsTopic());
+        clearInterval(state.mqtt.pingTimer);
+        state.mqtt.pingTimer = setInterval(mqttPing, 15000);
+        if (state.currentRoom) subscribeRoomTopic(state.currentRoom.roomId);
+      } else {
+        state.mqtt.connected = false;
+        setDataStatus("disconnected");
       }
-
-      mqtt.connected = true;
-      mqtt.connecting = false;
-      setMQTTStatus("connected");
-      restartRefreshTimers();
-
-      mqttSubscribe(mqtt.topicPrefix + "/rooms");
-      if (state.currentRoom) mqttSubscribeCurrentRoom();
-
-      clearInterval(mqtt.pingTimer);
-      mqtt.pingTimer = setInterval(mqttPing, 15000);
       return;
     }
 
     if (type === 3) {
-      const topicInfo = mqttDecodeString(bytes, index);
+      const topicInfo = decodeString(bytes, index);
       const topic = topicInfo.value;
       index = topicInfo.nextIndex;
       const message = new TextDecoder().decode(bytes.slice(index));
-      mqttHandleMessage(topic, message);
+
+      try {
+        const obj = JSON.parse(message);
+        handleMQTTMessage(topic, obj);
+      } catch (e) {}
       return;
     }
 
     if (type === 13) {
-      setMQTTStatus("connected");
+      setDataStatus("connected");
     }
   }
 
-  function mqttHandleMessage(topic, message) {
-    let data;
-    try { data = JSON.parse(message); } catch (e) { return; }
-    if (!data || data.senderId === state.senderId) return;
+  function subscribeRoomTopic(roomId) {
+    const topic = roomTopic(roomId);
+    if (state.mqtt.activeTopic === topic) return;
+    if (state.mqtt.activeTopic) mqttUnsubscribe(state.mqtt.activeTopic);
+    state.mqtt.activeTopic = topic;
+    if (state.mqtt.connected) mqttSubscribe(topic);
+  }
 
-    if (data.type === "roomsUpdate") {
-      if (!state.currentRoom) loadRooms();
+  function unsubscribeActiveRoomTopic() {
+    if (state.mqtt.activeTopic && state.mqtt.connected) {
+      mqttUnsubscribe(state.mqtt.activeTopic);
+    }
+    state.mqtt.activeTopic = null;
+  }
+
+  async function handleMQTTMessage(topic, obj) {
+    if (topic === roomsTopic()) {
+      if (obj.type === "roomsUpdate") loadRooms(true);
       return;
     }
 
-    if (data.type === "messageUpdate" || data.type === "messagesCleared") {
-      if (state.currentRoom && data.roomId === state.currentRoom.roomId) {
-        loadMessages();
-      }
+    if (!state.currentRoom) return;
+    if (topic !== roomTopic(state.currentRoom.roomId)) return;
+
+    if (obj.type === "roomCleared" && obj.roomId === state.currentRoom.roomId) {
+      localStorage.removeItem(roomCacheKey(obj.roomId));
+      localStorage.removeItem(roomLastCommentKey(obj.roomId));
+      state.roomSeen = new Set();
+      chatBox.innerHTML = "";
+      showToast("当前房间已清空");
       return;
     }
 
-    if (data.type === "roomDeleted") {
-      if (state.currentRoom && data.roomId === state.currentRoom.roomId) {
-        alert("当前房间已被管理员删除");
-        showLobby();
-      } else if (!state.currentRoom) {
-        loadRooms();
-      }
+    if (obj.type === "message" && obj.roomId === state.currentRoom.roomId && obj.payload) {
+      try {
+        const msg = await decryptPayload(obj.payload, state.currentRoom.roomSecret, "vx-room-msg:" + obj.roomId);
+        appendMessageIfNew(msg, "mqtt");
+      } catch (e) {}
     }
-  }
-
-  function mqttSubscribeCurrentRoom() {
-    if (!mqtt.connected || !state.currentRoom || !mqtt.topicPrefix) return;
-    const topic = mqtt.topicPrefix + "/room/" + state.currentRoom.roomId;
-    if (mqtt.subscribedRooms.has(topic)) return;
-    mqttSubscribe(topic);
-    mqtt.subscribedRooms.add(topic);
-  }
-
-  function mqttLeaveCurrentRoom() {
-    // MQTT 断线/重连时会自动清理；这里保留订阅也不影响功能。
-  }
-
-  function mqttPublishRoomsUpdate() {
-    if (!mqtt.topicPrefix) return;
-    mqttPublish(mqtt.topicPrefix + "/rooms", {
-      type: "roomsUpdate",
-      senderId: state.senderId,
-      time: Date.now()
-    });
-  }
-
-  function mqttPublishRoomUpdate(roomId, type = "messageUpdate") {
-    if (!mqtt.topicPrefix || !roomId) return;
-    mqttPublish(mqtt.topicPrefix + "/room/" + roomId, {
-      type: type,
-      roomId: roomId,
-      senderId: state.senderId,
-      time: Date.now()
-    });
   }
 
   messageInput.addEventListener("keydown", function(e) {
-    if (e.key === "Enter") {
-      sendMessage();
-    }
-  });
-
-  document.getElementById("joinRoomPassword").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") {
-      confirmJoinRoom();
-    }
-  });
-
-  document.getElementById("adminPassword").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") {
-      clearCurrentRoomMessagesWithAdmin();
-    }
+    if (e.key === "Enter") sendMessage();
   });
 
   document.getElementById("nameInput").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") {
-      saveName();
+    if (e.key === "Enter") saveName();
+  });
+
+  document.getElementById("joinRoomPassword").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") confirmJoinRoom();
+  });
+
+  document.getElementById("adminPassword").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") clearCurrentRoomMessagesWithAdmin();
+  });
+
+  window.addEventListener("online", () => {
+    if (appConfig) {
+      connectMQTT();
+      flushPendingGistMessages();
     }
   });
 
-  ["pointerdown", "keydown", "input", "touchstart"].forEach(function(eventName) {
-    chatApp.addEventListener(eventName, function() {
-      if (appConfig) resetIdleTimer();
-    }, { passive: true });
-  });
-
-  document.addEventListener("touchmove", function(e) {
-    const scrollable = e.target.closest(".screen, .chat-box, .modal");
-    if (!scrollable) {
-      e.preventDefault();
-    }
-  }, { passive: false });
-
-  document.addEventListener("visibilitychange", function() {
+  document.addEventListener("visibilitychange", () => {
     if (!document.hidden && appConfig) {
-      if (!mqtt.connected && !mqtt.connecting) connectMQTT();
-      if (state.currentRoom) loadMessages(); else loadRooms();
+      connectMQTT();
+      flushPendingGistMessages();
+      if (state.currentRoom) syncRoomHistoryFromGist(state.currentRoom.roomId, state.currentRoom.roomSecret);
+      else loadRooms(true);
     }
   });
-
-  window.addEventListener("online", function() {
-    if (appConfig) connectMQTT();
-  });
-
-
-
-  /* ===== Keyboard viewport fix: keep top/header/status fixed; only middle/chat area adjusts ===== */
-  function updateKeyboardInset() {
-    const app = document.getElementById("chatApp");
-    if (!app) return;
-
-    let inset = 0;
-    if (window.visualViewport) {
-      const baseHeight = stableAppHeight || window.innerHeight || document.documentElement.clientHeight || 0;
-      inset = Math.max(0, baseHeight - window.visualViewport.height - window.visualViewport.offsetTop);
-    }
-
-    if (inset < 80) inset = 0;
-    app.style.setProperty("--keyboard-inset", inset + "px");
-    app.classList.toggle("keyboard-open", inset > 0);
-
-    if (inset > 0) {
-      window.scrollTo(0, 0);
-      if (state && state.currentRoom && chatBox) {
-        setTimeout(function () {
-          chatBox.scrollTop = chatBox.scrollHeight;
-        }, 60);
-      }
-    }
-  }
-
-  setStableAppHeight(true);
-
-  window.addEventListener("orientationchange", function () {
-    setTimeout(function () {
-      stableAppHeight = window.innerHeight || document.documentElement.clientHeight || stableAppHeight;
-      setStableAppHeight(true);
-      updateKeyboardInset();
-    }, 350);
-  });
-
-  window.addEventListener("resize", function () {
-    setStableAppHeight(false);
-    updateKeyboardInset();
-  });
-
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", updateKeyboardInset);
-    window.visualViewport.addEventListener("scroll", updateKeyboardInset);
-  }
-
-  window.addEventListener("scroll", function () {
-    if (chatApp && chatApp.style.display !== "none") {
-      window.scrollTo(0, 0);
-    }
-  }, { passive: true });
-
-  if (messageInput) {
-    messageInput.addEventListener("focus", function () {
-      setTimeout(updateKeyboardInset, 80);
-      setTimeout(updateKeyboardInset, 260);
-    });
-    messageInput.addEventListener("blur", function () {
-      setTimeout(updateKeyboardInset, 80);
-    });
-  }
 </script>
 
 </body>
