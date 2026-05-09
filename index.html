@@ -983,6 +983,13 @@
 
   const API = "https://api.github.com";
 
+  const NOTIFY_WS_URL = "wss://vx-notify-2026.appleloveword4.workers.dev/ws";
+  const NOTIFY_TOKEN = "vx_notify_2026_private_key";
+  const FALLBACK_LOBBY_REFRESH_MS = 30000;
+  const FALLBACK_ROOM_REFRESH_MS = 30000;
+  const NOTIFY_RECONNECT_MS = 3000;
+  const NOTIFY_PING_MS = 25000;
+
   const ROOM_PREFIX = "ENC_ROOM_META_V1:";
   const MSG_PREFIX = "ENC_ROOM_MSG_V1:";
 
@@ -1017,6 +1024,11 @@
     loadedMessageIds: new Set(),
     roomLoadedOnce: false,
     toastTimer: null,
+    notifyWs: null,
+    notifyReconnectTimer: null,
+    notifyPingTimer: null,
+    notifyManuallyClosed: false,
+    notifyAuthed: false,
     rooms: []
   };
 
@@ -1541,6 +1553,7 @@
     state.lastRenderHash = "";
     state.lastRoomsHash = "";
 
+    connectNotifyWS();
     showLobby();
   }
 
@@ -1689,6 +1702,10 @@
     clearInterval(state.timer);
     clearInterval(state.lobbyTimer);
 
+    if (state.currentRoom && state.currentRoom.roomId) {
+      notifyLeaveRoom(state.currentRoom.roomId);
+    }
+
     state.currentRoom = null;
     state.lastRenderHash = "";
     state.loadedMessageIds = new Set();
@@ -1696,7 +1713,7 @@
     hideToast();
 
     loadRooms();
-    state.lobbyTimer = setInterval(loadRooms, 500);
+    state.lobbyTimer = setInterval(loadRooms, FALLBACK_LOBBY_REFRESH_MS);
 
     resetIdleTimer();
   }
@@ -1720,6 +1737,8 @@
     state.timer = null;
     state.lobbyTimer = null;
     state.idleTimer = null;
+    disconnectNotifyWS();
+
     state.currentRoom = null;
     appConfig = null;
     activeUnlockCode = "";
@@ -1745,6 +1764,10 @@
   }
 
   function backToLobby() {
+    if (state.currentRoom && state.currentRoom.roomId) {
+      notifyLeaveRoom(state.currentRoom.roomId);
+    }
+
     chatBox.innerHTML = "";
     messageInput.value = "";
     showLobby();
@@ -1759,6 +1782,143 @@
 
     statusEl.style.display = "block";
     statusEl.textContent = text;
+  }
+
+
+  function notifySend(data) {
+    try {
+      if (!state.notifyWs || state.notifyWs.readyState !== WebSocket.OPEN || !state.notifyAuthed) {
+        return false;
+      }
+
+      state.notifyWs.send(JSON.stringify(data));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function notifyJoinCurrentRoom() {
+    if (!state.currentRoom || !state.currentRoom.roomId) return;
+
+    notifySend({
+      type: "joinRoom",
+      roomId: state.currentRoom.roomId
+    });
+  }
+
+  function notifyLeaveRoom(roomId) {
+    if (!roomId) return;
+
+    notifySend({
+      type: "leaveRoom",
+      roomId: roomId
+    });
+  }
+
+  function startNotifyPing() {
+    clearInterval(state.notifyPingTimer);
+
+    state.notifyPingTimer = setInterval(function() {
+      notifySend({ type: "ping" });
+    }, NOTIFY_PING_MS);
+  }
+
+  function disconnectNotifyWS() {
+    state.notifyManuallyClosed = true;
+    state.notifyAuthed = false;
+
+    clearTimeout(state.notifyReconnectTimer);
+    clearInterval(state.notifyPingTimer);
+
+    state.notifyReconnectTimer = null;
+    state.notifyPingTimer = null;
+
+    if (state.notifyWs) {
+      try {
+        state.notifyWs.close();
+      } catch (e) {}
+    }
+
+    state.notifyWs = null;
+  }
+
+  function connectNotifyWS() {
+    if (!appConfig) return;
+
+    if (
+      state.notifyWs &&
+      (state.notifyWs.readyState === WebSocket.OPEN || state.notifyWs.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
+
+    state.notifyManuallyClosed = false;
+    state.notifyAuthed = false;
+
+    try {
+      const ws = new WebSocket(NOTIFY_WS_URL);
+      state.notifyWs = ws;
+
+      ws.addEventListener("open", function() {
+        try {
+          ws.send(JSON.stringify({
+            type: "auth",
+            token: NOTIFY_TOKEN
+          }));
+        } catch (e) {}
+      });
+
+      ws.addEventListener("message", function(event) {
+        let msg;
+
+        try {
+          msg = JSON.parse(event.data);
+        } catch (e) {
+          return;
+        }
+
+        if (msg.type === "ready") {
+          state.notifyAuthed = true;
+          startNotifyPing();
+
+          if (state.currentRoom && state.currentRoom.roomId) {
+            notifyJoinCurrentRoom();
+          }
+
+          return;
+        }
+
+        if (msg.type === "messageUpdate" && state.currentRoom && msg.roomId === state.currentRoom.roomId) {
+          loadMessages();
+          return;
+        }
+
+        if (msg.type === "roomsUpdate" && appConfig && !state.currentRoom) {
+          loadRooms();
+          return;
+        }
+      });
+
+      ws.addEventListener("close", function() {
+        state.notifyAuthed = false;
+        clearInterval(state.notifyPingTimer);
+        state.notifyPingTimer = null;
+
+        if (!state.notifyManuallyClosed && appConfig) {
+          clearTimeout(state.notifyReconnectTimer);
+          state.notifyReconnectTimer = setTimeout(connectNotifyWS, NOTIFY_RECONNECT_MS);
+        }
+      });
+
+      ws.addEventListener("error", function() {
+        state.notifyAuthed = false;
+      });
+
+    } catch (e) {
+      clearTimeout(state.notifyReconnectTimer);
+      state.notifyReconnectTimer = setTimeout(connectNotifyWS, NOTIFY_RECONNECT_MS);
+    }
   }
 
   function hideToast() {
@@ -1936,6 +2096,7 @@
       document.getElementById("newRoomPassword").value = "";
       closeCreateRoomModal();
 
+      notifySend({ type: "roomsUpdate" });
       openRoom(meta, roomSecret, { accessType: "owner" });
 
     } catch (e) {
@@ -2166,8 +2327,11 @@
 
     chatBox.innerHTML = "";
 
+    connectNotifyWS();
+    notifyJoinCurrentRoom();
+
     loadMessages();
-    state.timer = setInterval(loadMessages, 500);
+    state.timer = setInterval(loadMessages, FALLBACK_ROOM_REFRESH_MS);
 
     if (state.currentRoom.legacyAdminNoSecret) {
       setStatus("这个旧房间没有管理密钥，管理密码可进入管理和删除，但无法解密显示旧消息。建议清空或删除后重建。 ");
@@ -2357,6 +2521,12 @@
       }
 
       showToast("发送成功", "success", 1400);
+
+      notifySend({
+        type: "messageUpdate",
+        roomId: state.currentRoom.roomId
+      });
+
       await loadMessages();
 
     } catch (e) {
@@ -2483,6 +2653,12 @@
       closeAdminModal();
       setStatus("");
       alert("当前房间聊天记录已清空");
+
+      notifySend({
+        type: "messageUpdate",
+        roomId: state.currentRoom.roomId
+      });
+
       await loadMessages();
 
     } catch (e) {
@@ -2522,6 +2698,12 @@
 
       alert("房间已删除");
 
+      notifySend({ type: "roomsUpdate" });
+      notifySend({
+        type: "messageUpdate",
+        roomId: roomId
+      });
+
       chatBox.innerHTML = "";
       messageInput.value = "";
 
@@ -2533,6 +2715,32 @@
       alert(e.message);
     }
   }
+
+
+
+  document.addEventListener("visibilitychange", function() {
+    if (!appConfig) return;
+
+    if (document.hidden) {
+      clearInterval(state.timer);
+      clearInterval(state.lobbyTimer);
+      state.timer = null;
+      state.lobbyTimer = null;
+      return;
+    }
+
+    connectNotifyWS();
+
+    if (state.currentRoom) {
+      loadMessages();
+      clearInterval(state.timer);
+      state.timer = setInterval(loadMessages, FALLBACK_ROOM_REFRESH_MS);
+    } else {
+      loadRooms();
+      clearInterval(state.lobbyTimer);
+      state.lobbyTimer = setInterval(loadRooms, FALLBACK_LOBBY_REFRESH_MS);
+    }
+  });
 
   messageInput.addEventListener("keydown", function(e) {
     if (e.key === "Enter") {
