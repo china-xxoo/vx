@@ -47,11 +47,20 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #111827;
       overflow: hidden;
+      overscroll-behavior: none;
+      position: fixed;
+      inset: 0;
+      touch-action: manipulation;
+    }
+
+    body {
+      -webkit-overflow-scrolling: auto;
     }
 
     .calculator {
       width: 100%;
       height: 100vh;
+      height: 100dvh;
       background:
         radial-gradient(circle at top, #1f2937 0%, #111827 48%, #060b15 100%);
       color: white;
@@ -119,8 +128,11 @@
       display: none;
       width: 100%;
       height: 100vh;
+      height: 100dvh;
       background: #eef2f7;
       flex-direction: column;
+      overflow: hidden;
+      overscroll-behavior: none;
     }
 
     .top-header,
@@ -179,6 +191,8 @@
       display: none;
       flex: 1;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
       padding: 18px;
       background:
         radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 28%),
@@ -360,6 +374,8 @@
     .chat-box {
       flex: 1;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
       padding: 14px;
       background: #f7f7f8;
     }
@@ -497,6 +513,52 @@
       background: #111827;
       color: white;
     }
+
+    .danger-btn {
+      background: #dc2626 !important;
+      color: white !important;
+    }
+
+    .secondary-btn {
+      background: #f3f4f6 !important;
+      color: #111827 !important;
+    }
+
+    .notice {
+      background: #fff7ed;
+      color: #c2410c;
+      padding: 12px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .nickname-ok {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .split-line {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 16px 0;
+    }
+
+    .modal-actions.vertical {
+      flex-direction: column;
+    }
+
+    .modal-actions.vertical button {
+      width: 100%;
+    }
+
+    .tiny-text {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
   </style>
 </head>
 
@@ -534,58 +596,36 @@
 
 <div class="chat-app" id="chatApp">
 
-  <div class="top-header" id="nameHeader">
-    设置名字
-    <button class="panic-btn" onclick="lockChat()">退出</button>
-  </div>
-
-  <div class="screen" id="nameScreen">
-    <div class="card">
-      <h2>第一次进入</h2>
-      <p>先设置你的聊天名字。这个名字只保存在当前手机浏览器里。</p>
-      <input class="input" id="nameInput" placeholder="输入你的名字" />
-      <button class="main-btn" onclick="saveName()">保存并继续</button>
-    </div>
-  </div>
-
   <div class="top-header" id="lobbyHeader" style="display:none;">
-    系统设置
-    <button class="panic-btn" onclick="lockChat()">退出</button>
+    <button class="header-left" onclick="lockChat()">退出</button>
+    聊天室
+    <button class="panic-btn" onclick="openSettingsModal()">设置</button>
   </div>
 
   <div class="screen" id="lobbyScreen">
-    <div class="card">
-      <h3>我的名字</h3>
-      <p id="myNameText"></p>
-      <button class="small-btn" onclick="resetName()">修改名字</button>
-    </div>
-
-    <div class="card">
-      <h3>进入密码</h3>
-      <p>永久备用密码是 123456✖️。你也可以设置自己的进入密码；忘记后仍然可以用 123456✖️ 进入。</p>
-      <input class="input" id="newUnlockCode" placeholder="输入新的进入密码，例如 2580✖️" />
-      <input class="input" id="confirmUnlockCode" placeholder="再次输入新的进入密码" />
-      <button class="main-btn" onclick="changeUnlockCode()">修改进入密码</button>
+    <div id="nicknameNotice" class="notice">
+      还没有设置昵称。请点击右上角“设置”添加昵称，否则不能进入或新建聊天室。
     </div>
 
     <div class="card">
       <h3>新建房间</h3>
+      <p>新建房间需要设置独立房间密码。之后可以用“房间密码”或“管理密码”进入。</p>
       <input class="input" id="newRoomName" placeholder="房间名称，例如：A" />
-      <input class="input" id="newRoomPassword" placeholder="房间密码" type="password" />
+      <input class="input" id="newRoomPassword" placeholder="房间密码，至少 4 位" type="password" />
       <button class="main-btn" onclick="createRoom()">新建并进入房间</button>
     </div>
 
     <div class="card">
-      <h3>房间列表</h3>
-      <p>房间以房间号为主显示。无密码房间可直接进入，其他房间需要输入对应房间密码。</p>
+      <h3>聊天室列表</h3>
+      <p>默认聊天大厅可直接进入；其他房间输入房间密码或管理密码进入。进入后系统会每 1 秒强制刷新并拉取最新 Gist 数据。</p>
       <div id="roomList"></div>
     </div>
   </div>
 
   <div class="chat-header" id="roomHeader" style="display:none;">
     <button class="header-left" onclick="backToLobby()">房间</button>
-    <span id="roomTitle">Private Chat</span>
-    <button class="admin-btn" onclick="openAdminModal()">房间设置</button>
+    <span id="roomTitle">聊天室</span>
+    <button class="admin-btn" onclick="openAdminModal()">管理</button>
     <button class="panic-btn" onclick="panicExit()">退出</button>
   </div>
 
@@ -600,11 +640,33 @@
 
 </div>
 
+<div class="modal-mask" id="settingsModal">
+  <div class="modal">
+    <h3>设置</h3>
+    <p>昵称会显示在所有聊天对话里。没有昵称时，不能进入或新建聊天室。</p>
+    <input class="input" id="nameInput" placeholder="输入你的昵称" />
+    <button class="main-btn" onclick="saveName()">保存昵称</button>
+
+    <div class="split-line"></div>
+
+    <h3>进入密码</h3>
+    <p>你可以修改自己的进入密码；原始进入密码会永久保留为备用密码。</p>
+    <input class="input" id="newUnlockCode" placeholder="输入新的进入密码，例如 2580✖️" />
+    <input class="input" id="confirmUnlockCode" placeholder="再次输入新的进入密码" />
+    <button class="main-btn" onclick="changeUnlockCode()">修改进入密码</button>
+    <div class="tiny-text">提示：原始密码不会被删除，忘记新密码时仍可用原始密码进入。</div>
+
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="cancel-btn" onclick="closeSettingsModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-mask" id="joinModal">
   <div class="modal">
     <h3>进入房间</h3>
     <p id="joinRoomText"></p>
-    <input class="input" id="joinRoomPassword" placeholder="输入房间密码" type="password" />
+    <input class="input" id="joinRoomPassword" placeholder="输入房间密码或管理密码" type="password" />
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeJoinModal()">取消</button>
       <button class="confirm-btn" onclick="confirmJoinRoom()">进入</button>
@@ -614,12 +676,13 @@
 
 <div class="modal-mask" id="adminModal">
   <div class="modal">
-    <h3>房间设置</h3>
-    <p>输入管理员密码后，可以删除当前房间和该房间聊天记录。默认无密码房间不可删除。</p>
-    <input class="input" id="adminPassword" placeholder="管理员密码" type="password" />
-    <div class="modal-actions">
+    <h3>房间管理</h3>
+    <p>输入管理密码后，可以清空当前房间聊天记录；自建房间还可以直接删除房间。</p>
+    <input class="input" id="adminPassword" placeholder="管理密码" type="password" />
+    <div class="modal-actions vertical">
+      <button class="confirm-btn" onclick="clearCurrentRoomMessagesWithAdmin()">清空当前房间聊天</button>
+      <button class="danger-btn" onclick="deleteCurrentRoomWithAdmin()">删除当前房间</button>
       <button class="cancel-btn" onclick="closeAdminModal()">取消</button>
-      <button class="confirm-btn" onclick="deleteCurrentRoomWithAdmin()">删除房间</button>
     </div>
   </div>
 </div>
@@ -675,14 +738,13 @@
   const chatApp = document.getElementById("chatApp");
   const display = document.getElementById("display");
 
-  const nameHeader = document.getElementById("nameHeader");
-  const nameScreen = document.getElementById("nameScreen");
   const lobbyHeader = document.getElementById("lobbyHeader");
   const lobbyScreen = document.getElementById("lobbyScreen");
   const roomHeader = document.getElementById("roomHeader");
   const roomTitle = document.getElementById("roomTitle");
   const roomList = document.getElementById("roomList");
-  const myNameText = document.getElementById("myNameText");
+  const nicknameNotice = document.getElementById("nicknameNotice");
+  const settingsModal = document.getElementById("settingsModal");
 
   const chatBox = document.getElementById("chatBox");
   const sendArea = document.getElementById("sendArea");
@@ -1110,9 +1172,61 @@
     return String(appConfig.chatSecret || "default") + "::default-no-password-room-v1";
   }
 
+  function hasNickname() {
+    return !!String(state.displayName || "").trim();
+  }
+
+  function requireNickname() {
+    if (hasNickname()) return true;
+    alert("请先在右上角“设置”里添加昵称，添加后才可以进入或新建聊天室。");
+    openSettingsModal();
+    return false;
+  }
+
+  function makeRoomSecret() {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    return toBase64(bytes) + "::" + crypto.randomUUID();
+  }
+
+  async function encryptAdminRoomSecret(roomId, roomSecret) {
+    return encryptPayload(
+      {
+        ok: true,
+        roomId: roomId,
+        roomSecret: roomSecret,
+        admin: true
+      },
+      appConfig.chatSecret,
+      "vx-room-admin:" + roomId
+    );
+  }
+
+  async function decryptAdminRoomSecret(room) {
+    if (!room.adminSecret) return null;
+
+    const data = await decryptPayload(
+      room.adminSecret,
+      appConfig.chatSecret,
+      "vx-room-admin:" + room.roomId
+    );
+
+    if (!data.ok || data.roomId !== room.roomId || !data.roomSecret) return null;
+    return data.roomSecret;
+  }
+
+  function updateNicknameNotice() {
+    if (!nicknameNotice) return;
+
+    if (hasNickname()) {
+      nicknameNotice.className = "notice nickname-ok";
+      nicknameNotice.textContent = "当前昵称：" + state.displayName + "。你可以在右上角“设置”中修改昵称和进入密码。";
+    } else {
+      nicknameNotice.className = "notice";
+      nicknameNotice.textContent = "还没有设置昵称。请点击右上角“设置”添加昵称，否则不能进入或新建聊天室。";
+    }
+  }
+
   function hideAllScreens() {
-    nameHeader.style.display = "none";
-    nameScreen.style.display = "none";
     lobbyHeader.style.display = "none";
     lobbyScreen.style.display = "none";
     roomHeader.style.display = "none";
@@ -1133,38 +1247,40 @@
     state.lastRenderHash = "";
     state.lastRoomsHash = "";
 
-    if (!state.displayName) {
-      showNameScreen();
-    } else {
-      showLobby();
-    }
+    showLobby();
   }
 
-  function showNameScreen() {
-    hideAllScreens();
-    nameHeader.style.display = "flex";
-    nameScreen.style.display = "block";
+  function openSettingsModal() {
+    document.getElementById("nameInput").value = state.displayName || "";
+    document.getElementById("newUnlockCode").value = "";
+    document.getElementById("confirmUnlockCode").value = "";
+    settingsModal.style.display = "flex";
     resetIdleTimer();
+  }
+
+  function closeSettingsModal() {
+    settingsModal.style.display = "none";
   }
 
   function saveName() {
     const name = document.getElementById("nameInput").value.trim();
 
     if (!name) {
-      alert("请输入你的名字");
+      alert("请输入昵称");
       return;
     }
 
     state.displayName = name;
     localStorage.setItem("vx_display_name", name);
-    showLobby();
+    updateNicknameNotice();
+    alert("昵称已保存");
   }
 
   function resetName() {
     localStorage.removeItem("vx_display_name");
     state.displayName = "";
     document.getElementById("nameInput").value = "";
-    showNameScreen();
+    updateNicknameNotice();
   }
 
   async function changeUnlockCode() {
@@ -1204,7 +1320,7 @@
       document.getElementById("newUnlockCode").value = "";
       document.getElementById("confirmUnlockCode").value = "";
 
-      alert("进入密码已修改。下次可以使用新密码，也可以继续使用永久备用密码 123456✖️。");
+      alert("进入密码已修改。下次可以使用新密码，也可以继续使用原始永久备用密码。");
 
     } catch (e) {
       alert("修改失败：" + e.message);
@@ -1217,7 +1333,7 @@
     lobbyHeader.style.display = "flex";
     lobbyScreen.style.display = "block";
 
-    myNameText.textContent = state.displayName;
+    updateNicknameNotice();
 
     clearInterval(state.timer);
     clearInterval(state.lobbyTimer);
@@ -1226,7 +1342,7 @@
     state.lastRenderHash = "";
 
     loadRooms();
-    state.lobbyTimer = setInterval(loadRooms, 3000);
+    state.lobbyTimer = setInterval(loadRooms, 1000);
 
     resetIdleTimer();
   }
@@ -1257,6 +1373,7 @@
 
     closeJoinModal();
     closeAdminModal();
+    closeSettingsModal();
 
     showRandomFakeCalculation();
   }
@@ -1345,7 +1462,7 @@
     let all = first.data;
 
     if (lastPage && lastPage > 1) {
-      const maxPage = Math.min(lastPage, 20);
+      const maxPage = lastPage;
 
       for (let p = 2; p <= maxPage; p++) {
         const page = await fetchCommentsPage(p);
@@ -1365,6 +1482,8 @@
   }
 
   async function createRoom() {
+    if (!requireNickname()) return;
+
     const roomName = document.getElementById("newRoomName").value.trim();
     const roomPassword = document.getElementById("newRoomPassword").value.trim();
 
@@ -1383,15 +1502,19 @@
     try {
       const roomId = crypto.randomUUID();
       const roomNo = generateRoomNo();
+      const roomSecret = makeRoomSecret();
 
       const check = await encryptPayload(
         {
           ok: true,
-          roomId: roomId
+          roomId: roomId,
+          roomSecret: roomSecret
         },
         roomPassword,
         "vx-room-check:" + roomId
       );
+
+      const adminSecret = await encryptAdminRoomSecret(roomId, roomSecret);
 
       const meta = {
         type: "room",
@@ -1401,7 +1524,9 @@
         createdBy: state.displayName,
         createdAt: Date.now(),
         noPassword: false,
-        check: check
+        check: check,
+        adminSecret: adminSecret,
+        version: 2
       };
 
       const encryptedMeta = await encryptRoomMeta(meta);
@@ -1426,7 +1551,7 @@
       document.getElementById("newRoomName").value = "";
       document.getElementById("newRoomPassword").value = "";
 
-      openRoom(meta, roomPassword);
+      openRoom(meta, roomSecret, { accessType: "owner" });
 
     } catch (e) {
       alert(e.message);
@@ -1510,7 +1635,7 @@
 
       const pwdTag = document.createElement("div");
       pwdTag.className = "room-tag " + (room.noPassword ? "free" : "locked");
-      pwdTag.textContent = room.noPassword ? "无密码" : "需密码";
+      pwdTag.textContent = room.noPassword ? "默认大厅" : "房间密码 / 管理密码";
 
       corner.appendChild(nameTag);
       corner.appendChild(pwdTag);
@@ -1525,7 +1650,7 @@
       meta.className = "room-meta";
 
       if (room.noPassword) {
-        meta.textContent = "系统默认房间";
+        meta.textContent = "系统默认聊天大厅";
       } else {
         const time = new Date(room.createdAt).toLocaleString([], {
           month: "2-digit",
@@ -1555,18 +1680,20 @@
   }
 
   function openJoinModal(roomId) {
+    if (!requireNickname()) return;
+
     pendingRoom = state.rooms.find(r => r.roomId === roomId);
 
     if (!pendingRoom) return;
 
     if (pendingRoom.noPassword) {
       const password = getDefaultRoomPassword();
-      openRoom(pendingRoom, password);
+      openRoom(pendingRoom, password, { accessType: "default" });
       return;
     }
 
     document.getElementById("joinRoomText").textContent =
-      "房间号：" + getRoomNo(pendingRoom) + " ｜ 名称：" + pendingRoom.roomName;
+      "房间号：" + getRoomNo(pendingRoom) + " ｜ 名称：" + pendingRoom.roomName + "。可输入房间密码或管理密码。";
 
     document.getElementById("joinRoomPassword").value = "";
     document.getElementById("joinModal").style.display = "flex";
@@ -1583,36 +1710,61 @@
     const password = document.getElementById("joinRoomPassword").value.trim();
 
     if (!pendingRoom || !password) {
-      alert("请输入房间密码");
+      alert("请输入房间密码或管理密码");
       return;
     }
 
     try {
-      const check = await decryptPayload(
-        pendingRoom.check,
-        password,
-        "vx-room-check:" + pendingRoom.roomId
-      );
+      try {
+        const check = await decryptPayload(
+          pendingRoom.check,
+          password,
+          "vx-room-check:" + pendingRoom.roomId
+        );
 
-      if (!check.ok || check.roomId !== pendingRoom.roomId) {
-        throw new Error("房间密码错误");
+        if (check.ok && check.roomId === pendingRoom.roomId) {
+          const roomSecret = check.roomSecret || password;
+          const room = pendingRoom;
+          closeJoinModal();
+          openRoom(room, roomSecret, { accessType: "room" });
+          return;
+        }
+      } catch (e) {}
+
+      const isAdmin = await checkAdminPassword(password);
+
+      if (isAdmin) {
+        const room = pendingRoom;
+        let adminRoomSecret = await decryptAdminRoomSecret(room);
+        let legacyAdminNoSecret = false;
+
+        if (!adminRoomSecret) {
+          adminRoomSecret = "__ADMIN_LEGACY_NO_ROOM_SECRET__";
+          legacyAdminNoSecret = true;
+        }
+
+        closeJoinModal();
+        openRoom(room, adminRoomSecret, {
+          accessType: "admin",
+          adminMode: true,
+          canSend: !legacyAdminNoSecret,
+          legacyAdminNoSecret: legacyAdminNoSecret
+        });
+        return;
       }
 
-      const room = pendingRoom;
-      closeJoinModal();
-      openRoom(room, password);
+      alert("密码错误");
 
     } catch (e) {
-      alert("房间密码错误");
+      alert("密码错误");
     }
   }
 
-  function openRoom(room, roomPassword) {
+  function openRoom(room, roomPassword, options = {}) {
     hideAllScreens();
 
     clearInterval(state.lobbyTimer);
     clearInterval(state.timer);
-    clearTimeout(state.idleTimer);
 
     state.currentRoom = {
       roomId: room.roomId,
@@ -1620,20 +1772,28 @@
       roomName: room.roomName,
       password: roomPassword,
       noPassword: !!room.noPassword,
-      commentId: room.commentId || null
+      commentId: room.commentId || null,
+      adminMode: !!options.adminMode,
+      accessType: options.accessType || "room",
+      canSend: options.canSend !== false,
+      legacyAdminNoSecret: !!options.legacyAdminNoSecret
     };
 
     state.lastRenderHash = "";
 
-    roomTitle.textContent = getRoomNo(room);
+    roomTitle.textContent = room.roomName || getRoomNo(room);
     roomHeader.style.display = "flex";
     chatBox.style.display = "block";
-    sendArea.style.display = "flex";
+    sendArea.style.display = state.currentRoom.canSend ? "flex" : "none";
 
     chatBox.innerHTML = "";
 
     loadMessages();
     state.timer = setInterval(loadMessages, 1000);
+
+    if (state.currentRoom.legacyAdminNoSecret) {
+      setStatus("这个旧房间没有管理密钥，管理密码可进入管理和删除，但无法解密显示旧消息。建议清空或删除后重建。 ");
+    }
 
     resetIdleTimer();
   }
@@ -1658,7 +1818,9 @@
     if (!appConfig || !state.currentRoom) return;
 
     try {
-      setStatus("");
+      if (!state.currentRoom.legacyAdminNoSecret) {
+        setStatus("");
+      }
 
       const comments = await fetchLatestComments();
       const currentRoomId = state.currentRoom.roomId;
@@ -1704,7 +1866,6 @@
 
       messages.sort((a, b) => a.time - b.time);
       renderMessages(messages);
-      resetIdleTimer();
 
     } catch (e) {
       setStatus(e.message);
@@ -1728,7 +1889,7 @@
         minute: "2-digit"
       });
 
-      meta.textContent = (isMe ? "我" : msg.senderName || "对方") + " · " + time;
+      meta.textContent = (msg.senderName || (isMe ? state.displayName : "对方")) + " · " + time;
 
       const bubble = document.createElement("div");
       bubble.className = "bubble";
@@ -1747,6 +1908,11 @@
 
     if (!text) return;
     if (!appConfig || !state.currentRoom) return;
+    if (!requireNickname()) return;
+    if (state.currentRoom.canSend === false) {
+      alert("当前是旧房间的管理模式，不能发送新消息。请清空或删除后重建房间。");
+      return;
+    }
 
     resetIdleTimer();
 
@@ -1814,6 +1980,24 @@
     return hash === ADMIN_PASSWORD_HASH;
   }
 
+  async function requireAdminPassword() {
+    const password = document.getElementById("adminPassword").value.trim();
+
+    if (!password) {
+      alert("请输入管理密码");
+      return false;
+    }
+
+    const ok = await checkAdminPassword(password);
+
+    if (!ok) {
+      alert("管理密码错误");
+      return false;
+    }
+
+    return true;
+  }
+
   async function deleteGistComment(commentId) {
     const res = await githubFetch(
       `/gists/${appConfig.gistId}/comments/${commentId}`,
@@ -1827,20 +2011,77 @@
     }
   }
 
+  async function getCommentIdsForRoom(roomId, includeRoomMeta) {
+    const comments = await fetchAllCommentsForRooms();
+    const idsToDelete = [];
+
+    for (const c of comments) {
+      if (typeof c.body !== "string") continue;
+
+      if (includeRoomMeta && c.body.startsWith(ROOM_PREFIX)) {
+        try {
+          const raw = c.body.slice(ROOM_PREFIX.length);
+          const payload = JSON.parse(raw);
+          const room = await decryptRoomMeta(payload);
+
+          if (room.roomId === roomId) {
+            idsToDelete.push(c.id);
+          }
+        } catch (e) {}
+      }
+
+      if (c.body.startsWith(MSG_PREFIX)) {
+        try {
+          const raw = c.body.slice(MSG_PREFIX.length);
+          const wrapper = JSON.parse(raw);
+
+          if (wrapper.roomId === roomId) {
+            idsToDelete.push(c.id);
+          }
+        } catch (e) {}
+      }
+    }
+
+    return [...new Set(idsToDelete)];
+  }
+
+  async function clearCurrentRoomMessagesWithAdmin() {
+    const ok = await requireAdminPassword();
+    if (!ok) return;
+
+    if (!state.currentRoom) {
+      alert("当前不在房间内");
+      return;
+    }
+
+    const confirmed = confirm("确定清空当前房间的聊天记录吗？此操作不可恢复。");
+    if (!confirmed) return;
+
+    try {
+      setStatus("正在清空聊天记录...");
+
+      const idsToDelete = await getCommentIdsForRoom(state.currentRoom.roomId, false);
+
+      for (const id of idsToDelete) {
+        await deleteGistComment(id);
+      }
+
+      state.lastRenderHash = "";
+      chatBox.innerHTML = "";
+      closeAdminModal();
+      setStatus("");
+      alert("当前房间聊天记录已清空");
+      await loadMessages();
+
+    } catch (e) {
+      setStatus(e.message);
+      alert(e.message);
+    }
+  }
+
   async function deleteCurrentRoomWithAdmin() {
-    const password = document.getElementById("adminPassword").value.trim();
-
-    if (!password) {
-      alert("请输入管理员密码");
-      return;
-    }
-
-    const ok = await checkAdminPassword(password);
-
-    if (!ok) {
-      alert("管理员密码错误");
-      return;
-    }
+    const ok = await requireAdminPassword();
+    if (!ok) return;
 
     if (!state.currentRoom) {
       alert("当前不在房间内");
@@ -1848,49 +2089,18 @@
     }
 
     if (state.currentRoom.noPassword) {
-      alert("默认无密码房间不可删除");
+      alert("默认聊天大厅不可删除，但可以清空聊天记录。");
       return;
     }
 
-    const confirmed = confirm("确定删除当前房间吗？该房间聊天记录也会一起删除。");
-
+    const confirmed = confirm("确定删除当前房间吗？该房间聊天记录也会一起删除，此操作不可恢复。");
     if (!confirmed) return;
 
     try {
       setStatus("正在删除房间...");
 
       const roomId = state.currentRoom.roomId;
-      const comments = await fetchAllCommentsForRooms();
-      const idsToDelete = [];
-
-      for (const c of comments) {
-        if (typeof c.body !== "string") continue;
-
-        if (c.body.startsWith(ROOM_PREFIX)) {
-          try {
-            const raw = c.body.slice(ROOM_PREFIX.length);
-            const payload = JSON.parse(raw);
-            const room = await decryptRoomMeta(payload);
-
-            if (room.roomId === roomId) {
-              idsToDelete.push(c.id);
-            }
-          } catch (e) {}
-        }
-
-        if (c.body.startsWith(MSG_PREFIX)) {
-          try {
-            const raw = c.body.slice(MSG_PREFIX.length);
-            const wrapper = JSON.parse(raw);
-
-            if (wrapper.roomId === roomId) {
-              idsToDelete.push(c.id);
-            }
-          } catch (e) {}
-        }
-      }
-
-      const uniqueIds = [...new Set(idsToDelete)];
+      const uniqueIds = await getCommentIdsForRoom(roomId, true);
 
       for (const id of uniqueIds) {
         await deleteGistComment(id);
@@ -1926,9 +2136,28 @@
 
   document.getElementById("adminPassword").addEventListener("keydown", function(e) {
     if (e.key === "Enter") {
-      deleteCurrentRoomWithAdmin();
+      clearCurrentRoomMessagesWithAdmin();
     }
   });
+
+  document.getElementById("nameInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      saveName();
+    }
+  });
+
+  ["pointerdown", "keydown", "input", "touchstart"].forEach(function(eventName) {
+    chatApp.addEventListener(eventName, function() {
+      if (appConfig) resetIdleTimer();
+    }, { passive: true });
+  });
+
+  document.addEventListener("touchmove", function(e) {
+    const scrollable = e.target.closest(".screen, .chat-box, .modal");
+    if (!scrollable) {
+      e.preventDefault();
+    }
+  }, { passive: false });
 </script>
 
 </body>
