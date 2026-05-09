@@ -10,24 +10,12 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <script>
-    (function () {
-      const url = new URL(location.href);
-      const fresh = url.searchParams.get("_fresh");
-      const now = Date.now();
-
-      if (!fresh || now - Number(fresh) > 60000) {
-        url.searchParams.set("_fresh", String(now));
-        location.replace(url.toString());
-      }
-    })();
-  </script>
-
-  <link rel="icon" type="image/png" href="/vx/apple-touch-icon.png?v=20260509" />
-  <link rel="shortcut icon" type="image/png" href="/vx/apple-touch-icon.png?v=20260509" />
-  <link rel="apple-touch-icon" href="/vx/apple-touch-icon.png?v=20260509" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/vx/apple-touch-icon.png?v=20260509" />
-  <link rel="apple-touch-icon-precomposed" href="/vx/apple-touch-icon.png?v=20260509" />
+  <link rel="icon" type="image/png" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="shortcut icon" type="image/png" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="apple-touch-icon-precomposed" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="manifest" href="https://china-xxoo.github.io/vx/manifest.webmanifest" />
 
   <meta name="theme-color" content="#111827" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -638,11 +626,11 @@
     }
 
     .wechat-notice {
-      margin: 10px 12px;
-      padding: 10px 12px;
-      border-radius: 10px;
+      margin: 8px 12px;
+      padding: 7px 10px;
+      border-radius: 8px;
       font-size: 13px;
-      line-height: 1.45;
+      line-height: 1.25;
       background: #fff7ed;
       color: #c2410c;
     }
@@ -900,7 +888,7 @@
 
   <div class="top-header wechat-header" id="lobbyHeader" style="display:none;">
     <span class="app-title-with-logo">
-      <img class="app-logo" src="/vx/apple-touch-icon.png?v=20260509" alt="logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+      <img class="app-logo" src="https://china-xxoo.github.io/vx/apple-touch-icon.png" alt="logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
       <span class="app-logo-fallback">C</span>
     </span>
     <button class="header-text-btn header-new" onclick="openCreateRoomModal()">新建</button>
@@ -908,9 +896,7 @@
   </div>
 
   <div class="screen wechat-screen" id="lobbyScreen">
-    <div id="nicknameNotice" class="wechat-notice">
-      还没有设置昵称。请点击右上角“设置”添加昵称，否则不能进入或新建聊天室。
-    </div>
+    <div id="nicknameNotice" class="wechat-notice">昵称：未设置</div>
     <div id="roomList" class="wechat-list"></div>
   </div>
 
@@ -950,24 +936,13 @@
   </div>
 </div>
 
-<div class="modal-mask sheet-mask" id="settingsModal">
-  <div class="modal">
-    <h3>设置</h3>
-    <p>昵称会显示在所有聊天对话里。没有昵称时，不能进入或新建聊天室。</p>
-    <input class="input" id="nameInput" placeholder="输入你的昵称" />
-    <button class="main-btn" onclick="saveName()">保存昵称</button>
-
-    <div class="split-line"></div>
-
-    <h3>进入密码</h3>
-    <p>你可以修改自己的进入密码；原始进入密码会永久保留为备用密码。</p>
-    <input class="input" id="newUnlockCode" placeholder="输入新的进入密码，例如 2580✖️" />
-    <input class="input" id="confirmUnlockCode" placeholder="再次输入新的进入密码" />
-    <button class="main-btn" onclick="changeUnlockCode()">修改进入密码</button>
-    <div class="tiny-text">提示：原始密码不会被删除，忘记新密码时仍可用原始密码进入。</div>
-
-    <div class="modal-actions" style="margin-top:14px;">
-      <button class="cancel-btn" onclick="closeSettingsModal()">关闭</button>
+<div class="modal-mask center-mask" id="settingsModal">
+  <div class="modal nick-modal">
+    <h3>修改昵称</h3>
+    <input class="input" id="nameInput" placeholder="输入昵称" maxlength="12" />
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeSettingsModal()">取消</button>
+      <button class="confirm-btn" onclick="saveName()">保存</button>
     </div>
   </div>
 </div>
