@@ -3,10 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
   <title>Calculator</title>
 
-  <link rel="apple-touch-icon" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
   <link rel="icon" type="image/png" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="shortcut icon" type="image/png" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
+  <link rel="apple-touch-icon-precomposed" href="https://china-xxoo.github.io/vx/apple-touch-icon.png" />
 
   <meta name="theme-color" content="#111827" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -20,450 +28,2959 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    html, body {
+    html,
+    body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;
-      overscroll-behavior: none;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #111827;
-      color: #fff;
+      overflow: hidden;
+      overscroll-behavior: none;
+      position: fixed;
+      inset: 0;
+      touch-action: manipulation;
     }
 
     body {
-      position: fixed;
-      inset: 0;
+      -webkit-overflow-scrolling: auto;
     }
 
-    .app {
+    .calculator {
       width: 100%;
       height: 100vh;
       height: 100dvh;
+      background:
+        radial-gradient(circle at top, #1f2937 0%, #111827 48%, #060b15 100%);
+      color: white;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 22px;
-      background:
-        radial-gradient(circle at top, rgba(55,65,81,0.92), transparent 34%),
-        radial-gradient(circle at bottom, rgba(15,23,42,1), #020617 72%);
+      justify-content: flex-end;
+      padding: 18px;
     }
 
-    .logo {
-      width: 72px;
-      height: 72px;
-      border-radius: 18px;
-      object-fit: cover;
-      margin-bottom: 22px;
-      background: #111827;
-      box-shadow: 0 18px 44px rgba(0,0,0,0.35);
-    }
-
-    .title {
-      font-size: 22px;
-      font-weight: 900;
-      margin-bottom: 8px;
-    }
-
-    .sub-title {
-      font-size: 13px;
-      color: rgba(255,255,255,0.62);
-      margin-bottom: 28px;
-      text-align: center;
-      line-height: 1.5;
-    }
-
-    .status-card {
-      width: min(92vw, 390px);
-      border-radius: 28px;
-      padding: 24px 20px;
-      background: rgba(255,255,255,0.10);
-      border: 1px solid rgba(255,255,255,0.14);
-      box-shadow: 0 24px 80px rgba(0,0,0,0.28);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      text-align: center;
-    }
-
-    .big-dot {
-      width: 78px;
-      height: 78px;
-      border-radius: 999px;
-      margin: 4px auto 18px;
-      background: #ef4444;
-      box-shadow: 0 0 34px rgba(239,68,68,0.75);
-      transition: 0.25s ease;
-    }
-
-    .big-dot.green {
-      background: #22c55e;
-      box-shadow: 0 0 38px rgba(34,197,94,0.82);
-    }
-
-    .big-dot.yellow {
-      background: #f59e0b;
-      box-shadow: 0 0 38px rgba(245,158,11,0.82);
-    }
-
-    .status-text {
-      font-size: 22px;
-      font-weight: 900;
-      margin-bottom: 8px;
-    }
-
-    .status-desc {
-      min-height: 44px;
-      font-size: 13px;
-      line-height: 1.5;
-      color: rgba(255,255,255,0.68);
-      word-break: break-all;
-    }
-
-    .mini-row {
-      margin-top: 18px;
+    .display {
+      flex: 1;
       display: flex;
-      gap: 10px;
+      align-items: flex-end;
+      justify-content: flex-end;
+      font-size: 54px;
+      font-weight: 300;
+      padding: 28px 8px 26px;
+      word-break: break-all;
+      text-align: right;
+      color: #f9fafb;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+      line-height: 1.1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding-bottom: 18px;
     }
 
     .btn {
-      flex: 1;
+      height: 72px;
       border: none;
-      border-radius: 999px;
-      padding: 12px 14px;
-      color: #111827;
-      background: #fff;
-      font-size: 14px;
-      font-weight: 800;
+      border-radius: 22px;
+      font-size: 28px;
+      color: #f9fafb;
+      background: linear-gradient(180deg, #374151 0%, #1f2937 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        0 8px 18px rgba(0,0,0,0.28);
       cursor: pointer;
     }
 
-    .log {
-      width: min(92vw, 390px);
-      height: 132px;
-      margin-top: 14px;
-      padding: 12px;
-      overflow-y: auto;
-      border-radius: 18px;
-      background: rgba(0,0,0,0.24);
-      color: rgba(255,255,255,0.72);
-      font-size: 12px;
-      line-height: 1.45;
-      text-align: left;
-      overscroll-behavior: contain;
+    .btn:active {
+      transform: scale(0.96);
+      opacity: 0.92;
     }
+
+    .operator {
+      background: linear-gradient(180deg, #f59e0b 0%, #ea580c 100%);
+      color: white;
+    }
+
+    .function {
+      background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
+      color: #111827;
+    }
+
+    .zero {
+      grid-column: span 2;
+    }
+
+    .chat-app {
+      display: none;
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      background: #eef2f7;
+      flex-direction: column;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    .top-header,
+    .chat-header {
+      height: 56px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 17px;
+      position: relative;
+      color: #111827;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      position: absolute;
+      left: 12px;
+      border: none;
+      background: #f3f4f6;
+      color: #111827;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .panic-btn {
+      position: absolute;
+      right: 12px;
+      border: none;
+      background: #111827;
+      color: white;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .admin-btn {
+      position: absolute;
+      right: 70px;
+      border: none;
+      background: #f3f4f6;
+      color: #111827;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .screen {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding: 18px;
+      background:
+        radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(168,85,247,0.10), transparent 30%),
+        #eef2f7;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.94);
+      border-radius: 22px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 10px 30px rgba(15,23,42,0.08);
+      border: 1px solid rgba(255,255,255,0.75);
+    }
+
+    .card h2,
+    .card h3 {
+      margin: 0 0 10px;
+      color: #111827;
+    }
+
+    .card p {
+      margin: 6px 0 12px;
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .input {
+      width: 100%;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font-size: 15px;
+      outline: none;
+      margin-bottom: 10px;
+      background: white;
+    }
+
+    .input:focus {
+      border-color: #111827;
+      box-shadow: 0 0 0 3px rgba(17,24,39,0.08);
+    }
+
+    .main-btn {
+      width: 100%;
+      border: none;
+      background: #111827;
+      color: white;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .small-btn {
+      border: none;
+      background: #111827;
+      color: white;
+      border-radius: 999px;
+      padding: 9px 15px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .room-item {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      border-radius: 24px;
+      padding: 18px;
+      margin-bottom: 12px;
+      min-height: 142px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 12px 30px rgba(15,23,42,0.08);
+      border: 1px solid rgba(255,255,255,0.8);
+    }
+
+    .room-item::before {
+      content: "";
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      right: -42px;
+      bottom: -50px;
+      background: radial-gradient(circle, rgba(17,24,39,0.10), transparent 70%);
+      border-radius: 50%;
+    }
+
+    .room-topline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 1;
+    }
+
+    .room-corner {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      align-items: flex-end;
+      max-width: 45%;
+      font-size: 11px;
+      color: #6b7280;
+      text-align: right;
+    }
+
+    .room-tag {
+      background: #f3f4f6;
+      border-radius: 999px;
+      padding: 5px 8px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .room-tag.free {
+      background: #ecfdf5;
+      color: #047857;
+      font-weight: 800;
+    }
+
+    .room-tag.locked {
+      background: #fff7ed;
+      color: #c2410c;
+      font-weight: 800;
+    }
+
+    .room-number-label {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      z-index: 1;
+    }
+
+    .room-number {
+      font-size: 42px;
+      line-height: 1;
+      font-weight: 900;
+      color: #111827;
+      letter-spacing: 0.04em;
+      margin-top: 8px;
+      z-index: 1;
+    }
+
+    .room-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 18px;
+      z-index: 1;
+    }
+
+    .room-meta {
+      font-size: 12px;
+      color: #6b7280;
+      min-width: 0;
+    }
+
+    .empty {
+      background: #fff7ed;
+      color: #c2410c;
+      padding: 12px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .chat-box {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding: 14px;
+      background: #f7f7f8;
+    }
+
+    .msg-wrap {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 12px;
+    }
+
+    .msg-wrap.me {
+      align-items: flex-end;
+    }
+
+    .msg-wrap.other {
+      align-items: flex-start;
+    }
+
+    .meta {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 4px;
+      padding: 0 5px;
+    }
+
+    .bubble {
+      max-width: 78%;
+      padding: 10px 13px;
+      border-radius: 16px;
+      font-size: 15px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .me .bubble {
+      background: #111827;
+      color: white;
+      border-top-right-radius: 4px;
+    }
+
+    .other .bubble {
+      background: white;
+      color: #111827;
+      border-top-left-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .status {
+      display: none;
+      background: #fff7ed;
+      color: #c2410c;
+      padding: 8px 12px;
+      font-size: 12px;
+      border-top: 1px solid #fed7aa;
+    }
+
+    .send-area {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      flex-shrink: 0;
+    }
+
+    .send-area input {
+      flex: 1;
+      border: 1px solid #ddd;
+      border-radius: 999px;
+      padding: 12px 14px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .send-area button {
+      border: none;
+      border-radius: 999px;
+      background: #111827;
+      color: white;
+      padding: 0 18px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .modal-mask {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 99;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 380px;
+      background: white;
+      border-radius: 20px;
+      padding: 18px;
+    }
+
+    .modal h3 {
+      margin: 0 0 8px;
+      color: #111827;
+    }
+
+    .modal p {
+      margin: 0 0 12px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+      border: none;
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .cancel-btn {
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .confirm-btn {
+      background: #111827;
+      color: white;
+    }
+
+    .danger-btn {
+      background: #dc2626 !important;
+      color: white !important;
+    }
+
+    .secondary-btn {
+      background: #f3f4f6 !important;
+      color: #111827 !important;
+    }
+
+    .notice {
+      background: #fff7ed;
+      color: #c2410c;
+      padding: 12px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .nickname-ok {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .split-line {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 16px 0;
+    }
+
+    .modal-actions.vertical {
+      flex-direction: column;
+    }
+
+    .modal-actions.vertical button {
+      width: 100%;
+    }
+
+    .tiny-text {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+
+    .app-title-with-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .app-logo {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      object-fit: cover;
+      display: block;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    .app-logo-fallback {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: #111827;
+      color: #fff;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+
+    /* WeChat-like lobby layout */
+    .top-header.wechat-header {
+      height: 52px;
+      background: #f7f7f7;
+      border-bottom: 1px solid #dcdcdc;
+      font-weight: 700;
+    }
+
+    .header-text-btn {
+      position: absolute;
+      border: none;
+      background: transparent;
+      color: #111827;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 8px 6px;
+      cursor: pointer;
+    }
+
+    .header-text-btn:active {
+      opacity: 0.5;
+    }
+
+    .header-exit {
+      left: 12px;
+    }
+
+    .header-new {
+      right: 58px;
+    }
+
+    .header-settings {
+      right: 12px;
+    }
+
+    #lobbyScreen.wechat-screen {
+      padding: 0;
+      background: #ededed;
+    }
+
+    .wechat-notice {
+      margin: 10px 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      background: #fff7ed;
+      color: #c2410c;
+    }
+
+    .wechat-notice.nickname-ok {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .wechat-list {
+      background: #ffffff;
+      border-top: 1px solid #e5e5e5;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .wechat-room-button {
+      width: 100%;
+      min-height: 72px;
+      border: none;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      text-align: left;
+      position: relative;
+      font-family: inherit;
+    }
+
+    .wechat-room-button::after {
+      content: "";
+      position: absolute;
+      left: 74px;
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: #eeeeee;
+    }
+
+    .wechat-room-button:active {
+      background: #f2f2f2;
+    }
+
+    .wechat-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: linear-gradient(145deg, #22c55e, #16a34a);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .wechat-avatar.locked {
+      background: linear-gradient(145deg, #111827, #374151);
+    }
+
+    .wechat-room-main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .wechat-room-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+
+    .wechat-room-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .wechat-room-time {
+      font-size: 11px;
+      color: #9ca3af;
+      flex-shrink: 0;
+    }
+
+    .wechat-room-sub {
+      font-size: 13px;
+      color: #8a8a8a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-creator-bar {
+      display: none;
+      background: #f7f7f7;
+      color: #6b7280;
+      font-size: 12px;
+      padding: 7px 12px;
+      border-bottom: 1px solid #e5e7eb;
+      flex-shrink: 0;
+      text-align: center;
+    }
+
+    .emergency-bar {
+      display: none;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(78vw, 330px);
+      padding: 0;
+      background: transparent;
+      border: none;
+      flex-shrink: 0;
+      z-index: 30;
+      pointer-events: none;
+    }
+
+    .emergency-close-btn {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.32);
+      border-radius: 999px;
+      background: rgba(220, 38, 38, 0.72);
+      color: #ffffff;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow: 0 14px 34px rgba(220,38,38,0.30);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      pointer-events: auto;
+    }
+
+    .emergency-close-btn:active {
+      transform: scale(0.98);
+      opacity: 0.86;
+    }
+
+    .meta-name {
+      font-weight: 800;
+      color: #4b5563;
+    }
+
+    .modal-mask.sheet-mask {
+      align-items: flex-end;
+      padding: 0;
+    }
+
+    .modal-mask.sheet-mask .modal {
+      max-width: none;
+      width: 100%;
+      border-radius: 18px 18px 0 0;
+      padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+      box-shadow: 0 -12px 30px rgba(0,0,0,0.18);
+    }
+
+    .compact-modal {
+      max-width: 320px;
+      padding: 16px;
+    }
+
+    .compact-modal h3 {
+      margin-bottom: 10px;
+      font-size: 17px;
+    }
+
+    .current-name-line {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #f3f4f6;
+    }
+
+    .chat-header .admin-btn {
+      right: 12px;
+    }
+
+
+    .app-toast {
+      display: none;
+      position: absolute;
+      left: 50%;
+      top: calc(68px + env(safe-area-inset-top));
+      transform: translateX(-50%);
+      max-width: min(78vw, 320px);
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(17,24,39,0.84);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      z-index: 120;
+      box-shadow: 0 10px 28px rgba(15,23,42,0.22);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .app-toast.success {
+      background: rgba(22, 163, 74, 0.88);
+    }
+
+    .app-toast.new {
+      background: rgba(17,24,39,0.88);
+    }
+
+
+
+    .mqtt-status-pill {
+      position: absolute;
+      left: 10px;
+      top: calc(env(safe-area-inset-top, 0px) + 12px);
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.88);
+      border: 1px solid rgba(229,231,235,0.8);
+      color: #111827;
+      font-size: 11px;
+      font-weight: 800;
+      box-shadow: 0 6px 18px rgba(15,23,42,0.08);
+      pointer-events: none;
+    }
+
+    .mqtt-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 7px rgba(239,68,68,0.70);
+    }
+
+    .mqtt-dot.green {
+      background: #22c55e;
+      box-shadow: 0 0 7px rgba(34,197,94,0.80);
+    }
+
+    .mqtt-dot.yellow {
+      background: #f59e0b;
+      box-shadow: 0 0 7px rgba(245,158,11,0.80);
+    }
+
+    .settings-mini-modal {
+      max-width: 300px;
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .settings-mini-modal h3 {
+      margin: 0 0 12px;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .settings-mini-modal .input {
+      margin-bottom: 12px;
+    }
+
+    .create-mini-modal p {
+      display: none;
+    }
+
   </style>
 </head>
 
 <body>
-  <div class="app">
-    <img class="logo" src="https://china-xxoo.github.io/vx/apple-touch-icon.png" alt="logo" />
 
-    <div class="title">私有 EMQX 后台检测</div>
-    <div class="sub-title">GitHub Pages 打开页面，检测手机能不能连接你的私有 MQTT 实时后台。</div>
+<div class="calculator" id="calculator">
+  <div class="display" id="display">0</div>
 
-    <div class="status-card">
-      <div class="big-dot" id="statusDot"></div>
-      <div class="status-text" id="statusText">后台未连接</div>
-      <div class="status-desc" id="statusDesc">等待连接...</div>
+  <div class="grid">
+    <button class="btn function" onclick="clearCalc()">C</button>
+    <button class="btn function" onclick="backspaceCalc()">⌫</button>
+    <button class="btn function" onclick="appendOperator('%')">%</button>
+    <button class="btn operator" onclick="appendOperator('/')">÷</button>
 
-      <div class="mini-row">
-        <button class="btn" onclick="reconnectNow()">重新连接</button>
-      </div>
-    </div>
+    <button class="btn" onclick="appendNumber('1')">1</button>
+    <button class="btn" onclick="appendNumber('2')">2</button>
+    <button class="btn" onclick="appendNumber('3')">3</button>
+    <button class="btn operator" onclick="appendOperator('*')">×</button>
 
-    <div class="log" id="logBox"></div>
+    <button class="btn" onclick="appendNumber('4')">4</button>
+    <button class="btn" onclick="appendNumber('5')">5</button>
+    <button class="btn" onclick="appendNumber('6')">6</button>
+    <button class="btn operator" onclick="appendOperator('-')">−</button>
+
+    <button class="btn" onclick="appendNumber('7')">7</button>
+    <button class="btn" onclick="appendNumber('8')">8</button>
+    <button class="btn" onclick="appendNumber('9')">9</button>
+    <button class="btn operator" onclick="appendOperator('+')">+</button>
+
+    <button class="btn zero" onclick="appendNumber('0')">0</button>
+    <button class="btn" onclick="appendDot()">.</button>
+    <button class="btn operator" onclick="calculateResult()">=</button>
+  </div>
+</div>
+
+<div class="chat-app" id="chatApp">
+
+  <div class="mqtt-status-pill" id="mqttStatusPill"><span class="mqtt-dot" id="mqttDot"></span><span id="mqttText">离线</span></div>
+
+  <div class="top-header wechat-header" id="lobbyHeader" style="display:none;">
+    <span class="app-title-with-logo">
+      <img class="app-logo" src="https://china-xxoo.github.io/vx/apple-touch-icon.png" alt="logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+      <span class="app-logo-fallback">C</span>
+    </span>
+    <button class="header-text-btn header-new" onclick="openCreateRoomModal()">新建</button>
+    <button class="header-text-btn header-settings" onclick="openSettingsModal()">设置</button>
   </div>
 
-  <script>
-    const MQTT_WS_URL = "wss://afa67eee.ala.cn-hangzhou.emqxsl.cn:8084/mqtt";
-    const MQTT_USERNAME = "vx_user";
-    const MQTT_PASSWORD = "vx_2026_chat_private_520_xx";
+  <div class="screen wechat-screen" id="lobbyScreen">
+    <div id="nicknameNotice" class="wechat-notice">
+      还没有设置昵称。请点击右上角“设置”添加昵称，否则不能进入或新建聊天室。
+    </div>
+    <div id="roomList" class="wechat-list"></div>
+  </div>
 
-    const CLIENT_ID = "vx_web_" + Math.random().toString(16).slice(2) + "_" + Date.now();
-    const TEST_TOPIC = "vx/private/test/" + CLIENT_ID;
+  <div class="chat-header" id="roomHeader" style="display:none;">
+    <button class="header-left" onclick="backToLobby()">房间</button>
+    <span id="roomTitle">聊天室</span>
+    <button class="admin-btn" onclick="openAdminModal()">管理</button>
+  </div>
 
-    let ws = null;
-    let reconnectTimer = null;
-    let pingTimer = null;
-    let packetId = 1;
-    let connected = false;
-    let receivedSelfTest = false;
+  <div class="chat-creator-bar" id="roomCreatorBar"></div>
+  <div class="emergency-bar" id="emergencyBar">
+    <button class="emergency-close-btn" onclick="emergencyClose()">有内鬼，紧急关闭</button>
+  </div>
+  <div class="chat-box" id="chatBox" style="display:none;"></div>
 
-    function log(text) {
-      const box = document.getElementById("logBox");
-      const time = new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-      });
-      box.innerHTML = "[" + time + "] " + text + "<br>" + box.innerHTML;
+  <div class="status" id="status"></div>
+
+  <div class="app-toast" id="appToast"></div>
+
+  <div class="send-area" id="sendArea" style="display:none;">
+    <input id="messageInput" placeholder="输入消息..." />
+    <button onclick="sendMessage()">发送</button>
+  </div>
+
+</div>
+
+<div class="modal-mask sheet-mask" id="createRoomModal">
+  <div class="modal create-mini-modal">
+    <h3>新建聊天室</h3>
+    <p>房间名限制：最多 5 个汉字或 8 个英文；不能和已有聊天室重名。</p>
+    <input class="input" id="newRoomName" placeholder="房间名称，例如：好友 / Work" maxlength="16" />
+    <input class="input" id="newRoomPassword" placeholder="房间密码，至少 4 位" type="password" />
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeCreateRoomModal()">取消</button>
+      <button class="confirm-btn" onclick="createRoom()">创建</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask sheet-mask" id="settingsModal">
+  <div class="modal settings-mini-modal">
+    <h3 id="currentNameLine">昵称：未设置</h3>
+    <input class="input" id="nameInput" placeholder="输入昵称" />
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeSettingsModal()">取消</button>
+      <button class="confirm-btn" onclick="saveName()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask sheet-mask" id="joinModal">
+  <div class="modal">
+    <h3>进入房间</h3>
+    <p id="joinRoomText"></p>
+    <input class="input" id="joinRoomPassword" placeholder="输入房间密码或管理密码" type="password" />
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeJoinModal()">取消</button>
+      <button class="confirm-btn" onclick="confirmJoinRoom()">进入</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask sheet-mask" id="adminModal">
+  <div class="modal">
+    <h3>房间管理</h3>
+    <p>输入管理密码后，可以清空当前房间聊天记录；自建房间还可以直接删除房间。</p>
+    <input class="input" id="adminPassword" placeholder="管理密码" type="password" />
+    <div class="modal-actions vertical">
+      <button class="confirm-btn" onclick="clearCurrentRoomMessagesWithAdmin()">清空当前房间聊天</button>
+      <button class="danger-btn" onclick="deleteCurrentRoomWithAdmin()">删除当前房间</button>
+      <button class="cancel-btn" onclick="closeAdminModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const DEFAULT_ENCRYPTED_CONFIG = {
+    "salt": "mD+MSNlz/wdZ1ejc4CrW0w==",
+    "iv": "gA1+MMbI4ovNM9sN",
+    "data": "YzgAikVHoyepAKdvPOJUjKK34pbo4Fxhg75u4GkiYr2J7v+sqI3Tduwx7+X1HyAop3CcwGsA/u+hehcnx5OnnCR18t0RnLljxkCyBktDEmseCbOpOVItrSSHTbo7zAg4KlynHXcaSDXj2k3z8/4gTKkL5Fzwjwleou7kvUg8yausUinUG3GFc6bLEH5s9kARmFhj6jXGU6nzxt6E6Tb8w+1y7DCBB/dVnQpO8cWHY7XphV/WBdrY"
+  };
+
+  const ADMIN_PASSWORD_HASH = "21bc5b04f12d8ba253d1ff68ad358622606c8034be1fdeb99f8d31a0691a1b8e";
+
+  const API = "https://api.github.com";
+
+  const ROOM_PREFIX = "ENC_ROOM_META_V1:";
+  const MSG_PREFIX = "ENC_ROOM_MSG_V1:";
+
+  const MQTT_WS_URL = "wss://afa67eee.ala.cn-hangzhou.emqxsl.cn:8084/mqtt";
+  const MQTT_USERNAME = "vx_user";
+  const MQTT_PASSWORD = "vx_2026_chat_private_520_xx";
+  const MQTT_KEEPALIVE_SECONDS = 30;
+  const MQTT_RECONNECT_MS = 5000;
+  const GIST_LOBBY_FALLBACK_MS = 5000;
+  const GIST_CHAT_FALLBACK_MS = 2000;
+  const GIST_IDLE_REFRESH_MS = 30000;
+
+  const DEFAULT_PUBLIC_ROOM = {
+    type: "room",
+    roomId: "default-no-password-room-v1",
+    roomNo: "000001",
+    roomName: "聊天大厅",
+    createdBy: "System",
+    createdAt: 0,
+    noPassword: true,
+    commentId: null
+  };
+
+  let calcExpression = "";
+  let unlockInput = "";
+  let isFakeResult = false;
+
+  let appConfig = null;
+  let activeUnlockCode = "";
+  let pendingRoom = null;
+
+  let mqtt = {
+    ws: null,
+    connected: false,
+    connecting: false,
+    packetId: 1,
+    reconnectTimer: null,
+    pingTimer: null,
+    topicPrefix: "",
+    clientId: "",
+    subscribedRooms: new Set()
+  };
+
+  let state = {
+    senderId: localStorage.getItem("vx_sender_id") || crypto.randomUUID(),
+    displayName: localStorage.getItem("vx_display_name") || "",
+    currentRoom: null,
+    timer: null,
+    lobbyTimer: null,
+    idleTimer: null,
+    lastRenderHash: "",
+    lastRoomsHash: "",
+    loadedMessageIds: new Set(),
+    roomLoadedOnce: false,
+    toastTimer: null,
+    rooms: []
+  };
+
+  localStorage.setItem("vx_sender_id", state.senderId);
+
+  const calculator = document.getElementById("calculator");
+  const chatApp = document.getElementById("chatApp");
+  const display = document.getElementById("display");
+
+  const lobbyHeader = document.getElementById("lobbyHeader");
+  const lobbyScreen = document.getElementById("lobbyScreen");
+  const roomHeader = document.getElementById("roomHeader");
+  const roomTitle = document.getElementById("roomTitle");
+  const roomList = document.getElementById("roomList");
+  const nicknameNotice = document.getElementById("nicknameNotice");
+  const settingsModal = document.getElementById("settingsModal");
+  const createRoomModal = document.getElementById("createRoomModal");
+  const roomCreatorBar = document.getElementById("roomCreatorBar");
+  const emergencyBar = document.getElementById("emergencyBar");
+
+  const chatBox = document.getElementById("chatBox");
+  const sendArea = document.getElementById("sendArea");
+  const messageInput = document.getElementById("messageInput");
+  const statusEl = document.getElementById("status");
+  const appToast = document.getElementById("appToast");
+  const mqttDot = document.getElementById("mqttDot");
+  const mqttText = document.getElementById("mqttText");
+
+  function updateDisplay() {
+    const showText = (calcExpression || "0")
+      .replaceAll("*", "×")
+      .replaceAll("/", "÷");
+
+    display.textContent = showText;
+  }
+
+  function showRandomFakeCalculation() {
+    const examples = [
+      "128+256=384",
+      "96÷3=32",
+      "45×7=315",
+      "980-275=705",
+      "36×12=432",
+      "720÷8=90",
+      "58+349=407",
+      "1500-680=820",
+      "24×19=456",
+      "999÷9=111",
+      "375+425=800",
+      "64×8=512",
+      "144÷12=12",
+      "870-239=631"
+    ];
+
+    calcExpression = examples[Math.floor(Math.random() * examples.length)]
+      .replaceAll("×", "*")
+      .replaceAll("÷", "/");
+
+    unlockInput = "";
+    isFakeResult = true;
+    updateDisplay();
+  }
+
+  function appendNumber(num) {
+    if (isFakeResult) {
+      calcExpression = "";
+      isFakeResult = false;
     }
 
-    function setStatus(type, desc) {
-      const dot = document.getElementById("statusDot");
-      const text = document.getElementById("statusText");
-      const descEl = document.getElementById("statusDesc");
+    if (calcExpression === "0" || calcExpression === "Error") {
+      calcExpression = num;
+    } else {
+      calcExpression += num;
+    }
 
-      dot.className = "big-dot";
+    unlockInput += num;
+    updateDisplay();
+  }
 
-      if (type === "connected") {
-        dot.classList.add("green");
-        text.textContent = "后台已连接";
-        descEl.textContent = desc || "私有 EMQX MQTT WebSocket 已连接。";
+  function appendOperator(op) {
+    let secretOp = op;
+
+    if (op === "*") {
+      secretOp = "✖️";
+    }
+
+    if (op === "/") {
+      secretOp = "÷";
+    }
+
+    if (isFakeResult) {
+      calcExpression = "";
+      isFakeResult = false;
+    }
+
+    unlockInput += secretOp;
+
+    if (!calcExpression || calcExpression === "Error") {
+      updateDisplay();
+      return;
+    }
+
+    const last = calcExpression.slice(-1);
+
+    if ("+-*/%".includes(last)) {
+      calcExpression = calcExpression.slice(0, -1) + op;
+    } else {
+      calcExpression += op;
+    }
+
+    updateDisplay();
+  }
+
+  function appendDot() {
+    if (isFakeResult) {
+      calcExpression = "";
+      isFakeResult = false;
+    }
+
+    if (calcExpression === "Error") {
+      calcExpression = "";
+    }
+
+    calcExpression += ".";
+    unlockInput += ".";
+    updateDisplay();
+  }
+
+  function clearCalc() {
+    calcExpression = "";
+    unlockInput = "";
+    isFakeResult = false;
+    updateDisplay();
+  }
+
+  function backspaceCalc() {
+    if (isFakeResult) {
+      calcExpression = "";
+      unlockInput = "";
+      isFakeResult = false;
+      updateDisplay();
+      return;
+    }
+
+    calcExpression = calcExpression.slice(0, -1);
+    unlockInput = unlockInput.slice(0, -1);
+    updateDisplay();
+  }
+
+  async function calculateResult() {
+    try {
+      if (isFakeResult) {
+        calcExpression = "";
+        unlockInput = "";
+        isFakeResult = false;
+        updateDisplay();
         return;
       }
 
-      if (type === "connecting") {
-        dot.classList.add("yellow");
-        text.textContent = "后台连接中";
-        descEl.textContent = desc || "正在连接私有 EMQX MQTT 后台...";
-        return;
-      }
+      if (unlockInput) {
+        const unlocked = await tryUnlock();
 
-      text.textContent = "后台未连接";
-      descEl.textContent = desc || "当前设备无法连接私有 EMQX MQTT 后台。";
-    }
-
-    function encodeString(str) {
-      const encoder = new TextEncoder();
-      const bytes = encoder.encode(str);
-      return [bytes.length >> 8, bytes.length & 255, ...bytes];
-    }
-
-    function encodeLength(length) {
-      const encoded = [];
-      do {
-        let digit = length % 128;
-        length = Math.floor(length / 128);
-        if (length > 0) digit = digit | 128;
-        encoded.push(digit);
-      } while (length > 0);
-      return encoded;
-    }
-
-    function makePacket(type, body) {
-      return new Uint8Array([type, ...encodeLength(body.length), ...body]);
-    }
-
-    function sendPacket(type, body) {
-      if (!ws || ws.readyState !== WebSocket.OPEN) return;
-      ws.send(makePacket(type, body));
-    }
-
-    function sendConnect() {
-      const variableHeader = [
-        ...encodeString("MQTT"),
-        4,
-        0xC2,
-        0,
-        30
-      ];
-
-      const payload = [
-        ...encodeString(CLIENT_ID),
-        ...encodeString(MQTT_USERNAME),
-        ...encodeString(MQTT_PASSWORD)
-      ];
-
-      sendPacket(0x10, [...variableHeader, ...payload]);
-      log("发送 CONNECT：用户名密码认证");
-    }
-
-    function sendSubscribe(topic) {
-      const id = packetId++;
-      const variableHeader = [id >> 8, id & 255];
-      const payload = [...encodeString(topic), 0];
-      sendPacket(0x82, [...variableHeader, ...payload]);
-      log("订阅：" + topic);
-    }
-
-    function sendPublish(topic, message) {
-      const encoder = new TextEncoder();
-      const payload = [
-        ...encodeString(topic),
-        ...encoder.encode(message)
-      ];
-      sendPacket(0x30, payload);
-      log("发布测试消息");
-    }
-
-    function sendPing() {
-      sendPacket(0xC0, []);
-      log("PING");
-    }
-
-    function parseRemainingLength(bytes, index) {
-      let multiplier = 1;
-      let value = 0;
-      let encodedByte;
-      let pos = index;
-
-      do {
-        encodedByte = bytes[pos++];
-        value += (encodedByte & 127) * multiplier;
-        multiplier *= 128;
-      } while ((encodedByte & 128) !== 0);
-
-      return {
-        value,
-        nextIndex: pos
-      };
-    }
-
-    function decodeString(bytes, index) {
-      const len = (bytes[index] << 8) + bytes[index + 1];
-      const start = index + 2;
-      const end = start + len;
-      const decoder = new TextDecoder();
-      return {
-        value: decoder.decode(bytes.slice(start, end)),
-        nextIndex: end
-      };
-    }
-
-    function handlePacket(arrayBuffer) {
-      const bytes = new Uint8Array(arrayBuffer);
-      const type = bytes[0] >> 4;
-      const rem = parseRemainingLength(bytes, 1);
-      let index = rem.nextIndex;
-
-      if (type === 2) {
-        const returnCode = bytes[index + 1];
-
-        if (returnCode !== 0) {
-          setStatus("disconnected", "认证失败，CONNACK 返回码：" + returnCode);
-          log("CONNACK 失败，返回码：" + returnCode);
+        if (unlocked) {
           return;
         }
+      }
 
-        connected = true;
-        log("CONNACK，连接成功");
-
-        sendSubscribe(TEST_TOPIC);
-
-        setTimeout(function () {
-          sendPublish(TEST_TOPIC, "hello-private-" + Date.now());
-        }, 500);
-
-        pingTimer = setInterval(sendPing, 15000);
+      if (!calcExpression) {
         return;
       }
 
-      if (type === 3) {
-        const topicInfo = decodeString(bytes, index);
-        const topic = topicInfo.value;
-        index = topicInfo.nextIndex;
+      const last = calcExpression.slice(-1);
 
-        const decoder = new TextDecoder();
-        const message = decoder.decode(bytes.slice(index));
-
-        log("收到消息：" + topic + " / " + message);
-
-        if (topic === TEST_TOPIC) {
-          receivedSelfTest = true;
-          setStatus("connected", "连接成功，并且已收到自己发布的测试消息。");
-        }
-
+      if ("+-*/%".includes(last)) {
         return;
       }
 
-      if (type === 9) {
-        log("SUBACK");
+      if (!/^[0-9+\-*/%. ]+$/.test(calcExpression)) {
+        calcExpression = "Error";
+        unlockInput = "";
+        updateDisplay();
         return;
       }
 
-      if (type === 13) {
-        log("PONG");
-        if (connected) setStatus("connected", "MQTT 心跳正常。");
-        return;
+      const result = Function('"use strict"; return (' + calcExpression + ')')();
+
+      if (!isFinite(result)) {
+        calcExpression = "Error";
+      } else {
+        calcExpression = String(Number(result.toFixed(8)));
       }
 
-      log("收到 MQTT 包类型：" + type);
+      unlockInput = "";
+      updateDisplay();
+
+    } catch (e) {
+      calcExpression = "Error";
+      unlockInput = "";
+      updateDisplay();
+    }
+  }
+
+  function toBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
     }
 
-    function clearTimers() {
-      clearTimeout(reconnectTimer);
-      clearInterval(pingTimer);
-      reconnectTimer = null;
-      pingTimer = null;
+    return btoa(binary);
+  }
+
+  function fromBase64(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
     }
 
-    function connectMQTT() {
-      clearTimers();
-      connected = false;
-      receivedSelfTest = false;
-      setStatus("connecting");
-      log("开始连接：" + MQTT_WS_URL);
+    return bytes;
+  }
 
+  async function deriveKey(password, salt) {
+    const encoder = new TextEncoder();
+
+    const baseKey = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(password),
+      "PBKDF2",
+      false,
+      ["deriveKey"]
+    );
+
+    return crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 180000,
+        hash: "SHA-256"
+      },
+      baseKey,
+      {
+        name: "AES-GCM",
+        length: 256
+      },
+      false,
+      ["encrypt", "decrypt"]
+    );
+  }
+
+  async function deriveKeyFromText(password, saltText) {
+    const salt = new TextEncoder().encode(saltText);
+    return deriveKey(password, salt);
+  }
+
+  async function encryptPayload(obj, password, saltText) {
+    const encoder = new TextEncoder();
+    const key = await deriveKeyFromText(password, saltText);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const encrypted = await crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      encoder.encode(JSON.stringify(obj))
+    );
+
+    return {
+      iv: toBase64(iv),
+      data: toBase64(encrypted)
+    };
+  }
+
+  async function decryptPayload(payload, password, saltText) {
+    const decoder = new TextDecoder();
+    const key = await deriveKeyFromText(password, saltText);
+
+    const iv = fromBase64(payload.iv);
+    const data = fromBase64(payload.data);
+
+    const decrypted = await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      data
+    );
+
+    return JSON.parse(decoder.decode(decrypted));
+  }
+
+  function getEncryptedConfigCandidates() {
+    const list = [];
+
+    const saved = localStorage.getItem("vx_custom_encrypted_config");
+
+    if (saved) {
       try {
-        ws = new WebSocket(MQTT_WS_URL, "mqtt");
-        ws.binaryType = "arraybuffer";
-      } catch (e) {
-        setStatus("disconnected", "WebSocket 创建失败：" + e.message);
-        log("创建失败：" + e.message);
-        scheduleReconnect();
-        return;
-      }
+        const customConfig = JSON.parse(saved);
 
-      ws.onopen = function () {
-        log("WebSocket 已打开");
-        sendConnect();
-      };
-
-      ws.onmessage = function (event) {
-        handlePacket(event.data);
-      };
-
-      ws.onerror = function () {
-        setStatus("disconnected", "连接出错。当前网络可能无法访问私有 EMQX WSS。");
-        log("WebSocket error");
-      };
-
-      ws.onclose = function () {
-        clearTimers();
-        setStatus("disconnected", "连接已断开，5 秒后自动重连。");
-        log("WebSocket close");
-        scheduleReconnect();
-      };
-
-      setTimeout(function () {
-        if (!receivedSelfTest) {
-          setStatus("disconnected", "未收到测试消息，可能认证失败或连接不可用。");
+        if (
+          customConfig &&
+          customConfig.salt &&
+          customConfig.iv &&
+          customConfig.data
+        ) {
+          list.push({
+            type: "custom",
+            config: customConfig
+          });
         }
-      }, 8000);
+      } catch (e) {}
     }
 
-    function scheduleReconnect() {
-      clearTimeout(reconnectTimer);
-      reconnectTimer = setTimeout(connectMQTT, 5000);
-    }
+    list.push({
+      type: "default",
+      config: DEFAULT_ENCRYPTED_CONFIG
+    });
 
-    function reconnectNow() {
-      clearTimers();
-      if (ws) {
-        try { ws.close(); } catch (e) {}
+    return list;
+  }
+
+  async function decryptOneConfig(encryptedConfig, unlockCode) {
+    const decoder = new TextDecoder();
+
+    const salt = fromBase64(encryptedConfig.salt);
+    const iv = fromBase64(encryptedConfig.iv);
+    const data = fromBase64(encryptedConfig.data);
+
+    const key = await deriveKey(unlockCode, salt);
+
+    const decrypted = await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      data
+    );
+
+    return JSON.parse(decoder.decode(decrypted));
+  }
+
+  async function decryptConfig(unlockCode) {
+    const candidates = getEncryptedConfigCandidates();
+
+    let lastError = null;
+
+    for (const item of candidates) {
+      try {
+        const config = await decryptOneConfig(item.config, unlockCode);
+
+        return {
+          config: config,
+          type: item.type
+        };
+      } catch (e) {
+        lastError = e;
       }
-      connectMQTT();
     }
 
-    document.addEventListener("visibilitychange", function () {
-      if (!document.hidden) reconnectNow();
-    });
+    throw lastError || new Error("密码错误");
+  }
 
-    window.addEventListener("online", reconnectNow);
+  async function encryptConfigWithUnlockCode(config, unlockCode) {
+    const encoder = new TextEncoder();
 
-    window.addEventListener("offline", function () {
-      setStatus("disconnected", "设备已离线。");
-      log("offline");
-    });
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
 
-    document.addEventListener("touchmove", function (e) {
-      e.preventDefault();
-    }, { passive: false });
+    const key = await deriveKey(unlockCode, salt);
+
+    const encrypted = await crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: iv
+      },
+      key,
+      encoder.encode(JSON.stringify(config))
+    );
+
+    return {
+      salt: toBase64(salt),
+      iv: toBase64(iv),
+      data: toBase64(encrypted)
+    };
+  }
+
+  function getUnlockCodeCandidates(input) {
+    const variants = new Set();
+
+    variants.add(input);
+    variants.add(input.replace(/(\*|×|✖️|✖)/g, "✖️"));
+    variants.add(input.replace(/(\*|×|✖️|✖)/g, "×"));
+    variants.add(input.replace(/(\*|×|✖️|✖)/g, "*"));
+    variants.add(input.replace(/(\*|×|✖️|✖)/g, "✖"));
+
+    return Array.from(variants);
+  }
+
+  async function tryUnlock() {
+    const candidates = getUnlockCodeCandidates(unlockInput);
+
+    for (const code of candidates) {
+      try {
+        const result = await decryptConfig(code);
+
+        appConfig = result.config;
+        activeUnlockCode = code;
+
+        openApp();
+        return true;
+
+      } catch (e) {}
+    }
+
+    if (unlockInput.length > 40) {
+      unlockInput = "";
+    }
+
+    return false;
+  }
+
+  function generateRoomNo() {
+    return String(Math.floor(100000 + Math.random() * 900000));
+  }
+
+  function getRoomNo(room) {
+    if (room.roomNo) return room.roomNo;
+
+    const text = String(room.roomId || "");
+    let sum = 0;
+
+    for (let i = 0; i < text.length; i++) {
+      sum = (sum + text.charCodeAt(i) * (i + 1)) % 900000;
+    }
+
+    return String(100000 + sum).slice(0, 6);
+  }
+
+  function getDefaultRoomPassword() {
+    return String(appConfig.chatSecret || "default") + "::default-no-password-room-v1";
+  }
+
+  function hasNickname() {
+    return !!String(state.displayName || "").trim();
+  }
+
+  function requireNickname() {
+    if (hasNickname()) return true;
+    alert("请先在右上角“设置”里添加昵称，添加后才可以进入或新建聊天室。");
+    openSettingsModal();
+    return false;
+  }
+
+  function makeRoomSecret() {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    return toBase64(bytes) + "::" + crypto.randomUUID();
+  }
+
+  async function encryptAdminRoomSecret(roomId, roomSecret) {
+    return encryptPayload(
+      {
+        ok: true,
+        roomId: roomId,
+        roomSecret: roomSecret,
+        admin: true
+      },
+      appConfig.chatSecret,
+      "vx-room-admin:" + roomId
+    );
+  }
+
+  async function decryptAdminRoomSecret(room) {
+    if (!room.adminSecret) return null;
+
+    const data = await decryptPayload(
+      room.adminSecret,
+      appConfig.chatSecret,
+      "vx-room-admin:" + room.roomId
+    );
+
+    if (!data.ok || data.roomId !== room.roomId || !data.roomSecret) return null;
+    return data.roomSecret;
+  }
+
+  function updateNicknameNotice() {
+    if (!nicknameNotice) return;
+
+    if (hasNickname()) {
+      nicknameNotice.className = "wechat-notice nickname-ok";
+      nicknameNotice.textContent = "昵称：" + state.displayName;
+    } else {
+      nicknameNotice.className = "wechat-notice";
+      nicknameNotice.textContent = "昵称：未设置";
+    }
+  }
+
+  function hideAllScreens() {
+    lobbyHeader.style.display = "none";
+    lobbyScreen.style.display = "none";
+    roomHeader.style.display = "none";
+    roomCreatorBar.style.display = "none";
+    emergencyBar.style.display = "none";
+    chatBox.style.display = "none";
+    sendArea.style.display = "none";
+    setStatus("");
+  }
+
+  function openApp() {
+    calculator.style.display = "none";
+    chatApp.style.display = "flex";
+
+    clearInterval(state.timer);
+    clearInterval(state.lobbyTimer);
+    clearTimeout(state.idleTimer);
+
+    state.currentRoom = null;
+    state.lastRenderHash = "";
+    state.lastRoomsHash = "";
 
     connectMQTT();
-  </script>
+    showLobby();
+  }
+
+  function openSettingsModal() {
+    document.getElementById("nameInput").value = state.displayName || "";
+    const currentNameLine = document.getElementById("currentNameLine");
+    if (currentNameLine) {
+      currentNameLine.textContent = "昵称：" + (state.displayName || "未设置");
+    }
+    settingsModal.style.display = "flex";
+    resetIdleTimer();
+  }
+
+  function closeSettingsModal() {
+    settingsModal.style.display = "none";
+  }
+
+  function openCreateRoomModal() {
+    if (!requireNickname()) return;
+    document.getElementById("newRoomName").value = "";
+    document.getElementById("newRoomPassword").value = "";
+    createRoomModal.style.display = "flex";
+    resetIdleTimer();
+  }
+
+  function closeCreateRoomModal() {
+    createRoomModal.style.display = "none";
+  }
+
+  function getRoomNameWeight(name) {
+    let weight = 0;
+    for (const ch of name) {
+      if (/[^\x00-\xff]/.test(ch)) {
+        weight += 1.6;
+      } else {
+        weight += 1;
+      }
+    }
+    return weight;
+  }
+
+  function normalizeRoomName(name) {
+    return String(name || "").trim().toLowerCase();
+  }
+
+  function validateRoomName(roomName) {
+    if (!roomName) {
+      alert("请输入房间名称");
+      return false;
+    }
+
+    if (getRoomNameWeight(roomName) > 8) {
+      alert("房间名太长：最多 5 个汉字或 8 个英文。混合名称也不能超过同等长度。");
+      return false;
+    }
+
+    const target = normalizeRoomName(roomName);
+    const duplicate = state.rooms.some(room => normalizeRoomName(room.roomName) === target);
+
+    if (duplicate) {
+      alert("房间名称已存在，请换一个名称。");
+      return false;
+    }
+
+    return true;
+  }
+
+  function saveName() {
+    const name = document.getElementById("nameInput").value.trim();
+
+    if (!name) {
+      alert("请输入昵称");
+      return;
+    }
+
+    state.displayName = name;
+    localStorage.setItem("vx_display_name", name);
+    updateNicknameNotice();
+    const currentNameLine = document.getElementById("currentNameLine");
+    if (currentNameLine) {
+      currentNameLine.textContent = "昵称：" + state.displayName;
+    }
+    closeSettingsModal();
+  }
+
+  function resetName() {
+    localStorage.removeItem("vx_display_name");
+    state.displayName = "";
+    document.getElementById("nameInput").value = "";
+    updateNicknameNotice();
+  }
+
+  async function changeUnlockCode() {
+    const newCode = document.getElementById("newUnlockCode").value.trim();
+    const confirmCode = document.getElementById("confirmUnlockCode").value.trim();
+
+    if (!newCode || !confirmCode) {
+      alert("请输入新的进入密码并再次确认");
+      return;
+    }
+
+    if (newCode !== confirmCode) {
+      alert("两次输入的进入密码不一致");
+      return;
+    }
+
+    if (!/^[0-9+\-*/×÷.%✖️✖\uFE0F]{4,40}$/.test(newCode)) {
+      alert("进入密码只能使用数字和基础运算符，例如 123456✖️");
+      return;
+    }
+
+    if (!appConfig) {
+      alert("当前配置未解锁，请重新进入");
+      return;
+    }
+
+    try {
+      const newEncryptedConfig = await encryptConfigWithUnlockCode(appConfig, newCode);
+
+      localStorage.setItem(
+        "vx_custom_encrypted_config",
+        JSON.stringify(newEncryptedConfig)
+      );
+
+      activeUnlockCode = newCode;
+
+      document.getElementById("newUnlockCode").value = "";
+      document.getElementById("confirmUnlockCode").value = "";
+
+      alert("进入密码已修改。下次可以使用新密码，也可以继续使用原始永久备用密码。");
+
+    } catch (e) {
+      alert("修改失败：" + e.message);
+    }
+  }
+
+  function showLobby() {
+    hideAllScreens();
+
+    lobbyHeader.style.display = "flex";
+    lobbyScreen.style.display = "block";
+    emergencyBar.style.display = "block";
+
+    updateNicknameNotice();
+
+    clearInterval(state.timer);
+    clearInterval(state.lobbyTimer);
+
+    state.currentRoom = null;
+    state.lastRenderHash = "";
+    state.loadedMessageIds = new Set();
+    state.roomLoadedOnce = false;
+    hideToast();
+
+    loadRooms();
+    state.lobbyTimer = setInterval(loadRooms, getLobbyRefreshMs());
+
+    resetIdleTimer();
+  }
+
+  function resetIdleTimer() {
+    clearTimeout(state.idleTimer);
+
+    state.idleTimer = setTimeout(function() {
+      lockChat();
+    }, 60000);
+  }
+
+  function lockChat() {
+    chatApp.style.display = "none";
+    calculator.style.display = "flex";
+
+    clearInterval(state.timer);
+    clearInterval(state.lobbyTimer);
+    clearTimeout(state.idleTimer);
+
+    state.timer = null;
+    state.lobbyTimer = null;
+    state.idleTimer = null;
+    state.currentRoom = null;
+    disconnectMQTT();
+    appConfig = null;
+    activeUnlockCode = "";
+    unlockInput = "";
+
+    closeJoinModal();
+    closeAdminModal();
+    closeSettingsModal();
+    closeCreateRoomModal();
+    hideToast();
+
+    showRandomFakeCalculation();
+  }
+
+  function panicExit() {
+    lockChat();
+  }
+
+  function emergencyClose() {
+    messageInput.value = "";
+    chatBox.innerHTML = "";
+    lockChat();
+  }
+
+  function backToLobby() {
+    mqttLeaveCurrentRoom();
+    chatBox.innerHTML = "";
+    messageInput.value = "";
+    showLobby();
+  }
+
+  function setStatus(text) {
+    if (!text) {
+      statusEl.style.display = "none";
+      statusEl.textContent = "";
+      return;
+    }
+
+    statusEl.style.display = "block";
+    statusEl.textContent = text;
+  }
+
+  function hideToast() {
+    clearTimeout(state.toastTimer);
+    state.toastTimer = null;
+
+    if (!appToast) return;
+    appToast.style.display = "none";
+    appToast.textContent = "";
+    appToast.className = "app-toast";
+  }
+
+  function showToast(text, type = "info", duration = 1600) {
+    if (!appToast) return;
+
+    clearTimeout(state.toastTimer);
+    appToast.textContent = text;
+    appToast.className = "app-toast " + type;
+    appToast.style.display = "block";
+
+    state.toastTimer = setTimeout(function() {
+      hideToast();
+    }, duration);
+  }
+
+  async function githubFetch(path, options = {}) {
+    const headers = {
+      "Accept": "application/vnd.github+json",
+      "Authorization": "Bearer " + appConfig.token,
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(options.headers || {})
+    };
+
+    return fetch(API + path, {
+      ...options,
+      headers
+    });
+  }
+
+  function parseLastPage(linkHeader) {
+    if (!linkHeader) return null;
+
+    const parts = linkHeader.split(",");
+
+    for (const part of parts) {
+      if (part.includes('rel="last"')) {
+        const match = part.match(/[?&]page=(\d+)/);
+        if (match) return Number(match[1]);
+      }
+    }
+
+    return null;
+  }
+
+  async function fetchCommentsPage(page) {
+    const res = await githubFetch(
+      `/gists/${appConfig.gistId}/comments?per_page=100&page=${page}`
+    );
+
+    if (!res.ok) {
+      throw new Error("读取失败：" + res.status);
+    }
+
+    return {
+      data: await res.json(),
+      link: res.headers.get("link")
+    };
+  }
+
+  async function fetchLatestComments() {
+    const first = await fetchCommentsPage(1);
+    const lastPage = parseLastPage(first.link);
+
+    if (lastPage && lastPage > 1) {
+      const last = await fetchCommentsPage(lastPage);
+      return last.data;
+    }
+
+    return first.data;
+  }
+
+  async function fetchAllCommentsForRooms() {
+    const first = await fetchCommentsPage(1);
+    const lastPage = parseLastPage(first.link);
+
+    let all = first.data;
+
+    if (lastPage && lastPage > 1) {
+      const maxPage = lastPage;
+
+      for (let p = 2; p <= maxPage; p++) {
+        const page = await fetchCommentsPage(p);
+        all = all.concat(page.data);
+      }
+    }
+
+    return all;
+  }
+
+  async function encryptRoomMeta(meta) {
+    return encryptPayload(meta, appConfig.chatSecret, "vx-room-meta-v1");
+  }
+
+  async function decryptRoomMeta(payload) {
+    return decryptPayload(payload, appConfig.chatSecret, "vx-room-meta-v1");
+  }
+
+  async function createRoom() {
+    if (!requireNickname()) return;
+
+    const roomName = document.getElementById("newRoomName").value.trim();
+    const roomPassword = document.getElementById("newRoomPassword").value.trim();
+
+    if (!validateRoomName(roomName)) {
+      return;
+    }
+
+    if (roomPassword.length < 4) {
+      alert("房间密码至少 4 位");
+      return;
+    }
+
+    resetIdleTimer();
+
+    try {
+      const roomId = crypto.randomUUID();
+      const roomNo = generateRoomNo();
+      const roomSecret = makeRoomSecret();
+
+      const check = await encryptPayload(
+        {
+          ok: true,
+          roomId: roomId,
+          roomSecret: roomSecret
+        },
+        roomPassword,
+        "vx-room-check:" + roomId
+      );
+
+      const adminSecret = await encryptAdminRoomSecret(roomId, roomSecret);
+
+      const meta = {
+        type: "room",
+        roomId: roomId,
+        roomNo: roomNo,
+        roomName: roomName,
+        createdBy: state.displayName,
+        createdAt: Date.now(),
+        noPassword: false,
+        check: check,
+        adminSecret: adminSecret,
+        version: 2
+      };
+
+      const encryptedMeta = await encryptRoomMeta(meta);
+
+      const res = await githubFetch(`/gists/${appConfig.gistId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          body: ROOM_PREFIX + JSON.stringify(encryptedMeta)
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("创建房间失败：" + res.status);
+      }
+
+      const createdComment = await res.json();
+      meta.commentId = createdComment.id;
+
+      document.getElementById("newRoomName").value = "";
+      document.getElementById("newRoomPassword").value = "";
+      closeCreateRoomModal();
+      mqttPublishRoomsUpdate();
+
+      openRoom(meta, roomSecret, { accessType: "owner" });
+
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  async function loadRooms() {
+    if (!appConfig) return;
+
+    try {
+      const comments = await fetchAllCommentsForRooms();
+
+      const roomComments = comments.filter(c =>
+        typeof c.body === "string" && c.body.startsWith(ROOM_PREFIX)
+      );
+
+      const roomsHash = roomComments.map(c => c.id + ":" + c.updated_at).join("|");
+
+      if (roomsHash === state.lastRoomsHash && state.rooms.length) return;
+
+      state.lastRoomsHash = roomsHash;
+
+      const rooms = [];
+
+      rooms.push({ ...DEFAULT_PUBLIC_ROOM });
+
+      for (const c of roomComments) {
+        try {
+          const raw = c.body.slice(ROOM_PREFIX.length);
+          const payload = JSON.parse(raw);
+          const room = await decryptRoomMeta(payload);
+
+          if (room && room.type === "room" && room.roomId) {
+            room.commentId = c.id;
+            room.noPassword = !!room.noPassword;
+            rooms.push(room);
+          }
+        } catch (e) {}
+      }
+
+      const defaultRoom = rooms.shift();
+      rooms.sort((a, b) => b.createdAt - a.createdAt);
+      state.rooms = [defaultRoom].concat(rooms);
+
+      renderRooms();
+
+    } catch (e) {
+      roomList.innerHTML = `<div class="empty">${e.message}</div>`;
+    }
+  }
+
+  function getRoomAvatarText(room) {
+    const name = String(room.roomName || "聊天室").trim();
+    return name.slice(0, 1) || "聊";
+  }
+
+  function renderRooms() {
+    roomList.innerHTML = "";
+
+    state.rooms.forEach(room => {
+      const btn = document.createElement("button");
+      btn.className = "wechat-room-button";
+      btn.onclick = function() {
+        openJoinModal(room.roomId);
+      };
+
+      const avatar = document.createElement("div");
+      avatar.className = "wechat-avatar" + (room.noPassword ? "" : " locked");
+      avatar.textContent = getRoomAvatarText(room);
+
+      const main = document.createElement("div");
+      main.className = "wechat-room-main";
+
+      const titleRow = document.createElement("div");
+      titleRow.className = "wechat-room-title-row";
+
+      const title = document.createElement("div");
+      title.className = "wechat-room-title";
+      title.textContent = "【" + room.roomName + "】";
+
+      const time = document.createElement("div");
+      time.className = "wechat-room-time";
+
+      if (room.noPassword) {
+        time.textContent = "大厅";
+      } else {
+        time.textContent = new Date(room.createdAt).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+
+      titleRow.appendChild(title);
+      titleRow.appendChild(time);
+
+      const sub = document.createElement("div");
+      sub.className = "wechat-room-sub";
+
+      if (room.noPassword) {
+        sub.textContent = "默认聊天大厅 · 直接进入";
+      } else {
+        sub.textContent = "建立者：" + (room.createdBy || "未知") + " · 房间密码 / 管理密码进入";
+      }
+
+      main.appendChild(titleRow);
+      main.appendChild(sub);
+
+      btn.appendChild(avatar);
+      btn.appendChild(main);
+      roomList.appendChild(btn);
+    });
+  }
+
+  function openJoinModal(roomId) {
+    if (!requireNickname()) return;
+
+    pendingRoom = state.rooms.find(r => r.roomId === roomId);
+
+    if (!pendingRoom) return;
+
+    if (pendingRoom.noPassword) {
+      const password = getDefaultRoomPassword();
+      openRoom(pendingRoom, password, { accessType: "default" });
+      return;
+    }
+
+    document.getElementById("joinRoomText").textContent =
+      "房间号：" + getRoomNo(pendingRoom) + " ｜ 名称：" + pendingRoom.roomName + "。可输入房间密码或管理密码。";
+
+    document.getElementById("joinRoomPassword").value = "";
+    document.getElementById("joinModal").style.display = "flex";
+
+    resetIdleTimer();
+  }
+
+  function closeJoinModal() {
+    pendingRoom = null;
+    document.getElementById("joinModal").style.display = "none";
+  }
+
+  async function confirmJoinRoom() {
+    const password = document.getElementById("joinRoomPassword").value.trim();
+
+    if (!pendingRoom || !password) {
+      alert("请输入房间密码或管理密码");
+      return;
+    }
+
+    try {
+      try {
+        const check = await decryptPayload(
+          pendingRoom.check,
+          password,
+          "vx-room-check:" + pendingRoom.roomId
+        );
+
+        if (check.ok && check.roomId === pendingRoom.roomId) {
+          const roomSecret = check.roomSecret || password;
+          const room = pendingRoom;
+          closeJoinModal();
+          openRoom(room, roomSecret, { accessType: "room" });
+          return;
+        }
+      } catch (e) {}
+
+      const isAdmin = await checkAdminPassword(password);
+
+      if (isAdmin) {
+        const room = pendingRoom;
+        let adminRoomSecret = await decryptAdminRoomSecret(room);
+        let legacyAdminNoSecret = false;
+
+        if (!adminRoomSecret) {
+          adminRoomSecret = "__ADMIN_LEGACY_NO_ROOM_SECRET__";
+          legacyAdminNoSecret = true;
+        }
+
+        closeJoinModal();
+        openRoom(room, adminRoomSecret, {
+          accessType: "admin",
+          adminMode: true,
+          canSend: !legacyAdminNoSecret,
+          legacyAdminNoSecret: legacyAdminNoSecret
+        });
+        return;
+      }
+
+      alert("密码错误");
+
+    } catch (e) {
+      alert("密码错误");
+    }
+  }
+
+  function openRoom(room, roomPassword, options = {}) {
+    hideAllScreens();
+
+    clearInterval(state.lobbyTimer);
+    clearInterval(state.timer);
+
+    state.currentRoom = {
+      roomId: room.roomId,
+      roomNo: getRoomNo(room),
+      roomName: room.roomName,
+      password: roomPassword,
+      noPassword: !!room.noPassword,
+      commentId: room.commentId || null,
+      createdBy: room.createdBy || "System",
+      adminMode: !!options.adminMode,
+      accessType: options.accessType || "room",
+      canSend: options.canSend !== false,
+      legacyAdminNoSecret: !!options.legacyAdminNoSecret
+    };
+
+    state.lastRenderHash = "";
+    state.loadedMessageIds = new Set();
+    state.roomLoadedOnce = false;
+    hideToast();
+
+    roomTitle.textContent = room.roomName || getRoomNo(room);
+    roomHeader.style.display = "flex";
+    roomCreatorBar.textContent = room.noPassword ? "建立者：System" : "建立者：" + (room.createdBy || "未知");
+    roomCreatorBar.style.display = "block";
+    emergencyBar.style.display = "block";
+    chatBox.style.display = "block";
+    sendArea.style.display = state.currentRoom.canSend ? "flex" : "none";
+
+    chatBox.innerHTML = "";
+
+    mqttSubscribeCurrentRoom();
+    loadMessages();
+    state.timer = setInterval(loadMessages, getChatRefreshMs());
+
+    if (state.currentRoom.legacyAdminNoSecret) {
+      setStatus("这个旧房间没有管理密钥，管理密码可进入管理和删除，但无法解密显示旧消息。建议清空或删除后重建。 ");
+    }
+
+    resetIdleTimer();
+  }
+
+  async function encryptRoomMessage(obj) {
+    return encryptPayload(
+      obj,
+      state.currentRoom.password,
+      "vx-room-msg:" + state.currentRoom.roomId
+    );
+  }
+
+  async function decryptRoomMessage(payload) {
+    return decryptPayload(
+      payload,
+      state.currentRoom.password,
+      "vx-room-msg:" + state.currentRoom.roomId
+    );
+  }
+
+  async function loadMessages() {
+    if (!appConfig || !state.currentRoom) return;
+
+    try {
+      if (!state.currentRoom.legacyAdminNoSecret) {
+        setStatus("");
+      }
+
+      const comments = await fetchAllCommentsForRooms();
+      const currentRoomId = state.currentRoom.roomId;
+
+      const encryptedComments = comments.filter(c => {
+        if (typeof c.body !== "string") return false;
+        if (!c.body.startsWith(MSG_PREFIX)) return false;
+
+        try {
+          const raw = c.body.slice(MSG_PREFIX.length);
+          const wrapper = JSON.parse(raw);
+          return wrapper.roomId === currentRoomId;
+        } catch (e) {
+          return false;
+        }
+      });
+
+      const renderHash = encryptedComments
+        .map(c => c.id + ":" + c.updated_at)
+        .join("|");
+
+      if (renderHash === state.lastRenderHash) return;
+
+      state.lastRenderHash = renderHash;
+
+      const messages = [];
+
+      for (const c of encryptedComments) {
+        try {
+          const raw = c.body.slice(MSG_PREFIX.length);
+          const wrapper = JSON.parse(raw);
+          const msg = await decryptRoomMessage(wrapper.payload);
+
+          messages.push({
+            id: c.id,
+            senderId: msg.senderId,
+            senderName: msg.senderName,
+            text: msg.text,
+            time: msg.time
+          });
+        } catch (e) {}
+      }
+
+      messages.sort((a, b) => a.time - b.time);
+
+      const previousIds = state.loadedMessageIds || new Set();
+      const newOtherCount = messages.filter(msg => {
+        return msg.senderId !== state.senderId && !previousIds.has(String(msg.id));
+      }).length;
+
+      const shouldNotifyNewMessages = state.roomLoadedOnce && newOtherCount > 0;
+
+      renderMessages(messages);
+
+      state.loadedMessageIds = new Set(messages.map(msg => String(msg.id)));
+      state.roomLoadedOnce = true;
+
+      if (shouldNotifyNewMessages) {
+        showToast("新消息" + newOtherCount + "条", "new", 2200);
+      }
+
+    } catch (e) {
+      setStatus(e.message);
+    }
+  }
+
+  function renderMessages(messages) {
+    chatBox.innerHTML = "";
+
+    messages.forEach(msg => {
+      const isMe = msg.senderId === state.senderId;
+
+      const wrap = document.createElement("div");
+      wrap.className = "msg-wrap " + (isMe ? "me" : "other");
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const time = new Date(msg.time).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+
+      const senderName = String(
+        msg.senderName ||
+        (isMe ? state.displayName : "未知用户") ||
+        "未命名"
+      ).trim() || "未命名";
+
+      meta.innerHTML = "";
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "meta-name";
+      nameSpan.textContent = senderName;
+
+      const timeSpan = document.createElement("span");
+      timeSpan.textContent = " · " + time;
+
+      meta.appendChild(nameSpan);
+      meta.appendChild(timeSpan);
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.textContent = msg.text;
+
+      wrap.appendChild(meta);
+      wrap.appendChild(bubble);
+      chatBox.appendChild(wrap);
+    });
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const text = messageInput.value.trim();
+
+    if (!text) return;
+    if (!appConfig || !state.currentRoom) return;
+    if (!requireNickname()) return;
+    if (state.currentRoom.canSend === false) {
+      alert("当前是旧房间的管理模式，不能发送新消息。请清空或删除后重建房间。");
+      return;
+    }
+
+    resetIdleTimer();
+
+    messageInput.value = "";
+
+    try {
+      const msg = {
+        senderId: state.senderId,
+        senderName: String(state.displayName || "未命名").trim() || "未命名",
+        text: text,
+        time: Date.now()
+      };
+
+      const encrypted = await encryptRoomMessage(msg);
+
+      const wrapper = {
+        roomId: state.currentRoom.roomId,
+        payload: encrypted
+      };
+
+      const res = await githubFetch(`/gists/${appConfig.gistId}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          body: MSG_PREFIX + JSON.stringify(wrapper)
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("发送失败：" + res.status);
+      }
+
+      showToast("发送成功", "success", 1400);
+      mqttPublishRoomUpdate(state.currentRoom.roomId);
+      await loadMessages();
+
+    } catch (e) {
+      setStatus(e.message);
+    }
+  }
+
+  function openAdminModal() {
+    document.getElementById("adminPassword").value = "";
+    document.getElementById("adminModal").style.display = "flex";
+    resetIdleTimer();
+  }
+
+  function closeAdminModal() {
+    document.getElementById("adminModal").style.display = "none";
+  }
+
+  async function sha256Text(text) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+    return hashArray
+      .map(byte => byte.toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  async function checkAdminPassword(password) {
+    const hash = await sha256Text(password);
+    return hash === ADMIN_PASSWORD_HASH;
+  }
+
+  async function requireAdminPassword() {
+    const password = document.getElementById("adminPassword").value.trim();
+
+    if (!password) {
+      alert("请输入管理密码");
+      return false;
+    }
+
+    const ok = await checkAdminPassword(password);
+
+    if (!ok) {
+      alert("管理密码错误");
+      return false;
+    }
+
+    return true;
+  }
+
+  async function deleteGistComment(commentId) {
+    const res = await githubFetch(
+      `/gists/${appConfig.gistId}/comments/${commentId}`,
+      {
+        method: "DELETE"
+      }
+    );
+
+    if (!res.ok && res.status !== 204) {
+      throw new Error("删除评论失败：" + res.status);
+    }
+  }
+
+  async function getCommentIdsForRoom(roomId, includeRoomMeta) {
+    const comments = await fetchAllCommentsForRooms();
+    const idsToDelete = [];
+
+    for (const c of comments) {
+      if (typeof c.body !== "string") continue;
+
+      if (includeRoomMeta && c.body.startsWith(ROOM_PREFIX)) {
+        try {
+          const raw = c.body.slice(ROOM_PREFIX.length);
+          const payload = JSON.parse(raw);
+          const room = await decryptRoomMeta(payload);
+
+          if (room.roomId === roomId) {
+            idsToDelete.push(c.id);
+          }
+        } catch (e) {}
+      }
+
+      if (c.body.startsWith(MSG_PREFIX)) {
+        try {
+          const raw = c.body.slice(MSG_PREFIX.length);
+          const wrapper = JSON.parse(raw);
+
+          if (wrapper.roomId === roomId) {
+            idsToDelete.push(c.id);
+          }
+        } catch (e) {}
+      }
+    }
+
+    return [...new Set(idsToDelete)];
+  }
+
+  async function clearCurrentRoomMessagesWithAdmin() {
+    const ok = await requireAdminPassword();
+    if (!ok) return;
+
+    if (!state.currentRoom) {
+      alert("当前不在房间内");
+      return;
+    }
+
+    const confirmed = confirm("确定清空当前房间的聊天记录吗？此操作不可恢复。");
+    if (!confirmed) return;
+
+    try {
+      setStatus("正在清空聊天记录...");
+
+      const idsToDelete = await getCommentIdsForRoom(state.currentRoom.roomId, false);
+
+      for (const id of idsToDelete) {
+        await deleteGistComment(id);
+      }
+
+      state.lastRenderHash = "";
+      state.loadedMessageIds = new Set();
+      state.roomLoadedOnce = false;
+      chatBox.innerHTML = "";
+      closeAdminModal();
+      setStatus("");
+      alert("当前房间聊天记录已清空");
+      mqttPublishRoomUpdate(state.currentRoom.roomId, "messagesCleared");
+      await loadMessages();
+
+    } catch (e) {
+      setStatus(e.message);
+      alert(e.message);
+    }
+  }
+
+  async function deleteCurrentRoomWithAdmin() {
+    const ok = await requireAdminPassword();
+    if (!ok) return;
+
+    if (!state.currentRoom) {
+      alert("当前不在房间内");
+      return;
+    }
+
+    if (state.currentRoom.noPassword) {
+      alert("默认聊天大厅不可删除，但可以清空聊天记录。");
+      return;
+    }
+
+    const confirmed = confirm("确定删除当前房间吗？该房间聊天记录也会一起删除，此操作不可恢复。");
+    if (!confirmed) return;
+
+    try {
+      setStatus("正在删除房间...");
+
+      const roomId = state.currentRoom.roomId;
+      const uniqueIds = await getCommentIdsForRoom(roomId, true);
+
+      for (const id of uniqueIds) {
+        await deleteGistComment(id);
+      }
+
+      closeAdminModal();
+
+      alert("房间已删除");
+      mqttPublishRoomUpdate(roomId, "roomDeleted");
+      mqttPublishRoomsUpdate();
+
+      chatBox.innerHTML = "";
+      messageInput.value = "";
+
+      showLobby();
+      await loadRooms();
+
+    } catch (e) {
+      setStatus(e.message);
+      alert(e.message);
+    }
+  }
+
+
+  function setMQTTStatus(status) {
+    if (!mqttDot || !mqttText) return;
+
+    mqttDot.className = "mqtt-dot";
+
+    if (status === "connected") {
+      mqttDot.classList.add("green");
+      mqttText.textContent = "实时";
+      return;
+    }
+
+    if (status === "connecting") {
+      mqttDot.classList.add("yellow");
+      mqttText.textContent = "连接";
+      return;
+    }
+
+    mqttText.textContent = "离线";
+  }
+
+  function getLobbyRefreshMs() {
+    return mqtt.connected ? GIST_IDLE_REFRESH_MS : GIST_LOBBY_FALLBACK_MS;
+  }
+
+  function getChatRefreshMs() {
+    return mqtt.connected ? GIST_IDLE_REFRESH_MS : GIST_CHAT_FALLBACK_MS;
+  }
+
+  function restartRefreshTimers() {
+    if (!chatApp || chatApp.style.display === "none") return;
+
+    if (state.currentRoom) {
+      clearInterval(state.timer);
+      state.timer = setInterval(loadMessages, getChatRefreshMs());
+    } else if (lobbyScreen && lobbyScreen.style.display !== "none") {
+      clearInterval(state.lobbyTimer);
+      state.lobbyTimer = setInterval(loadRooms, getLobbyRefreshMs());
+    }
+  }
+
+  function mqttEncodeString(str) {
+    const bytes = new TextEncoder().encode(String(str));
+    return [bytes.length >> 8, bytes.length & 255, ...bytes];
+  }
+
+  function mqttEncodeLength(length) {
+    const encoded = [];
+    do {
+      let digit = length % 128;
+      length = Math.floor(length / 128);
+      if (length > 0) digit = digit | 128;
+      encoded.push(digit);
+    } while (length > 0);
+    return encoded;
+  }
+
+  function mqttPacket(type, body) {
+    return new Uint8Array([type, ...mqttEncodeLength(body.length), ...body]);
+  }
+
+  function mqttSendPacket(type, body) {
+    if (!mqtt.ws || mqtt.ws.readyState !== WebSocket.OPEN) return false;
+    mqtt.ws.send(mqttPacket(type, body));
+    return true;
+  }
+
+  function mqttSendConnect() {
+    const variableHeader = [
+      ...mqttEncodeString("MQTT"),
+      4,
+      0xC2,
+      0,
+      MQTT_KEEPALIVE_SECONDS
+    ];
+
+    const payload = [
+      ...mqttEncodeString(mqtt.clientId),
+      ...mqttEncodeString(MQTT_USERNAME),
+      ...mqttEncodeString(MQTT_PASSWORD)
+    ];
+
+    mqttSendPacket(0x10, [...variableHeader, ...payload]);
+  }
+
+  function mqttSubscribe(topic) {
+    if (!mqtt.connected || !topic) return false;
+    const id = mqtt.packetId++;
+    const variableHeader = [id >> 8, id & 255];
+    const payload = [...mqttEncodeString(topic), 0];
+    return mqttSendPacket(0x82, [...variableHeader, ...payload]);
+  }
+
+  function mqttPublish(topic, data) {
+    if (!mqtt.connected || !topic) return false;
+    const payloadText = typeof data === "string" ? data : JSON.stringify(data);
+    const bytes = new TextEncoder().encode(payloadText);
+    const payload = [...mqttEncodeString(topic), ...bytes];
+    return mqttSendPacket(0x30, payload);
+  }
+
+  function mqttPing() {
+    mqttSendPacket(0xC0, []);
+  }
+
+  function mqttParseLength(bytes, index) {
+    let multiplier = 1;
+    let value = 0;
+    let pos = index;
+    let encodedByte;
+
+    do {
+      encodedByte = bytes[pos++];
+      value += (encodedByte & 127) * multiplier;
+      multiplier *= 128;
+    } while ((encodedByte & 128) !== 0);
+
+    return { value, nextIndex: pos };
+  }
+
+  function mqttDecodeString(bytes, index) {
+    const len = (bytes[index] << 8) + bytes[index + 1];
+    const start = index + 2;
+    const end = start + len;
+    return {
+      value: new TextDecoder().decode(bytes.slice(start, end)),
+      nextIndex: end
+    };
+  }
+
+  async function ensureMqttTopicPrefix() {
+    if (mqtt.topicPrefix) return mqtt.topicPrefix;
+    if (!appConfig) return "";
+
+    const digest = await sha256Text(String(appConfig.gistId || "vx") + ":" + String(appConfig.chatSecret || "secret"));
+    mqtt.topicPrefix = "vx/private/" + digest.slice(0, 32);
+    return mqtt.topicPrefix;
+  }
+
+  async function connectMQTT() {
+    if (!appConfig) return;
+
+    disconnectMQTT(false);
+    setMQTTStatus("connecting");
+
+    try {
+      await ensureMqttTopicPrefix();
+      mqtt.clientId = "vx_web_" + state.senderId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 18) + "_" + Date.now();
+      mqtt.ws = new WebSocket(MQTT_WS_URL, "mqtt");
+      mqtt.ws.binaryType = "arraybuffer";
+      mqtt.connecting = true;
+
+      mqtt.ws.onopen = function() {
+        mqttSendConnect();
+      };
+
+      mqtt.ws.onmessage = function(event) {
+        mqttHandlePacket(event.data);
+      };
+
+      mqtt.ws.onerror = function() {
+        setMQTTStatus("disconnected");
+      };
+
+      mqtt.ws.onclose = function() {
+        mqtt.connected = false;
+        mqtt.connecting = false;
+        clearInterval(mqtt.pingTimer);
+        setMQTTStatus("disconnected");
+        restartRefreshTimers();
+        scheduleMqttReconnect();
+      };
+    } catch (e) {
+      mqtt.connected = false;
+      mqtt.connecting = false;
+      setMQTTStatus("disconnected");
+      restartRefreshTimers();
+      scheduleMqttReconnect();
+    }
+  }
+
+  function scheduleMqttReconnect() {
+    clearTimeout(mqtt.reconnectTimer);
+    if (!appConfig) return;
+    mqtt.reconnectTimer = setTimeout(connectMQTT, MQTT_RECONNECT_MS);
+  }
+
+  function disconnectMQTT(keepStatus = true) {
+    clearTimeout(mqtt.reconnectTimer);
+    clearInterval(mqtt.pingTimer);
+
+    if (mqtt.ws) {
+      try { mqtt.ws.close(); } catch (e) {}
+    }
+
+    mqtt.ws = null;
+    mqtt.connected = false;
+    mqtt.connecting = false;
+    mqtt.subscribedRooms = new Set();
+
+    if (!keepStatus) return;
+    setMQTTStatus("disconnected");
+  }
+
+  function mqttHandlePacket(arrayBuffer) {
+    const bytes = new Uint8Array(arrayBuffer);
+    const type = bytes[0] >> 4;
+    const rem = mqttParseLength(bytes, 1);
+    let index = rem.nextIndex;
+
+    if (type === 2) {
+      const returnCode = bytes[index + 1];
+      if (returnCode !== 0) {
+        setMQTTStatus("disconnected");
+        try { mqtt.ws.close(); } catch (e) {}
+        return;
+      }
+
+      mqtt.connected = true;
+      mqtt.connecting = false;
+      setMQTTStatus("connected");
+      restartRefreshTimers();
+
+      mqttSubscribe(mqtt.topicPrefix + "/rooms");
+      if (state.currentRoom) mqttSubscribeCurrentRoom();
+
+      clearInterval(mqtt.pingTimer);
+      mqtt.pingTimer = setInterval(mqttPing, 15000);
+      return;
+    }
+
+    if (type === 3) {
+      const topicInfo = mqttDecodeString(bytes, index);
+      const topic = topicInfo.value;
+      index = topicInfo.nextIndex;
+      const message = new TextDecoder().decode(bytes.slice(index));
+      mqttHandleMessage(topic, message);
+      return;
+    }
+
+    if (type === 13) {
+      setMQTTStatus("connected");
+    }
+  }
+
+  function mqttHandleMessage(topic, message) {
+    let data;
+    try { data = JSON.parse(message); } catch (e) { return; }
+    if (!data || data.senderId === state.senderId) return;
+
+    if (data.type === "roomsUpdate") {
+      if (!state.currentRoom) loadRooms();
+      return;
+    }
+
+    if (data.type === "messageUpdate" || data.type === "messagesCleared") {
+      if (state.currentRoom && data.roomId === state.currentRoom.roomId) {
+        loadMessages();
+      }
+      return;
+    }
+
+    if (data.type === "roomDeleted") {
+      if (state.currentRoom && data.roomId === state.currentRoom.roomId) {
+        alert("当前房间已被管理员删除");
+        showLobby();
+      } else if (!state.currentRoom) {
+        loadRooms();
+      }
+    }
+  }
+
+  function mqttSubscribeCurrentRoom() {
+    if (!mqtt.connected || !state.currentRoom || !mqtt.topicPrefix) return;
+    const topic = mqtt.topicPrefix + "/room/" + state.currentRoom.roomId;
+    if (mqtt.subscribedRooms.has(topic)) return;
+    mqttSubscribe(topic);
+    mqtt.subscribedRooms.add(topic);
+  }
+
+  function mqttLeaveCurrentRoom() {
+    // MQTT 断线/重连时会自动清理；这里保留订阅也不影响功能。
+  }
+
+  function mqttPublishRoomsUpdate() {
+    if (!mqtt.topicPrefix) return;
+    mqttPublish(mqtt.topicPrefix + "/rooms", {
+      type: "roomsUpdate",
+      senderId: state.senderId,
+      time: Date.now()
+    });
+  }
+
+  function mqttPublishRoomUpdate(roomId, type = "messageUpdate") {
+    if (!mqtt.topicPrefix || !roomId) return;
+    mqttPublish(mqtt.topicPrefix + "/room/" + roomId, {
+      type: type,
+      roomId: roomId,
+      senderId: state.senderId,
+      time: Date.now()
+    });
+  }
+
+  messageInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  });
+
+  document.getElementById("joinRoomPassword").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      confirmJoinRoom();
+    }
+  });
+
+  document.getElementById("adminPassword").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      clearCurrentRoomMessagesWithAdmin();
+    }
+  });
+
+  document.getElementById("nameInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      saveName();
+    }
+  });
+
+  ["pointerdown", "keydown", "input", "touchstart"].forEach(function(eventName) {
+    chatApp.addEventListener(eventName, function() {
+      if (appConfig) resetIdleTimer();
+    }, { passive: true });
+  });
+
+  document.addEventListener("touchmove", function(e) {
+    const scrollable = e.target.closest(".screen, .chat-box, .modal");
+    if (!scrollable) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  document.addEventListener("visibilitychange", function() {
+    if (!document.hidden && appConfig) {
+      if (!mqtt.connected && !mqtt.connecting) connectMQTT();
+      if (state.currentRoom) loadMessages(); else loadRooms();
+    }
+  });
+
+  window.addEventListener("online", function() {
+    if (appConfig) connectMQTT();
+  });
+
+</script>
+
 </body>
 </html>
