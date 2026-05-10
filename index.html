@@ -917,13 +917,17 @@
 </div>
 
 <script>
-  const DEFAULT_ENCRYPTED_CONFIG = {
-  "salt": "kGnDMg1d0ZqAiN2+FCO+lQ==",
-  "iv": "AiwUQfKWhpJmzpsC",
-  "data": "FoMZjID5hyydqxxDHZLqmGo7FVH6SEYl6bsitzm3eGipoURDmBsD9VJGYr7Uv7L1UYxkX+7Lr0k1rpOt6osNrtl2BoYYDcimq7JuNvN1Bm7z99NrHBgT0VES5AWGTAf+RbIdlJj1CN4mpr+G3+ze/SeI8Tw5QithsmuPTxba8EopUYRdf3u/yM/YRLWblGVYLNK73obNYgxjiUhPY5gu9/smJYIN18yfjq2ap+gB9mU3r9mIvcBKyk+jfbTQW7M="
-};
+  // 配置 Gist 方案：这里只需要填写一次配置 Gist ID。
+  // 配置页会把加密配置保存到这个 Gist 里的 vx-config.json，index 按 =数字= 时自动读取。
+  const CONFIG_GIST_ID = "PASTE_CONFIG_GIST_ID_HERE";
+  const CONFIG_FILE_NAME = "vx-config.json";
+  const CONFIG_FETCH_CACHE_MS = 30000;
 
-const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131edda6730f5845";
+  // 备用内置配置：远程配置读取失败时才会尝试。正常使用配置 Gist 后，不需要再复制配置到这里。
+  const DEFAULT_ENCRYPTED_CONFIG = null;
+
+  // 备用管理密码 hash：新版配置会把 adminHash 放进加密配置里，这里通常留空。
+  const ADMIN_PASSWORD_HASH = "";
   const API = "https://api.github.com";
   const ROOM_PREFIX = "ENC_ROOM_META_V1:";
   const MSG_PREFIX = "ENC_ROOM_MSG_V1:";
@@ -1067,6 +1071,8 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
   let activeUnlockCode = "";
   let pendingRoom = null;
   let packetId = 1;
+  let remoteConfigBundleCache = null;
+  let remoteConfigBundleFetchedAt = 0;
 
   const state = {
     senderId: localStorage.getItem("vx_sender_id") || crypto.randomUUID(),
@@ -1424,18 +1430,92 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
     return JSON.parse(decoder.decode(decrypted));
   }
 
-  function getEncryptedConfigCandidates() {
+  function getConfigGistId() {
+    const fromQuery = new URLSearchParams(location.search).get("config") || "";
+    return String(fromQuery || CONFIG_GIST_ID || "").trim();
+  }
+
+  function hasValidConfigGistId() {
+    const id = getConfigGistId();
+    return !!id && id !== "PASTE_CONFIG_GIST_ID_HERE";
+  }
+
+  function normalizeRemoteConfigBundle(data) {
+    if (!data || typeof data !== "object") return null;
+
+    // 新版推荐格式：{ encryptedConfig: { salt, iv, data } }
+    if (data.encryptedConfig && data.encryptedConfig.salt && data.encryptedConfig.iv && data.encryptedConfig.data) {
+      return data;
+    }
+
+    // 兼容：Gist 文件里直接就是 { salt, iv, data }
+    if (data.salt && data.iv && data.data) {
+      return { type: "VX_REMOTE_CONFIG_V1", encryptedConfig: data };
+    }
+
+    return null;
+  }
+
+  async function fetchRemoteConfigBundle(force = false) {
+    if (!hasValidConfigGistId()) return null;
+
+    const now = Date.now();
+    if (!force && remoteConfigBundleCache && now - remoteConfigBundleFetchedAt < CONFIG_FETCH_CACHE_MS) {
+      return remoteConfigBundleCache;
+    }
+
+    const gistId = getConfigGistId();
+    const res = await fetch(`${API}/gists/${encodeURIComponent(gistId)}?t=${Date.now()}`, {
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      },
+      cache: "no-store"
+    });
+
+    if (!res.ok) throw new Error("配置读取失败：" + res.status);
+
+    const gist = await res.json();
+    const file = gist.files && gist.files[CONFIG_FILE_NAME];
+    if (!file || typeof file.content !== "string") {
+      throw new Error("配置 Gist 中找不到 " + CONFIG_FILE_NAME);
+    }
+
+    const bundle = normalizeRemoteConfigBundle(JSON.parse(file.content));
+    if (!bundle) throw new Error("配置文件格式不正确");
+
+    remoteConfigBundleCache = bundle;
+    remoteConfigBundleFetchedAt = now;
+    return bundle;
+  }
+
+  async function getEncryptedConfigCandidates(forceRemote = false) {
     const list = [];
+
+    try {
+      const remoteBundle = await fetchRemoteConfigBundle(forceRemote);
+      if (remoteBundle && remoteBundle.encryptedConfig) {
+        list.push({ type: "remote-gist", config: remoteBundle.encryptedConfig });
+      }
+    } catch (e) {
+      console.warn("remote config load failed", e);
+    }
+
+    // 兼容旧版：如果你以前在本机 localStorage 保存过配置，也仍然可用。
     const saved = localStorage.getItem("vx_custom_encrypted_config");
     if (saved) {
       try {
         const customConfig = JSON.parse(saved);
         if (customConfig && customConfig.salt && customConfig.iv && customConfig.data) {
-          list.push({ type: "custom", config: customConfig });
+          list.push({ type: "custom-local", config: customConfig });
         }
       } catch (e) {}
     }
-    list.push({ type: "default", config: DEFAULT_ENCRYPTED_CONFIG });
+
+    if (DEFAULT_ENCRYPTED_CONFIG && DEFAULT_ENCRYPTED_CONFIG.salt && DEFAULT_ENCRYPTED_CONFIG.iv && DEFAULT_ENCRYPTED_CONFIG.data) {
+      list.push({ type: "default", config: DEFAULT_ENCRYPTED_CONFIG });
+    }
+
     return list;
   }
 
@@ -1450,17 +1530,32 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
     return JSON.parse(decoder.decode(decrypted));
   }
 
+  function normalizeAppConfig(config) {
+    const normalized = { ...(config || {}) };
+
+    // 兼容旧配置页字段名：githubToken -> token
+    if (!normalized.token && normalized.githubToken) normalized.token = normalized.githubToken;
+
+    return normalized;
+  }
+
   async function decryptConfig(unlockCode) {
-    const candidates = getEncryptedConfigCandidates();
+    const candidates = await getEncryptedConfigCandidates(true);
     let lastError = null;
+
     for (const item of candidates) {
       try {
-        return { config: await decryptOneConfig(item.config, unlockCode), type: item.type };
+        const config = normalizeAppConfig(await decryptOneConfig(item.config, unlockCode));
+        if (!config.token || !config.gistId || !config.chatSecret) {
+          throw new Error("配置缺少 token / gistId / chatSecret");
+        }
+        return { config, type: item.type };
       } catch (e) {
         lastError = e;
       }
     }
-    throw lastError || new Error("密码错误");
+
+    throw lastError || new Error("密码错误或未找到配置");
   }
 
   function normalizeUnlockCode(input) {
@@ -1476,6 +1571,10 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
 
   async function tryUnlock() {
     const candidates = getUnlockCodeCandidates(unlockInput);
+    if (!candidates.length) return false;
+
+    showToast("正在核对暗号...", 900);
+
     for (const code of candidates) {
       try {
         const result = await decryptConfig(code);
@@ -1485,7 +1584,9 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
         setTimeout(() => purgeExpiredDefaultRoomMessages(true), 1200);
         openApp();
         return true;
-      } catch (e) {}
+      } catch (e) {
+        console.warn("unlock failed", e);
+      }
     }
     return false;
   }
@@ -2207,7 +2308,8 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
 
   async function checkAdminPassword(password) {
     const hash = await sha256Text(password);
-    return hash === ADMIN_PASSWORD_HASH;
+    const adminHash = (appConfig && appConfig.adminHash) || ADMIN_PASSWORD_HASH;
+    return !!adminHash && hash === adminHash;
   }
 
   async function requireAdminPassword() {
