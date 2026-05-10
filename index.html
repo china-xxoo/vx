@@ -744,6 +744,149 @@
       opacity: 0.84;
     }
 
+
+
+    .lobby-search-wrap {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .lobby-search-input {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid rgba(56,189,248,0.22);
+      background: rgba(15,23,42,0.82);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 12px 14px;
+      font-size: 14px;
+      outline: none;
+    }
+    .lobby-search-input::placeholder { color: rgba(226,232,240,0.46); }
+    .lobby-search-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 0 16px;
+      color: #fff;
+      background: linear-gradient(135deg, #2563eb, #06b6d4);
+      font-size: 13px;
+      font-weight: 950;
+      cursor: pointer;
+      box-shadow: 0 0 18px rgba(14,165,233,0.22);
+    }
+    .admin-screen {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding: 14px 14px calc(120px + var(--bottom-safe));
+    }
+    .admin-card, .notice-card {
+      border: 1px solid rgba(56,189,248,0.18);
+      background: linear-gradient(135deg, rgba(15,23,42,0.88), rgba(2,6,23,0.76));
+      border-radius: 20px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 14px 30px rgba(0,0,0,0.18), inset 0 0 22px rgba(56,189,248,0.035);
+    }
+    .admin-title {
+      margin: 0 0 10px;
+      font-size: 17px;
+      font-weight: 950;
+      color: #effbff;
+    }
+    .admin-small {
+      color: rgba(226,232,240,0.62);
+      font-size: 12px;
+      line-height: 1.55;
+      margin-top: 8px;
+    }
+    .admin-row {
+      border: 1px solid rgba(56,189,248,0.14);
+      background: rgba(15,23,42,0.66);
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .admin-room-name {
+      font-size: 15px;
+      font-weight: 950;
+      color: #fff;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+    .admin-room-meta {
+      font-size: 12px;
+      color: rgba(226,232,240,0.64);
+      line-height: 1.55;
+      margin-bottom: 10px;
+      word-break: break-word;
+    }
+    .admin-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .mini-btn {
+      border: 1px solid rgba(56,189,248,0.22);
+      border-radius: 12px;
+      padding: 10px 8px;
+      font-size: 12px;
+      font-weight: 950;
+      color: #e0f7ff;
+      background: rgba(14,165,233,0.12);
+      cursor: pointer;
+    }
+    .mini-btn.danger {
+      color: #fecaca;
+      border-color: rgba(248,113,113,0.30);
+      background: rgba(220,38,38,0.18);
+    }
+    .notice-textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      border: 1px solid rgba(56,189,248,0.20);
+      background: rgba(15,23,42,0.85);
+      color: var(--text);
+      border-radius: 15px;
+      padding: 12px 14px;
+      outline: none;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .switch-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(226,232,240,0.86);
+      font-size: 13px;
+      font-weight: 900;
+      margin: 8px 0 10px;
+    }
+    .modal-text {
+      white-space: pre-wrap;
+      line-height: 1.65;
+      color: rgba(229,244,255,0.92);
+      font-size: 14px;
+      max-height: 56vh;
+      overflow-y: auto;
+      border: 1px solid rgba(56,189,248,0.12);
+      background: rgba(15,23,42,0.50);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .account-choice {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .account-pane { display: none; margin-top: 12px; }
+
     @media (max-width: 420px) {
       .app-header {
         grid-template-columns: minmax(82px, 1fr) auto minmax(82px, 1fr);
@@ -777,6 +920,8 @@
       .header-right {
         gap: 5px;
       }
+      .admin-actions { grid-template-columns: 1fr; }
+      .account-choice { grid-template-columns: 1fr; }
     }
 
   </style>
@@ -818,8 +963,8 @@
 <div class="chat-app" id="chatApp">
   <div class="app-header">
     <div class="header-left">
-      <div class="logo-wrap" id="headerLogo"><img class="app-logo" src="/vx/vx-logo-180.png" alt="logo" /><span class="logo-unread-badge" id="logoUnreadBadge"></span></div>
-      <button class="room-back-btn" id="roomBackBtn" onclick="backToLobby()" style="display:none;">返回</button>
+      <button class="room-back-btn" id="announcementBtn" onclick="openAnnouncementModal()">公告</button>
+      <button class="room-back-btn" id="roomBackBtn" onclick="backToLobby()" style="display:none;">返回大厅</button>
       <button class="room-title-btn" id="roomTitleBtn" onclick="backToLobby()" style="display:none;">【聊天大厅】</button>
     </div>
 
@@ -834,7 +979,6 @@
     </div>
 
     <div class="header-right" id="roomActions" style="display:none;">
-      <button class="header-btn" onclick="openAdminModal()">管理</button>
       <button class="header-btn" onclick="openSettingsModal()">设置</button>
     </div>
   </div>
@@ -842,7 +986,27 @@
   <div class="app-body">
     <div class="screen" id="lobbyScreen">
       <div class="nickname-line" id="nicknameLine"></div>
+      <div class="lobby-search-wrap">
+        <input class="lobby-search-input" id="roomSearchInput" placeholder="请输入6位房间号" autocomplete="off" maxlength="64" />
+        <button class="lobby-search-btn" onclick="handleLobbySearch()">搜索</button>
+      </div>
       <div class="room-list" id="roomList"></div>
+    </div>
+
+    <div class="admin-screen" id="adminScreen">
+      <div class="admin-card">
+        <div class="admin-title">公告管理</div>
+        <input class="input" id="announcementTitleInput" placeholder="公告标题，例如：系统公告" />
+        <textarea class="notice-textarea" id="announcementContentInput" placeholder="公告内容"></textarea>
+        <label class="switch-line"><input type="checkbox" id="announcementEnabledInput" checked /> 开启公告</label>
+        <button class="confirm-btn mini-btn" onclick="saveAnnouncementFromAdmin()">保存公告</button>
+        <div class="admin-small" id="announcementAdminTip">公告会显示在大厅左上角公告按钮中。</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-title">所有房间</div>
+        <div class="admin-small">管理员可免密进入、清空聊天记录或删除房间。</div>
+        <div id="adminRoomList" style="margin-top:12px;"></div>
+      </div>
     </div>
 
     <div class="chat-shell" id="chatShell">
@@ -872,11 +1036,13 @@
 
 <div class="modal-mask" id="settingsModal">
   <div class="modal">
-    <h3>设置昵称</h3>
-    <input class="input" id="nameInput" placeholder="输入昵称" />
+    <h3>设置</h3>
+    <div class="admin-small" id="currentAccountTip">当前账号：</div>
+    <input class="input" id="localUnlockCodeInput" inputmode="numeric" maxlength="6" placeholder="本机进入暗语，1-6位数字" />
+    <div class="admin-small">本机暗语只保存在当前设备，用于本机快速进入。修改后不会影响系统默认暗语，系统默认暗语仍然有效。</div>
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeSettingsModal()">取消</button>
-      <button class="confirm-btn" onclick="saveName()">保存</button>
+      <button class="confirm-btn" onclick="saveLocalUnlockCode()">保存</button>
     </div>
   </div>
 </div>
@@ -884,7 +1050,7 @@
 <div class="modal-mask" id="createRoomModal">
   <div class="modal">
     <h3>新建房间</h3>
-    <input class="input" id="newRoomName" placeholder="房间名称：5个汉字或8个英文以内" />
+    <div class="admin-small">房间号由系统自动生成，6位数字与字母混合，房间名不可修改。</div>
     <input class="input" id="newRoomPassword" placeholder="房间密码，至少4位" type="password" />
     <div class="modal-actions">
       <button class="cancel-btn" onclick="closeCreateRoomModal()">取消</button>
@@ -916,6 +1082,40 @@
   </div>
 </div>
 
+
+
+<div class="modal-mask" id="announcementModal">
+  <div class="modal">
+    <h3 id="announcementModalTitle">公告</h3>
+    <div class="modal-text" id="announcementModalContent">暂无公告，谢谢使用。</div>
+    <div class="modal-actions">
+      <button class="confirm-btn" onclick="closeAnnouncementModal()">知道了</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="accountModal">
+  <div class="modal">
+    <h3>账号初始化</h3>
+    <div class="admin-small">请选择自动分配账号，或用绑定邮箱和安全码找回账号。</div>
+    <div class="account-choice">
+      <button class="confirm-btn" onclick="showAutoAccountPane()">自动分配账号</button>
+      <button class="cancel-btn" onclick="showRecoverAccountPane()">找回账号</button>
+    </div>
+    <div class="account-pane" id="autoAccountPane">
+      <input class="input" id="autoEmailInput" type="email" placeholder="找回邮箱" />
+      <input class="input" id="autoSafeCodeInput" inputmode="numeric" maxlength="6" placeholder="安全码，1-6位数字" />
+      <div class="admin-small">安全码建议使用你容易记住的常用数字，最多6位。找回时需要邮箱和安全码同时正确。</div>
+      <button class="confirm-btn" style="width:100%; margin-top:8px;" onclick="createAutoAccount()">生成并进入</button>
+    </div>
+    <div class="account-pane" id="recoverAccountPane">
+      <input class="input" id="recoverEmailInput" type="email" placeholder="绑定邮箱" />
+      <input class="input" id="recoverSafeCodeInput" inputmode="numeric" maxlength="6" placeholder="安全码，1-6位数字" />
+      <button class="confirm-btn" style="width:100%; margin-top:8px;" onclick="recoverAccount()">找回账号</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // 仓库配置文件方案：配置页会把加密配置自动保存到同仓库 vx-config.json。
   // index 中任意输入后按 %，会从 % 前最后连续数字中取后 6 位，并从后往前做后缀匹配核对。
@@ -931,6 +1131,8 @@
   const API = "https://api.github.com";
   const ROOM_PREFIX = "ENC_ROOM_META_V1:";
   const MSG_PREFIX = "ENC_ROOM_MSG_V1:";
+  const ANNOUNCE_PREFIX = "VX_ANNOUNCEMENT_V1:";
+  const ACCOUNT_PREFIX = "ENC_ACCOUNT_PROFILE_V1:";
 
   const MQTT_WS_URL = "wss://afa67eee.ala.cn-hangzhou.emqxsl.cn:8084/mqtt";
   const MQTT_USERNAME = "vx_user";
@@ -1091,6 +1293,9 @@
     typingStopTimer: null,
     typingPublishTimer: null,
     roomMessageNoticeClock: {},
+    accountProfile: null,
+    adminMode: false,
+    announcement: null,
     audio: {
       ctx: null,
       enabled: false,
@@ -1123,6 +1328,10 @@
   const dataStatusText = document.getElementById("dataStatusText");
   const headerLogo = document.getElementById("headerLogo");
   const logoUnreadBadge = document.getElementById("logoUnreadBadge");
+  const announcementBtn = document.getElementById("announcementBtn");
+  const roomSearchInput = document.getElementById("roomSearchInput");
+  const adminScreen = document.getElementById("adminScreen");
+  const adminRoomList = document.getElementById("adminRoomList");
   const roomBackBtn = document.getElementById("roomBackBtn");
   const roomTitleBtn = document.getElementById("roomTitleBtn");
   const lobbyActions = document.getElementById("lobbyActions");
@@ -1666,7 +1875,13 @@
   }
 
   function generateRoomNo() {
-    return String(Math.floor(100000 + Math.random() * 900000));
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    do {
+      code = "";
+      for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    } while (!/[A-Z]/.test(code) || !/[0-9]/.test(code));
+    return code;
   }
 
   function getRoomNo(room) {
@@ -1708,29 +1923,25 @@
   async function createRoom() {
     if (!requireNickname()) return;
 
-    const roomName = document.getElementById("newRoomName").value.trim();
     const roomPassword = document.getElementById("newRoomPassword").value.trim();
-
-    if (!validateRoomName(roomName)) {
-      showToast("房间名限5个汉字或8个英文");
-      return;
-    }
-
-    await loadRooms(false);
-
-    if (isDuplicateRoomName(roomName)) {
-      showToast("房间名已存在");
-      return;
-    }
-
     if (roomPassword.length < 4) {
       showToast("密码至少4位");
       return;
     }
 
+    await loadRooms(false);
+
     try {
       const roomId = crypto.randomUUID();
       const roomSecret = makeRoomSecret();
+      let roomNo = generateRoomNo();
+      const used = new Set((state.rooms || []).map(r => String(r.roomNo || "").toUpperCase()));
+      let guard = 0;
+      while (used.has(roomNo) && guard < 50) {
+        roomNo = generateRoomNo();
+        guard++;
+      }
+      const roomName = "房间 " + roomNo;
 
       const check = await encryptPayload(
         { ok: true, roomId, roomSecret },
@@ -1743,20 +1954,23 @@
       const meta = {
         type: "room",
         roomId,
-        roomNo: generateRoomNo(),
+        roomNo,
         roomName,
         createdBy: state.displayName,
+        ownerAccountId: state.accountProfile && state.accountProfile.accountId,
+        ownerNicknameNumber: state.displayName,
         createdAt: Date.now(),
         noPassword: false,
         check,
         adminSecret,
-        version: 3
+        version: 4
       };
 
       const encryptedMeta = await encryptRoomMeta(meta);
       const comment = await postGistComment(ROOM_PREFIX + JSON.stringify(encryptedMeta));
       meta.commentId = comment.id;
 
+      rememberRoomAccess(meta, roomSecret, "created");
       closeCreateRoomModal();
       await loadRooms(false);
       mqttPublishJson(roomsTopic(), {
@@ -1766,7 +1980,7 @@
         time: Date.now()
       });
       mqttPublishJson(roomsTopic(), { type: "roomsUpdate", time: Date.now() });
-      showToast("房间已创建");
+      showToast("房间已创建：" + roomNo);
       openRoom(meta, roomSecret, { accessType: "owner" });
     } catch (e) {
       showToast("创建失败");
@@ -1788,6 +2002,7 @@
           const roomSecret = check.roomSecret || password;
           const room = pendingRoom;
           closeJoinModal();
+          rememberRoomAccess(room, roomSecret, "joined");
           openRoom(room, roomSecret, { accessType: "room" });
           return;
         }
@@ -1802,6 +2017,7 @@
         }
         const room = pendingRoom;
         closeJoinModal();
+        rememberRoomAccess(room, roomSecret, "joined");
         openRoom(room, roomSecret, { accessType: "admin", adminMode: true });
         return;
       }
@@ -2288,7 +2504,11 @@
       const comments = await fetchAllComments();
       const roomComments = comments.filter(c => typeof c.body === "string" && c.body.startsWith(ROOM_PREFIX));
       const roomsHash = roomComments.map(c => c.id + ":" + c.updated_at).join("|");
-      if (roomsHash === state.lastRoomsHash && state.rooms.length) return;
+      if (roomsHash === state.lastRoomsHash && state.rooms.length) {
+        renderRooms();
+        if (state.adminMode) renderAdminRooms();
+        return;
+      }
       state.lastRoomsHash = roomsHash;
 
       const rooms = [{ ...DEFAULT_PUBLIC_ROOM }];
@@ -2308,14 +2528,33 @@
       rooms.sort((a, b) => b.createdAt - a.createdAt);
       state.rooms = [defaultRoom].concat(rooms);
       renderRooms();
+      if (state.adminMode) renderAdminRooms();
     } catch (e) {
       if (!silent) showToast("房间加载失败");
     }
   }
 
+  function getVisibleRooms() {
+    const all = state.rooms || [];
+    if (state.adminMode) return all;
+    return all.filter(room => isRoomVisibleToCurrentAccount(room));
+  }
+
+  function isRoomVisibleToCurrentAccount(room) {
+    if (!room) return false;
+    if (isDefaultPublicRoomId(room.roomId)) return true;
+    if (hasStoredRoomAccess(room.roomId)) return true;
+    const profile = state.accountProfile || loadLocalAccountProfile();
+    if (!profile) return false;
+    const created = Array.isArray(profile.createdRooms) ? profile.createdRooms : [];
+    const joined = Array.isArray(profile.joinedRooms) ? profile.joinedRooms : [];
+    return created.includes(room.roomId) || joined.includes(room.roomId);
+  }
+
   function renderRooms() {
     roomList.innerHTML = "";
-    state.rooms.forEach(room => {
+    const rooms = getVisibleRooms();
+    rooms.forEach(room => {
       const div = document.createElement("div");
       div.className = "room-row";
       div.onclick = () => openJoinModal(room.roomId);
@@ -2325,18 +2564,19 @@
 
       const name = document.createElement("div");
       name.className = "room-name";
-      name.textContent = "【" + room.roomName + "】";
+      name.textContent = "【" + (room.roomName || getRoomNo(room)) + "】";
 
       const meta = document.createElement("div");
       meta.className = "room-meta";
-      meta.textContent = "";
+      meta.style.display = "block";
+      meta.textContent = isDefaultPublicRoomId(room.roomId) ? "公共大厅" : ("房间号：" + getRoomNo(room));
 
       const side = document.createElement("div");
       side.className = "room-side";
 
       const badge = document.createElement("div");
       badge.className = "room-badge";
-      badge.textContent = room.noPassword ? "大厅" : "加密";
+      badge.textContent = room.noPassword ? "大厅" : getRoomNo(room);
       side.appendChild(badge);
 
       const unreadCount = getRoomUnreadCount(room.roomId);
@@ -2869,12 +3109,12 @@
 
     if (status === "connected") {
       dataStatus.classList.add("connected");
-      dataStatusText.textContent = onlineCount > 1 ? "在线 " + onlineCount + " 人" : "数据已连接";
+      setStatusBaseText(onlineCount > 1 ? "在线 " + onlineCount + " 人" : "数据已连接");
     } else if (status === "connecting") {
       dataStatus.classList.add("connecting");
-      dataStatusText.textContent = "连接中...";
+      setStatusBaseText("连接中...");
     } else {
-      dataStatusText.textContent = "数据已断开";
+      setStatusBaseText("数据已断开");
     }
   }
 
@@ -2891,7 +3131,7 @@
 
     const count = Object.keys(clients).length;
     if (updateText && state.mqtt.connected && dataStatusText) {
-      dataStatusText.textContent = count > 1 ? "在线 " + count + " 人" : "数据已连接";
+      setStatusBaseText(count > 1 ? "在线 " + count + " 人" : "数据已连接");
     }
     return count;
   }
@@ -2948,30 +3188,431 @@
     }
   }
 
+
+  function normalizeEmail(email) {
+    return String(email || "").trim().toLowerCase();
+  }
+
+  function maskEmail(email) {
+    const e = normalizeEmail(email);
+    const parts = e.split("@");
+    if (parts.length !== 2) return e ? e.slice(0, 2) + "****" : "";
+    const name = parts[0];
+    return (name.slice(0, 2) || "**") + "****@" + parts[1];
+  }
+
+  function normalizeSafeCode(code) {
+    return String(code || "").replace(/\D/g, "").slice(0, 6);
+  }
+
+  function accountLocalKey() {
+    return "vx_account_profile_v1";
+  }
+
+  function loadLocalAccountProfile() {
+    try {
+      const raw = localStorage.getItem(accountLocalKey());
+      if (!raw) return null;
+      const profile = JSON.parse(raw);
+      if (!profile || !profile.accountId || !profile.nicknameNumber) return null;
+      state.accountProfile = profile;
+      return profile;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveLocalAccountProfile(profile) {
+    if (!profile) return;
+    profile.updatedAt = Date.now();
+    state.accountProfile = profile;
+    state.displayName = String(profile.nicknameNumber || "");
+    localStorage.setItem(accountLocalKey(), JSON.stringify(profile));
+    localStorage.setItem("vx_display_name", state.displayName);
+    if (nicknameLine) nicknameLine.textContent = "当前账号：" + state.displayName;
+  }
+
+  function getRecoveryPassword(email, safeCode) {
+    return normalizeEmail(email) + "::" + normalizeSafeCode(safeCode);
+  }
+
+  function generateNicknameNumber() {
+    return String(Math.floor(1000000 + Math.random() * 9000000));
+  }
+
+  async function createAccountProfileRemote(profile, email, safeCode) {
+    try {
+      const payload = await encryptPayload(profile, getRecoveryPassword(email, safeCode), "vx-account-profile-v1");
+      await postGistComment(ACCOUNT_PREFIX + JSON.stringify(payload));
+    } catch (e) {
+      console.warn("account profile save failed", e);
+    }
+  }
+
+  async function updateAccountProfileRemoteQuiet() {
+    const profile = state.accountProfile;
+    const email = localStorage.getItem("vx_account_email_plain") || "";
+    const safe = localStorage.getItem("vx_account_safe_plain") || "";
+    if (!profile || !email || !safe) return;
+    await createAccountProfileRemote(profile, email, safe);
+  }
+
+  function showAutoAccountPane() {
+    document.getElementById("autoAccountPane").style.display = "block";
+    document.getElementById("recoverAccountPane").style.display = "none";
+  }
+
+  function showRecoverAccountPane() {
+    document.getElementById("autoAccountPane").style.display = "none";
+    document.getElementById("recoverAccountPane").style.display = "block";
+  }
+
+  function openAccountModal() {
+    openModal("accountModal");
+    showAutoAccountPane();
+  }
+
+  function closeAccountModal() {
+    closeModal("accountModal");
+  }
+
+  async function createAutoAccount() {
+    const email = normalizeEmail(document.getElementById("autoEmailInput").value);
+    const safe = normalizeSafeCode(document.getElementById("autoSafeCodeInput").value);
+    if (!email || !email.includes("@")) return showToast("请输入正确邮箱");
+    if (!/^\d{1,6}$/.test(safe)) return showToast("安全码需1-6位数字");
+
+    const profile = {
+      accountId: crypto.randomUUID(),
+      nicknameNumber: generateNicknameNumber(),
+      emailMasked: maskEmail(email),
+      createdRooms: [],
+      joinedRooms: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    localStorage.setItem("vx_account_email_plain", email);
+    localStorage.setItem("vx_account_safe_plain", safe);
+    saveLocalAccountProfile(profile);
+    await createAccountProfileRemote(profile, email, safe);
+    closeAccountModal();
+    showToast("账号已分配：" + profile.nicknameNumber);
+    renderRooms();
+  }
+
+  async function recoverAccount() {
+    const email = normalizeEmail(document.getElementById("recoverEmailInput").value);
+    const safe = normalizeSafeCode(document.getElementById("recoverSafeCodeInput").value);
+    if (!email || !email.includes("@")) return showToast("请输入正确邮箱");
+    if (!/^\d{1,6}$/.test(safe)) return showToast("安全码需1-6位数字");
+
+    try {
+      const comments = await fetchAllComments();
+      const items = comments.filter(c => typeof c.body === "string" && c.body.startsWith(ACCOUNT_PREFIX));
+      let recovered = null;
+      for (const c of items) {
+        try {
+          const payload = JSON.parse(c.body.slice(ACCOUNT_PREFIX.length));
+          const profile = await decryptPayload(payload, getRecoveryPassword(email, safe), "vx-account-profile-v1");
+          if (profile && profile.accountId && profile.nicknameNumber) recovered = profile;
+        } catch (e) {}
+      }
+      if (!recovered) {
+        showToast("找回失败");
+        return;
+      }
+      localStorage.setItem("vx_account_email_plain", email);
+      localStorage.setItem("vx_account_safe_plain", safe);
+      saveLocalAccountProfile(recovered);
+      closeAccountModal();
+      showToast("账号已恢复：" + recovered.nicknameNumber);
+      await loadRooms(false);
+    } catch (e) {
+      showToast("找回失败");
+    }
+  }
+
+  function roomSecretKey(roomId) {
+    return "vx_room_secret_v5_" + roomId;
+  }
+
+  function hasStoredRoomAccess(roomId) {
+    return !!localStorage.getItem(roomSecretKey(roomId));
+  }
+
+  function getStoredRoomSecret(roomId) {
+    return localStorage.getItem(roomSecretKey(roomId)) || "";
+  }
+
+  function rememberRoomAccess(room, roomSecret, type = "joined") {
+    if (!room || !room.roomId || !roomSecret) return;
+    localStorage.setItem(roomSecretKey(room.roomId), roomSecret);
+    const profile = state.accountProfile || loadLocalAccountProfile();
+    if (!profile) return;
+    const key = type === "created" ? "createdRooms" : "joinedRooms";
+    profile.createdRooms = Array.isArray(profile.createdRooms) ? profile.createdRooms : [];
+    profile.joinedRooms = Array.isArray(profile.joinedRooms) ? profile.joinedRooms : [];
+    if (!profile[key].includes(room.roomId)) profile[key].push(room.roomId);
+    saveLocalAccountProfile(profile);
+    updateAccountProfileRemoteQuiet();
+  }
+
+  function formatClockTime() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+
+  function withClock(text) {
+    return text + " · " + formatClockTime();
+  }
+
+  function updateClockLabel() {
+    if (!dataStatusText) return;
+    const raw = dataStatusText.dataset.baseText || dataStatusText.textContent.replace(/ · \d{2}:\d{2}$/, "") || "数据已断开";
+    dataStatusText.dataset.baseText = raw;
+    dataStatusText.textContent = withClock(raw);
+  }
+
+  function setStatusBaseText(text) {
+    dataStatusText.dataset.baseText = text;
+    dataStatusText.textContent = withClock(text);
+  }
+
+  async function encryptConfigObjectForLocal(configObject, unlockCode) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveKey(unlockCode, salt);
+    const plaintext = new TextEncoder().encode(JSON.stringify(configObject));
+    const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
+    return { salt: toBase64(salt), iv: toBase64(iv), data: toBase64(encrypted) };
+  }
+
+  async function saveLocalUnlockCode() {
+    const input = document.getElementById("localUnlockCodeInput");
+    const code = normalizeSafeCode(input && input.value);
+    if (!/^\d{1,6}$/.test(code)) return showToast("请输入1-6位数字");
+    if (!appConfig) return showToast("配置未加载");
+    try {
+      const encrypted = await encryptConfigObjectForLocal(appConfig, code);
+      localStorage.setItem("vx_custom_encrypted_config", JSON.stringify(encrypted));
+      closeSettingsModal();
+      showToast("本机暗语已保存，系统默认暗语仍然有效");
+    } catch (e) {
+      showToast("保存失败");
+    }
+  }
+
+  async function fetchAnnouncement() {
+    try {
+      const comments = await fetchAllComments();
+      const items = comments.filter(c => typeof c.body === "string" && c.body.startsWith(ANNOUNCE_PREFIX));
+      let latest = null;
+      for (const c of items) {
+        try {
+          const data = JSON.parse(c.body.slice(ANNOUNCE_PREFIX.length));
+          data.commentId = c.id;
+          data.updatedAtRaw = c.updated_at;
+          if (!latest || new Date(c.updated_at).getTime() > new Date(latest.updatedAtRaw || 0).getTime()) latest = data;
+        } catch (e) {}
+      }
+      state.announcement = latest;
+      return latest;
+    } catch (e) {
+      return state.announcement || null;
+    }
+  }
+
+  async function openAnnouncementModal() {
+    const ann = await fetchAnnouncement();
+    const titleEl = document.getElementById("announcementModalTitle");
+    const contentEl = document.getElementById("announcementModalContent");
+    if (ann && ann.enabled !== false && String(ann.content || "").trim()) {
+      titleEl.textContent = ann.title || "系统公告";
+      contentEl.textContent = String(ann.content || "").trim();
+    } else {
+      titleEl.textContent = "公告";
+      contentEl.textContent = "暂无公告，谢谢使用。";
+    }
+    openModal("announcementModal");
+  }
+
+  function closeAnnouncementModal() {
+    closeModal("announcementModal");
+  }
+
+  async function saveAnnouncementFromAdmin() {
+    const title = String(document.getElementById("announcementTitleInput").value || "系统公告").trim() || "系统公告";
+    const content = String(document.getElementById("announcementContentInput").value || "").trim();
+    const enabled = !!document.getElementById("announcementEnabledInput").checked;
+    const ann = { type: "announcement", enabled, title, content, updatedAt: Date.now(), updatedBy: state.displayName || "admin" };
+    try {
+      const comments = await fetchAllComments();
+      const old = comments.filter(c => typeof c.body === "string" && c.body.startsWith(ANNOUNCE_PREFIX));
+      for (const c of old) {
+        try { await deleteGistComment(c.id); } catch (e) {}
+      }
+      await postGistComment(ANNOUNCE_PREFIX + JSON.stringify(ann));
+      state.announcement = ann;
+      document.getElementById("announcementAdminTip").textContent = "公告已保存";
+      showToast("公告已保存");
+    } catch (e) {
+      showToast("公告保存失败");
+    }
+  }
+
+  async function handleLobbySearch() {
+    const input = document.getElementById("roomSearchInput");
+    const value = String(input && input.value || "").trim();
+    if (!value) return;
+
+    if (/^[A-Za-z0-9]{6}$/.test(value)) {
+      await loadRooms(true);
+      const code = value.toUpperCase();
+      const room = (state.rooms || []).find(r => String(getRoomNo(r) || "").toUpperCase() === code);
+      if (!room) return showToast("未找到房间");
+      openJoinModal(room.roomId);
+      return;
+    }
+
+    const ok = await checkAdminPassword(value);
+    if (ok) {
+      input.value = "";
+      await openAdminPage();
+    } else {
+      showToast("未找到房间");
+    }
+  }
+
+  async function openAdminPage() {
+    state.adminMode = true;
+    state.currentRoom = null;
+    clearInterval(state.timer);
+    unsubscribeActiveRoomTopic();
+    clearTypingIndicator();
+    await loadRooms(false);
+    lobbyScreen.style.display = "none";
+    chatShell.style.display = "none";
+    adminScreen.style.display = "block";
+    sendArea.style.display = "none";
+    emergencyBar.style.display = "none";
+    if (announcementBtn) announcementBtn.style.display = "none";
+    roomBackBtn.style.display = "inline-flex";
+    roomBackBtn.textContent = "返回大厅";
+    roomTitleBtn.style.display = "inline-flex";
+    roomTitleBtn.textContent = "【管理后台】";
+    lobbyActions.style.display = "none";
+    roomActions.style.display = "none";
+    const ann = await fetchAnnouncement();
+    document.getElementById("announcementTitleInput").value = (ann && ann.title) || "系统公告";
+    document.getElementById("announcementContentInput").value = (ann && ann.content) || "";
+    document.getElementById("announcementEnabledInput").checked = !ann || ann.enabled !== false;
+    renderAdminRooms();
+  }
+
+  function renderAdminRooms() {
+    if (!adminRoomList) return;
+    adminRoomList.innerHTML = "";
+    const rooms = (state.rooms || []).filter(r => !isDefaultPublicRoomId(r.roomId));
+    if (!rooms.length) {
+      adminRoomList.innerHTML = '<div class="admin-small">暂无房间</div>';
+      return;
+    }
+    rooms.forEach(room => {
+      const row = document.createElement("div");
+      row.className = "admin-row";
+      const name = document.createElement("div");
+      name.className = "admin-room-name";
+      name.textContent = room.roomName || getRoomNo(room);
+      const meta = document.createElement("div");
+      meta.className = "admin-room-meta";
+      meta.textContent = "房间号：" + getRoomNo(room) + "\n创建者：" + (room.ownerNicknameNumber || room.createdBy || "未知") + "\n创建时间：" + (room.createdAt ? new Date(room.createdAt).toLocaleString() : "未知");
+      const actions = document.createElement("div");
+      actions.className = "admin-actions";
+      const enter = document.createElement("button");
+      enter.className = "mini-btn";
+      enter.textContent = "免密进入";
+      enter.onclick = () => adminEnterRoom(room.roomId);
+      const clear = document.createElement("button");
+      clear.className = "mini-btn danger";
+      clear.textContent = "清空记录";
+      clear.onclick = () => adminClearRoomMessages(room.roomId);
+      const del = document.createElement("button");
+      del.className = "mini-btn danger";
+      del.textContent = "删除房间";
+      del.onclick = () => adminDeleteRoom(room.roomId);
+      actions.appendChild(enter); actions.appendChild(clear); actions.appendChild(del);
+      row.appendChild(name); row.appendChild(meta); row.appendChild(actions);
+      adminRoomList.appendChild(row);
+    });
+  }
+
+  async function adminEnterRoom(roomId) {
+    const room = (state.rooms || []).find(r => r.roomId === roomId);
+    if (!room) return showToast("房间不存在");
+    try {
+      const secret = await decryptAdminRoomSecret(room);
+      if (!secret) return showToast("无法进入");
+      rememberRoomAccess(room, secret, "joined");
+      openRoom(room, secret, { accessType: "admin", adminMode: true });
+    } catch (e) {
+      showToast("无法进入");
+    }
+  }
+
+  async function adminClearRoomMessages(roomId) {
+    const room = (state.rooms || []).find(r => r.roomId === roomId);
+    if (!room) return;
+    if (!confirm("确定清空该房间聊天记录？")) return;
+    try {
+      const ids = await getCommentIdsForRoom(roomId, false);
+      for (const id of ids) await deleteGistComment(id);
+      localStorage.removeItem(roomCacheKey(roomId));
+      localStorage.removeItem(roomLastCommentKey(roomId));
+      setLatestRoomCount(roomId, 0);
+      mqttPublishJson(roomTopic(roomId), { type: "roomCleared", roomId, time: Date.now() });
+      showToast("已清空");
+    } catch (e) {
+      showToast("清空失败");
+    }
+  }
+
+  async function adminDeleteRoom(roomId) {
+    const room = (state.rooms || []).find(r => r.roomId === roomId);
+    if (!room) return;
+    if (!confirm("确定删除该房间？此操作不可恢复。")) return;
+    try {
+      const ids = await getCommentIdsForRoom(roomId, true);
+      for (const id of ids) await deleteGistComment(id);
+      localStorage.removeItem(roomCacheKey(roomId));
+      localStorage.removeItem(roomLastCommentKey(roomId));
+      localStorage.removeItem(roomSecretKey(roomId));
+      state.rooms = (state.rooms || []).filter(r => r.roomId !== roomId);
+      mqttPublishJson(roomsTopic(), { type: "roomDeleted", roomId, time: Date.now() });
+      renderAdminRooms();
+      renderRooms();
+      showToast("房间已删除");
+    } catch (e) {
+      showToast("删除失败");
+    }
+  }
+
   function hasNickname() {
     return !!String(state.displayName || "").trim();
   }
 
   function requireNickname() {
     if (hasNickname()) return true;
-    showToast("请先设置昵称");
-    openSettingsModal();
+    showToast("请先初始化账号");
+    openAccountModal();
     return false;
   }
 
   function validateRoomName(roomName) {
-    const name = String(roomName || "").trim();
-    if (!name) return false;
-    const chars = Array.from(name);
-    const hasCjk = /[\u4e00-\u9fff]/.test(name);
-    if (hasCjk) return chars.length <= 5;
-    return name.length <= 8;
+    return true;
   }
 
   function isDuplicateRoomName(roomName) {
-    const name = String(roomName || "").trim().toLowerCase();
-    if (!name) return false;
-    return (state.rooms || []).some(room => String(room.roomName || "").trim().toLowerCase() === name);
+    return false;
   }
 
   function openModal(id) {
@@ -2985,9 +3626,11 @@
   }
 
   function openSettingsModal() {
-    const input = document.getElementById("nameInput");
+    const input = document.getElementById("localUnlockCodeInput");
+    const tip = document.getElementById("currentAccountTip");
+    if (tip) tip.textContent = "当前账号：" + (state.displayName || "未初始化");
     if (input) {
-      input.value = state.displayName || "";
+      input.value = "";
       setTimeout(() => input.focus(), 80);
     }
     openModal("settingsModal");
@@ -2998,33 +3641,15 @@
   }
 
   function saveName() {
-    const input = document.getElementById("nameInput");
-    const name = String((input && input.value) || "").trim();
-    if (!name) {
-      showToast("请输入昵称");
-      return;
-    }
-    if (Array.from(name).length > 16) {
-      showToast("昵称太长");
-      return;
-    }
-
-    state.displayName = name;
-    localStorage.setItem("vx_display_name", name);
-    if (nicknameLine) nicknameLine.textContent = "当前昵称：" + name;
-    closeSettingsModal();
-    showToast("昵称已保存");
-    publishPresence("online");
+    saveLocalUnlockCode();
   }
 
   function openCreateRoomModal() {
     if (!requireNickname()) return;
-    const nameInput = document.getElementById("newRoomName");
     const passInput = document.getElementById("newRoomPassword");
-    if (nameInput) nameInput.value = "";
     if (passInput) passInput.value = "";
     openModal("createRoomModal");
-    setTimeout(() => nameInput && nameInput.focus(), 80);
+    setTimeout(() => passInput && passInput.focus(), 80);
   }
 
   function closeCreateRoomModal() {
@@ -3037,6 +3662,12 @@
 
     if (room.noPassword || isDefaultPublicRoomId(room.roomId)) {
       openRoom(room, getDefaultRoomPassword(), { accessType: "public" });
+      return;
+    }
+
+    const storedSecret = getStoredRoomSecret(room.roomId);
+    if (storedSecret) {
+      openRoom(room, storedSecret, { accessType: "saved" });
       return;
     }
 
@@ -3069,21 +3700,24 @@
 
   function showLobby() {
     state.currentRoom = null;
+    state.adminMode = false;
     clearInterval(state.timer);
     unsubscribeActiveRoomTopic();
     clearTypingIndicator();
 
     chatShell.style.display = "none";
+    adminScreen.style.display = "none";
     lobbyScreen.style.display = "block";
     sendArea.style.display = "none";
     emergencyBar.style.display = "none";
 
+    if (announcementBtn) announcementBtn.style.display = "inline-flex";
     roomBackBtn.style.display = "none";
     roomTitleBtn.style.display = "none";
     lobbyActions.style.display = "flex";
     roomActions.style.display = "none";
 
-    if (nicknameLine) nicknameLine.textContent = state.displayName ? "当前昵称：" + state.displayName : "";
+    if (nicknameLine) nicknameLine.textContent = state.displayName ? "当前账号：" + state.displayName : "";
     renderRooms();
     updateUnreadBadge();
 
@@ -3093,11 +3727,14 @@
 
   function showChat() {
     lobbyScreen.style.display = "none";
+    adminScreen.style.display = "none";
     chatShell.style.display = "flex";
     sendArea.style.display = "flex";
     emergencyBar.style.display = "block";
 
+    if (announcementBtn) announcementBtn.style.display = "none";
     roomBackBtn.style.display = "inline-flex";
+    roomBackBtn.textContent = "返回大厅";
     roomTitleBtn.style.display = "inline-flex";
     lobbyActions.style.display = "none";
     roomActions.style.display = "flex";
@@ -3119,8 +3756,9 @@
     calculator.style.display = "none";
     chatApp.style.display = "flex";
 
-    state.displayName = localStorage.getItem("vx_display_name") || state.displayName || "";
-    if (nicknameLine) nicknameLine.textContent = state.displayName ? "当前昵称：" + state.displayName : "";
+    state.accountProfile = loadLocalAccountProfile();
+    state.displayName = (state.accountProfile && state.accountProfile.nicknameNumber) || localStorage.getItem("vx_display_name") || state.displayName || "";
+    if (nicknameLine) nicknameLine.textContent = state.displayName ? "当前账号：" + state.displayName : "";
 
     resetSecretMode();
     calcExpression = "";
@@ -3133,10 +3771,13 @@
     startGistRetryLoop();
     flushPendingGistMessages();
     await loadRooms(false);
+    fetchAnnouncement();
     updateUnreadBadge();
+    updateClockLabel();
+    if (!window.__vxClockTimer) window.__vxClockTimer = setInterval(updateClockLabel, 30000);
 
-    if (!hasNickname()) {
-      setTimeout(openSettingsModal, 350);
+    if (!state.accountProfile && !hasNickname()) {
+      setTimeout(openAccountModal, 350);
     }
   }
 
@@ -3155,6 +3796,7 @@
     chatApp.style.display = "none";
     calculator.style.display = "flex";
     emergencyBar.style.display = "none";
+    if (adminScreen) adminScreen.style.display = "none";
 
     calcExpression = "";
     resetSecretMode();
@@ -3185,9 +3827,16 @@
     if (e.key === "Enter") sendMessage();
   });
 
-  document.getElementById("nameInput").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") saveName();
-  });
+  (function(){
+    const localUnlockInput = document.getElementById("localUnlockCodeInput");
+    if (localUnlockInput) localUnlockInput.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") saveLocalUnlockCode();
+    });
+    const searchInput = document.getElementById("roomSearchInput");
+    if (searchInput) searchInput.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") handleLobbySearch();
+    });
+  })();
 
   document.getElementById("joinRoomPassword").addEventListener("keydown", function(e) {
     if (e.key === "Enter") confirmJoinRoom();
