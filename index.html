@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=overlays-content" />
   <title>Calculator</title>
 
   <link rel="manifest" href="/vx/manifest.webmanifest?v=tech-config-fixed-20260510" />
@@ -55,6 +55,7 @@
       padding: 0;
       width: 100%;
       height: 100%;
+      min-height: 100%;
       overflow: hidden;
       overscroll-behavior: none;
       touch-action: manipulation;
@@ -63,9 +64,17 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
+    html {
+      position: fixed;
+      inset: 0;
+    }
+
     body {
       position: fixed;
       inset: 0;
+      width: 100vw;
+      height: var(--app-height);
+      max-height: var(--app-height);
     }
 
     button,
@@ -73,10 +82,21 @@
       font-family: inherit;
     }
 
+    /* App-like fixed viewport shell: never let visualViewport offset push the UI down like a webpage. */
+    #calculator,
+    #chatApp,
+    .app-header,
+    .app-body,
+    .send-area,
+    .bottom-nav {
+      will-change: transform;
+    }
+
+
     .calculator {
       width: 100%;
       height: var(--app-height);
-      min-height: 100vh;
+      min-height: var(--app-height);
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
@@ -148,7 +168,7 @@
       position: fixed;
       left: 0;
       right: 0;
-      top: var(--vv-top);
+      top: 0;
       width: 100%;
       height: var(--visible-height);
       overflow: hidden;
@@ -168,7 +188,7 @@
       position: fixed;
       left: 0;
       right: 0;
-      top: var(--vv-top);
+      top: 0;
       height: var(--header-height);
       padding: var(--top-safe) calc(10px + env(safe-area-inset-right, 0px)) 0 calc(10px + env(safe-area-inset-left, 0px));
       flex-shrink: 0;
@@ -346,7 +366,7 @@
       position: fixed;
       left: 0;
       right: 0;
-      top: calc(var(--vv-top) + var(--header-height));
+      top: var(--header-height);
       height: calc(var(--visible-height) - var(--header-height));
       min-height: 0;
       display: flex;
@@ -542,7 +562,7 @@
       position: fixed;
       left: 0;
       right: 0;
-      top: calc(var(--vv-top) + var(--visible-height) - var(--send-height));
+      top: calc(var(--visible-height) - var(--send-height));
       bottom: auto;
       height: var(--send-height);
       min-height: var(--send-height);
@@ -951,7 +971,7 @@
       position: fixed;
       left: 0;
       right: 0;
-      top: calc(var(--vv-top) + var(--visible-height) - var(--bottom-nav-height));
+      top: calc(var(--visible-height) - var(--bottom-nav-height));
       height: var(--bottom-nav-height);
       padding: 7px 10px calc(7px + var(--bottom-safe));
       background: rgba(2, 6, 23, .88);
@@ -1048,7 +1068,7 @@
     }
 
   </style>
-  <!-- tech-style-restored + keypad-config-fixed: 20260510 -->
+  <!-- tech-style-restored + keypad-config-fixed + fixed-mobile-viewport-lock: 20260510 -->
 </head>
 
 <body>
@@ -1301,8 +1321,8 @@
 
 <div class="modal-mask" id="accountModal">
   <div class="modal">
-    <h3>账号初始化</h3>
-    <div class="admin-small">请选择自动分配账号，或用绑定邮箱和安全码找回账号。</div>
+    <h3>创建账号 / 找回账号</h3>
+    <div class="admin-small">请选择自动分配账号，或用绑定邮箱和安全码找回账号。完成后可添加好友、新建房间和恢复聊天记录。</div>
     <div class="account-choice">
       <button class="confirm-btn" onclick="showAutoAccountPane()">自动分配账号</button>
       <button class="cancel-btn" onclick="showRecoverAccountPane()">找回账号</button>
@@ -1322,7 +1342,7 @@
 </div>
 
 <script>
-  const APP_VERSION = "20260510-chat-friends-tabs-v4";
+  const APP_VERSION = "20260510-chat-friends-tabs-v4-account-center";
 
   // 仓库配置文件方案：配置页会把加密配置自动保存到同仓库 vx-config.json。
   // index 中任意输入后按 %，会从 % 前最后连续数字中取后 6 位，并从后往前做后缀匹配核对。
@@ -1556,16 +1576,20 @@
   function updateAppHeight() {
     const root = document.documentElement;
 
+    // App-like viewport lock:
+    // visualViewport.offsetTop can become large on mobile browsers/PWA and push the whole UI down.
+    // We never use it as top offset. Header stays at top:0; only visible height changes.
     if (window.visualViewport) {
       const vv = window.visualViewport;
-      const visibleHeight = Math.max(320, vv.height);
-      const vvTop = Math.max(0, vv.offsetTop || 0);
-      const keyboard = Math.max(0, window.innerHeight - vv.height - vvTop);
+      const visibleHeight = Math.max(320, Math.round(vv.height));
+      const keyboard = Math.max(0, Math.round(window.innerHeight - vv.height - (vv.offsetTop || 0)));
 
+      root.style.setProperty("--app-height", window.innerHeight + "px");
       root.style.setProperty("--visible-height", visibleHeight + "px");
-      root.style.setProperty("--vv-top", vvTop + "px");
+      root.style.setProperty("--vv-top", "0px");
       root.style.setProperty("--keyboard-offset", keyboard + "px");
     } else {
+      root.style.setProperty("--app-height", window.innerHeight + "px");
       root.style.setProperty("--visible-height", window.innerHeight + "px");
       root.style.setProperty("--vv-top", "0px");
       root.style.setProperty("--keyboard-offset", "0px");
@@ -1578,6 +1602,9 @@
     window.visualViewport.addEventListener("resize", updateAppHeight);
     window.visualViewport.addEventListener("scroll", updateAppHeight);
   }
+  window.addEventListener("orientationchange", () => setTimeout(updateAppHeight, 250));
+  document.addEventListener("focusin", () => setTimeout(updateAppHeight, 80));
+  document.addEventListener("focusout", () => setTimeout(updateAppHeight, 180));
 
   document.addEventListener("touchmove", function(e) {
     const scrollable = e.target.closest(".screen, .chat-box, .modal");
@@ -3901,9 +3928,9 @@
   }
 
   function requireNickname() {
-    if (hasNickname()) return true;
-    showToast("请先初始化账号");
-    openAccountModal();
+    if (getSelfProfile()) return true;
+    showToast("请先到我的创建账号");
+    try { switchMainTab("mine"); } catch (e) {}
     return false;
   }
 
@@ -4078,9 +4105,6 @@
     updateClockLabel();
     if (!window.__vxClockTimer) window.__vxClockTimer = setInterval(updateClockLabel, 30000);
 
-    if (!state.accountProfile && !hasNickname()) {
-      setTimeout(openAccountModal, 350);
-    }
   }
 
   function emergencyClose() {
@@ -4561,6 +4585,10 @@
 
   renderRooms = function() {
     roomList.innerHTML = "";
+    if (!getSelfProfile()) {
+      roomList.innerHTML = '<div class="empty-tip">账号未初始化<br/>请前往「我的」创建账号或找回账号。</div>';
+      return;
+    }
     const items = buildConversationItems();
     if (!items.length) {
       roomList.innerHTML = '<div class="empty-tip">暂无聊天<br/>点击右上角 ＋ 添加好友，或搜索房间号加入群聊。</div>';
@@ -4625,6 +4653,11 @@
     const reqBox = document.getElementById("friendRequestList");
     const listBox = document.getElementById("friendList");
     if (!reqBox || !listBox) return;
+    if (!getSelfProfile()) {
+      reqBox.innerHTML = '<div class="empty-tip">账号未初始化<br/>请先到「我的」创建账号或找回账号。</div>';
+      listBox.innerHTML = '';
+      return;
+    }
     reqBox.innerHTML = '<div class="empty-tip">正在加载好友申请...</div>';
     listBox.innerHTML = "";
     await syncAcceptedFriendsQuiet();
@@ -4687,7 +4720,16 @@
     if (!box) return;
     const p = getSelfProfile();
     if (!p) {
-      box.innerHTML = '<div class="empty-tip">账号未初始化</div>';
+      box.innerHTML = `
+        <div class="mine-card">
+          <div class="mine-title">账号未初始化</div>
+          <div class="mine-line">请先创建账号或找回账号，完成后才能添加好友、新建房间和恢复聊天记录。</div>
+          <div class="mine-line">当前版本：${APP_VERSION}</div>
+          <div class="mine-line">配置更新时间：${getConfigUpdatedAtText()}</div>
+          <div class="mine-actions">
+            <button class="confirm-btn mini-btn" onclick="openAccountModal()">创建账号 / 找回账号</button>
+          </div>
+        </div>`;
       return;
     }
     const localSet = !!localStorage.getItem("vx_custom_encrypted_config");
@@ -4774,6 +4816,8 @@
     await oldCreateAutoAccount();
     await publishPublicProfileQuiet();
     renderMinePage();
+    renderRooms();
+    try { switchMainTab("mine"); } catch (e) {}
   };
 
   const oldRecoverAccount = recoverAccount;
@@ -4781,6 +4825,8 @@
     await oldRecoverAccount();
     await publishPublicProfileQuiet();
     renderMinePage();
+    renderRooms();
+    try { switchMainTab("mine"); } catch (e) {}
   };
 
   createRoom = async function() {
@@ -5060,7 +5106,6 @@
     state.displayName = getSelfSenderName();
     if (nicknameLine) nicknameLine.textContent = state.displayName ? "当前账号：" + state.displayName : "";
     initNotifyAudio(); connectMQTT(); await loadRooms(false); await syncAcceptedFriendsQuiet(); await publishPublicProfileQuiet();
-    if (!state.accountProfile && !hasNickname()) openAccountModal();
     showLobby(); scheduleDefaultRoomMidnightAutoClear(); setTimeout(() => purgeExpiredDefaultRoomMessages(true), 1200); scheduleDailyAutoUpdateCheck();
   };
 
