@@ -4,10 +4,10 @@
   "unlockRule": "percent_tail_suffix_numeric_1_6",
   "storage": "github_repo_contents",
   "configFileName": "vx-config.json",
-  "updatedAt": "2026-05-10T06:23:19.785Z",
+  "updatedAt": "2026-05-10T06:51:30.355Z",
   "encryptedConfig": {
-    "salt": "fbWlRTngqS5dtujMrWEtNw==",
-    "iv": "E4iuHxBBUCMaNmYG",
-    "data": "eV2ZQRomkGnf3YNcPxkNn7YVemeWadnyMNPr9w2Ww4hbMiBB7gHpVcXMJns+e5x8DEk7e+CtOgD98SSCLQTmVvGKG5yV9YxuWtdUHmfTk34sT9PzYuyFDzDcu1ygbroMopSLDaBVacKVw4asWmWETvJhDSssMuNtGETDev1FyYrWkHiu7ZIlZnOdXqVdEgsZO5IGMP1pLNtM++Cv6kGDfyRosCK+e1F/2llwSPYcs4uAIT8DPlE2aNPbVEtu488vxunDX3aRD59XoUV/BNCmOuhLi0moZzCYBxSetugYRTCJTkdi8qrTSxw93v5Y62lb2s6kHCe/PCZ9xXHg3xeRCD7mh8zzIf37v1Qe604FzycJ+Jmo+tETfjvO7rpsA8+MuvUIbntV90bCHZBzasH9VOBkwoMtYvOn/w=="
+    "salt": "xF0FZ+FEooVEJa73uI251w==",
+    "iv": "AJ0A083e0YCZU74f",
+    "data": "FjzMc3rbjmP/IrRQoIkLo0KFVmYAkVlYt13U1CZ9/Z8L1UocHimraFKs1zxCJNXmq29Y1uu+6YDLis7nq/dC13p0qWlVAJOiz+NfHM89OMOR1t2ssxmD+yzdcpLIGNt2i6JSFlyObaGDD1T+lq5lw36/5YoBL8QiicHgeJoUK8TlbJRUvNtDknpgKkorcvXr5hUcacBXCj5W/l1aYIqVaP7XDzu5AzzBXDKOTPtn4TxOI+xcCvZknAaW6F8LKmrbAyw2wWTHUQywS6r0q0IU4Ap/u6zyklKdmjG64ajXB1fZAobIGPAZL0e7l7iWNNqvfJKg02I7z5GphewuB80fpaZoOBC1luX3V5j75//I5EpGp8Fl6Fs+JFW54FWPlbtL8SSRgbw8UiP0h/CZN/WqKHMc55NDvIVWiQ=="
   }
 }
