@@ -2855,6 +2855,316 @@
   }
 
 
+  // ===== Missing UI / navigation helpers restored: 20260510 =====
+  function requestIdleCallbackSafe(callback) {
+    if (typeof window.requestIdleCallback === "function") {
+      return window.requestIdleCallback(callback, { timeout: 1200 });
+    }
+    return setTimeout(callback, 0);
+  }
+
+  function setDataStatus(status) {
+    const onlineCount = pruneOnlineClients(false);
+    dataStatus.classList.remove("connected", "connecting");
+
+    if (status === "connected") {
+      dataStatus.classList.add("connected");
+      dataStatusText.textContent = onlineCount > 1 ? "在线 " + onlineCount + " 人" : "数据已连接";
+    } else if (status === "connecting") {
+      dataStatus.classList.add("connecting");
+      dataStatusText.textContent = "连接中...";
+    } else {
+      dataStatusText.textContent = "数据已断开";
+    }
+  }
+
+  function pruneOnlineClients(updateText = true) {
+    const now = Date.now();
+    const clients = state.onlineClients || {};
+
+    Object.keys(clients).forEach(id => {
+      const item = clients[id];
+      if (!item || now - Number(item.time || 0) > PRESENCE_TTL_MS) {
+        delete clients[id];
+      }
+    });
+
+    const count = Object.keys(clients).length;
+    if (updateText && state.mqtt.connected && dataStatusText) {
+      dataStatusText.textContent = count > 1 ? "在线 " + count + " 人" : "数据已连接";
+    }
+    return count;
+  }
+
+  function sanitizeRoomForRealtime(room) {
+    return {
+      type: "room",
+      roomId: room.roomId,
+      roomNo: room.roomNo || getRoomNo(room),
+      roomName: room.roomName,
+      createdBy: room.createdBy,
+      createdAt: room.createdAt || Date.now(),
+      noPassword: !!room.noPassword,
+      check: room.check || null,
+      adminSecret: room.adminSecret || null,
+      commentId: room.commentId || null,
+      version: room.version || 3
+    };
+  }
+
+  function upsertRoomRealtime(room) {
+    if (!room || !room.roomId) return;
+    const safeRoom = sanitizeRoomForRealtime(room);
+    const idx = state.rooms.findIndex(r => r.roomId === safeRoom.roomId);
+
+    if (idx >= 0) {
+      state.rooms[idx] = { ...state.rooms[idx], ...safeRoom };
+    } else {
+      const defaultRoom = state.rooms.find(r => isDefaultPublicRoomId(r.roomId)) || { ...DEFAULT_PUBLIC_ROOM };
+      const others = state.rooms.filter(r => !isDefaultPublicRoomId(r.roomId));
+      others.unshift(safeRoom);
+      others.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+      state.rooms = [defaultRoom].concat(others);
+    }
+
+    renderRooms();
+    updateUnreadBadge();
+  }
+
+  function removeRoomRealtime(roomId) {
+    if (!roomId || isDefaultPublicRoomId(roomId)) return;
+    state.rooms = state.rooms.filter(room => room.roomId !== roomId);
+    localStorage.removeItem(roomCacheKey(roomId));
+    localStorage.removeItem(roomLastCommentKey(roomId));
+    localStorage.removeItem(roomEnteredKey(roomId));
+    localStorage.removeItem(roomLatestCountKey(roomId));
+    localStorage.removeItem(roomLastReadCountKey(roomId));
+
+    if (state.currentRoom && state.currentRoom.roomId === roomId) {
+      showLobby();
+    } else {
+      renderRooms();
+      updateUnreadBadge();
+    }
+  }
+
+  function hasNickname() {
+    return !!String(state.displayName || "").trim();
+  }
+
+  function requireNickname() {
+    if (hasNickname()) return true;
+    showToast("请先设置昵称");
+    openSettingsModal();
+    return false;
+  }
+
+  function validateRoomName(roomName) {
+    const name = String(roomName || "").trim();
+    if (!name) return false;
+    const chars = Array.from(name);
+    const hasCjk = /[\u4e00-\u9fff]/.test(name);
+    if (hasCjk) return chars.length <= 5;
+    return name.length <= 8;
+  }
+
+  function isDuplicateRoomName(roomName) {
+    const name = String(roomName || "").trim().toLowerCase();
+    if (!name) return false;
+    return (state.rooms || []).some(room => String(room.roomName || "").trim().toLowerCase() === name);
+  }
+
+  function openModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.style.display = "flex";
+  }
+
+  function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.style.display = "none";
+  }
+
+  function openSettingsModal() {
+    const input = document.getElementById("nameInput");
+    if (input) {
+      input.value = state.displayName || "";
+      setTimeout(() => input.focus(), 80);
+    }
+    openModal("settingsModal");
+  }
+
+  function closeSettingsModal() {
+    closeModal("settingsModal");
+  }
+
+  function saveName() {
+    const input = document.getElementById("nameInput");
+    const name = String((input && input.value) || "").trim();
+    if (!name) {
+      showToast("请输入昵称");
+      return;
+    }
+    if (Array.from(name).length > 16) {
+      showToast("昵称太长");
+      return;
+    }
+
+    state.displayName = name;
+    localStorage.setItem("vx_display_name", name);
+    if (nicknameLine) nicknameLine.textContent = "当前昵称：" + name;
+    closeSettingsModal();
+    showToast("昵称已保存");
+    publishPresence("online");
+  }
+
+  function openCreateRoomModal() {
+    if (!requireNickname()) return;
+    const nameInput = document.getElementById("newRoomName");
+    const passInput = document.getElementById("newRoomPassword");
+    if (nameInput) nameInput.value = "";
+    if (passInput) passInput.value = "";
+    openModal("createRoomModal");
+    setTimeout(() => nameInput && nameInput.focus(), 80);
+  }
+
+  function closeCreateRoomModal() {
+    closeModal("createRoomModal");
+  }
+
+  function openJoinModal(roomId) {
+    const room = (state.rooms || []).find(item => item.roomId === roomId);
+    if (!room) return;
+
+    if (room.noPassword || isDefaultPublicRoomId(room.roomId)) {
+      openRoom(room, getDefaultRoomPassword(), { accessType: "public" });
+      return;
+    }
+
+    pendingRoom = room;
+    const input = document.getElementById("joinRoomPassword");
+    if (input) {
+      input.value = "";
+      setTimeout(() => input.focus(), 80);
+    }
+    openModal("joinModal");
+  }
+
+  function closeJoinModal() {
+    closeModal("joinModal");
+    pendingRoom = null;
+  }
+
+  function openAdminModal() {
+    const input = document.getElementById("adminPassword");
+    if (input) {
+      input.value = "";
+      setTimeout(() => input.focus(), 80);
+    }
+    openModal("adminModal");
+  }
+
+  function closeAdminModal() {
+    closeModal("adminModal");
+  }
+
+  function showLobby() {
+    state.currentRoom = null;
+    clearInterval(state.timer);
+    unsubscribeActiveRoomTopic();
+    clearTypingIndicator();
+
+    chatShell.style.display = "none";
+    lobbyScreen.style.display = "block";
+    sendArea.style.display = "none";
+    emergencyBar.style.display = "none";
+
+    roomBackBtn.style.display = "none";
+    roomTitleBtn.style.display = "none";
+    lobbyActions.style.display = "flex";
+    roomActions.style.display = "none";
+
+    if (nicknameLine) nicknameLine.textContent = state.displayName ? "当前昵称：" + state.displayName : "";
+    renderRooms();
+    updateUnreadBadge();
+
+    clearInterval(state.lobbyTimer);
+    state.lobbyTimer = setInterval(() => loadRooms(true), LOBBY_FALLBACK_MS);
+  }
+
+  function showChat() {
+    lobbyScreen.style.display = "none";
+    chatShell.style.display = "flex";
+    sendArea.style.display = "flex";
+    emergencyBar.style.display = "block";
+
+    roomBackBtn.style.display = "inline-flex";
+    roomTitleBtn.style.display = "inline-flex";
+    lobbyActions.style.display = "none";
+    roomActions.style.display = "flex";
+
+    updateAppHeight();
+    setTimeout(() => {
+      updateAppHeight();
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }, 80);
+  }
+
+  async function backToLobby() {
+    try { publishTyping(false); } catch (e) {}
+    showLobby();
+    await loadRooms(true);
+  }
+
+  async function openApp() {
+    calculator.style.display = "none";
+    chatApp.style.display = "flex";
+
+    state.displayName = localStorage.getItem("vx_display_name") || state.displayName || "";
+    if (nicknameLine) nicknameLine.textContent = state.displayName ? "当前昵称：" + state.displayName : "";
+
+    resetSecretMode();
+    calcExpression = "";
+    unlockInput = "";
+    isFakeResult = false;
+
+    showLobby();
+    initNotifyAudio();
+    connectMQTT();
+    startGistRetryLoop();
+    flushPendingGistMessages();
+    await loadRooms(false);
+    updateUnreadBadge();
+
+    if (!hasNickname()) {
+      setTimeout(openSettingsModal, 350);
+    }
+  }
+
+  function emergencyClose() {
+    try {
+      publishTyping(false);
+      publishPresence("offline");
+      unsubscribeActiveRoomTopic();
+    } catch (e) {}
+
+    state.currentRoom = null;
+    clearInterval(state.timer);
+    clearInterval(state.lobbyTimer);
+    clearTypingIndicator();
+
+    chatApp.style.display = "none";
+    calculator.style.display = "flex";
+    emergencyBar.style.display = "none";
+
+    calcExpression = "";
+    resetSecretMode();
+    isFakeResult = false;
+    updateDisplay();
+  }
+
+  // ===== End restored helpers =====
+
+
   messageInput.addEventListener("focus", function() {
     updateAppHeight();
     setTimeout(function() {
@@ -2932,4 +3242,3 @@
 
 </body>
 </html>
-
