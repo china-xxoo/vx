@@ -7,7 +7,9 @@
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
-      margin: 0; padding: 0; min-height: 100%;
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: #e5f3ff;
       background:
@@ -18,13 +20,18 @@
     body { padding: 22px 14px 46px; }
     .wrap { width: min(760px, 100%); margin: 0 auto; }
     h1 {
-      text-align: center; margin: 6px 0 8px;
-      font-size: 26px; letter-spacing: .04em; color: #fff;
+      text-align: center;
+      margin: 6px 0 8px;
+      font-size: 26px;
+      letter-spacing: .04em;
+      color: #fff;
       text-shadow: 0 0 18px rgba(80, 220, 255, .5);
     }
     .sub {
-      text-align: center; color: rgba(229,243,255,.78);
-      font-size: 13px; margin-bottom: 18px;
+      text-align: center;
+      color: rgba(229,243,255,.78);
+      font-size: 13px;
+      margin-bottom: 18px;
     }
     .notice {
       border: 1px solid rgba(251, 191, 36, .38);
@@ -47,13 +54,19 @@
       -webkit-backdrop-filter: blur(12px);
     }
     .section-title {
-      font-size: 18px; font-weight: 900; color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      color: #fff;
       margin: 0 0 14px;
     }
     label {
-      display: flex; justify-content: space-between; align-items: center;
-      font-weight: 800; color: rgba(229,243,255,.88);
-      font-size: 13px; margin: 14px 0 7px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 800;
+      color: rgba(229,243,255,.88);
+      font-size: 13px;
+      margin: 14px 0 7px;
     }
     .hint { color: rgba(229,243,255,.48); font-weight: 700; font-size: 12px; }
     input, textarea {
@@ -72,9 +85,11 @@
       box-shadow: 0 0 0 3px rgba(34, 211, 238, .12);
     }
     textarea {
-      min-height: 230px; resize: vertical;
+      min-height: 230px;
+      resize: vertical;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12px; line-height: 1.55;
+      font-size: 12px;
+      line-height: 1.55;
     }
     .unlock-box {
       border-radius: 18px;
@@ -85,7 +100,9 @@
     .calc-display {
       width: 100%;
       min-height: 58px;
-      display: flex; align-items: center; justify-content: flex-end;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
       border-radius: 16px;
       padding: 13px 14px;
       background: rgba(0, 0, 0, .28);
@@ -93,7 +110,7 @@
       color: #fff;
       font-size: 26px;
       font-weight: 900;
-      letter-spacing: .03em;
+      letter-spacing: .08em;
       overflow-x: auto;
       white-space: nowrap;
     }
@@ -107,7 +124,7 @@
     .keypad {
       margin-top: 12px;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 10px;
     }
     .key {
@@ -123,21 +140,40 @@
       user-select: none;
     }
     .key:active { transform: scale(.97); opacity: .82; }
-    .key.op { color: #9beeff; background: rgba(14, 165, 233, .16); border-color: rgba(103,232,249,.28); }
     .key.danger { color: #fecaca; background: rgba(239,68,68,.16); border-color: rgba(248,113,113,.30); }
     .key.equal { color: #020617; background: linear-gradient(135deg, #67e8f9, #a78bfa); }
     .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
     .btn {
-      border: none; border-radius: 16px; padding: 15px 16px;
-      font-weight: 900; font-size: 15px; cursor: pointer;
+      border: none;
+      border-radius: 16px;
+      padding: 15px 16px;
+      font-weight: 900;
+      font-size: 15px;
+      cursor: pointer;
       color: #061526;
       background: linear-gradient(135deg, #67e8f9, #a78bfa);
       box-shadow: 0 12px 32px rgba(96,165,250,.25);
     }
-    .btn.secondary { background: rgba(255,255,255,.10); color: #e5f3ff; border: 1px solid rgba(255,255,255,.12); }
+    .btn.secondary {
+      background: rgba(255,255,255,.10);
+      color: #e5f3ff;
+      border: 1px solid rgba(255,255,255,.12);
+    }
     .btn:active { transform: scale(.99); opacity: .9; }
-    .copied { text-align: center; color: #86efac; font-size: 13px; margin-top: 10px; font-weight: 900; min-height: 18px; }
-    .small { color: rgba(229,243,255,.56); font-size: 12px; line-height: 1.55; margin-top: 10px; }
+    .copied {
+      text-align: center;
+      color: #86efac;
+      font-size: 13px;
+      margin-top: 10px;
+      font-weight: 900;
+      min-height: 18px;
+    }
+    .small {
+      color: rgba(229,243,255,.56);
+      font-size: 12px;
+      line-height: 1.55;
+      margin-top: 10px;
+    }
   </style>
 </head>
 
@@ -147,44 +183,34 @@
     <div class="sub">只在当前浏览器本地生成配置，不上传任何信息。</div>
 
     <div class="notice">
-      进入暗号请直接用下面克隆计算器点击输入。这里的数字和加减乘除按钮会和 index 页面保持同一套输入规则：
-      <b>加 +</b>、<b>减 -</b>、<b>乘 ×</b>、<b>除 ÷</b>。如果你手动输入 X / x / * / ✖ / ✖️，也会统一当成乘号；/ 会统一当成除号。暗号不做数学计算，只当密码字符串。
+      新规则：进入暗号只允许 <b>1-6 位数字</b>。index 页面中，只有计算器显示 <b>0</b> 时按一次 <b>=</b> 才会进入暗号模式；输入数字暗号后，再按一次 <b>=</b> 才会核对暗语。
     </div>
 
     <div class="card">
       <div class="section-title">基础配置</div>
 
-      <label>进入暗号 <span class="hint">建议用下方克隆计算器点击输入</span></label>
+      <label>进入暗号 <span class="hint">1-6位数字</span></label>
       <div class="unlock-box">
-        <div class="calc-display" id="unlockDisplay"></div>
-        <input id="unlockCode" autocomplete="off" inputmode="text" placeholder="也可以手动输入，例如：11111÷ 或 12X34" style="margin-top:10px;" />
+        <div class="calc-display" id="unlockDisplay">未输入</div>
+        <input id="unlockCode" autocomplete="off" inputmode="numeric" maxlength="6" placeholder="输入1-6位数字，例如：9999" style="margin-top:10px;" />
         <div class="standard-row">标准化暗号：<span id="normalizedPreview">未输入</span></div>
 
-        <div class="keypad" aria-label="暗号计算器键盘">
-          <button class="key danger" data-action="clear">C</button>
-          <button class="key danger" data-action="back">⌫</button>
-          <button class="key op" data-value="÷">÷</button>
-          <button class="key op" data-value="×">×</button>
-
-          <button class="key" data-value="7">7</button>
-          <button class="key" data-value="8">8</button>
-          <button class="key" data-value="9">9</button>
-          <button class="key op" data-value="-">-</button>
+        <div class="keypad" aria-label="数字暗号键盘">
+          <button class="key" data-value="1">1</button>
+          <button class="key" data-value="2">2</button>
+          <button class="key" data-value="3">3</button>
 
           <button class="key" data-value="4">4</button>
           <button class="key" data-value="5">5</button>
           <button class="key" data-value="6">6</button>
-          <button class="key op" data-value="+">+</button>
 
-          <button class="key" data-value="1">1</button>
-          <button class="key" data-value="2">2</button>
-          <button class="key" data-value="3">3</button>
-          <button class="key equal" data-action="noop">=</button>
+          <button class="key" data-value="7">7</button>
+          <button class="key" data-value="8">8</button>
+          <button class="key" data-value="9">9</button>
 
+          <button class="key danger" data-action="clear">C</button>
           <button class="key" data-value="0">0</button>
-          <button class="key op" data-value="+">+</button>
-          <button class="key op" data-value="-">-</button>
-          <button class="key op" data-value="÷">÷</button>
+          <button class="key danger" data-action="back">⌫</button>
         </div>
       </div>
 
@@ -212,7 +238,7 @@
         <button class="btn secondary" onclick="clearPage()">清空页面</button>
       </div>
       <div class="small">
-        生成后把结果发给我，我再加入 index.html。注意：配置页面生成时和 index 解锁时都必须使用同一套标准化规则。
+        生成后，把结果中的 DEFAULT_ENCRYPTED_CONFIG 和 ADMIN_PASSWORD_HASH 替换到 index.html 对应位置即可。注意：这个版本只支持 1-6 位数字暗号。
       </div>
     </div>
   </div>
@@ -221,40 +247,21 @@
     const PBKDF2_ITERATIONS = 180000;
 
     function normalizeUnlockCode(input) {
-      return String(input || "")
-        .trim()
-        .replace(/\s+/g, "")
-        .replace(/✖️/g, "×")
-        .replace(/[xX＊*✖]/g, "×")
-        .replace(/[×]/g, "×")
-        .replace(/[÷／/]/g, "÷")
-        .replace(/[−－—–]/g, "-")
-        .replace(/[＋﹢]/g, "+");
-    }
-
-    function canonicalUnlockCode(input) {
-      return normalizeUnlockCode(input)
-        .replace(/×/g, "*")
-        .replace(/÷/g, "/");
+      return String(input || "").replace(/\D/g, "").slice(0, 6);
     }
 
     function validateUnlockCode(input) {
-      const displayCode = normalizeUnlockCode(input);
-      const canonical = canonicalUnlockCode(displayCode);
+      const code = normalizeUnlockCode(input);
 
-      if (!canonical) {
+      if (!code) {
         throw new Error("请输入进入暗号");
       }
 
-      if (!/[0-9]/.test(canonical)) {
-        throw new Error("进入暗号至少需要包含一个数字");
+      if (!/^\d{1,6}$/.test(code)) {
+        throw new Error("进入暗号只能是1-6位数字");
       }
 
-      if (!/^[0-9+\-*/]+$/.test(canonical)) {
-        throw new Error("进入暗号只能包含数字和加减乘除符号");
-      }
-
-      return canonical;
+      return code;
     }
 
     function updateUnlockUI() {
@@ -262,11 +269,10 @@
       const display = document.getElementById("unlockDisplay");
       const preview = document.getElementById("normalizedPreview");
       const normalized = normalizeUnlockCode(input.value);
-      const canonical = canonicalUnlockCode(input.value);
 
       input.value = normalized;
-      display.textContent = normalized || "";
-      preview.textContent = canonical || "未输入";
+      display.textContent = normalized || "未输入";
+      preview.textContent = normalized || "未输入";
     }
 
     document.getElementById("unlockCode").addEventListener("input", updateUnlockUI);
@@ -280,8 +286,8 @@
         if (action === "clear") {
           input.value = "";
         } else if (action === "back") {
-          input.value = Array.from(input.value).slice(0, -1).join("");
-        } else if (value) {
+          input.value = input.value.slice(0, -1);
+        } else if (value && input.value.length < 6) {
           input.value += value;
         }
 
