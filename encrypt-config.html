@@ -204,20 +204,20 @@
 <body>
   <div class="wrap">
     <h1>VX 配置生成器</h1>
-    <div class="sub">新版逻辑：配置页把加密配置保存到 Gist；index 页面按 <b>=数字=</b> 时自动读取并核对。</div>
+    <div class="sub">新版逻辑：配置页把加密配置保存到 Gist；index 页面按 <b>%</b> 时自动读取并核对。</div>
 
     <div class="notice">
-      暗号规则已经固定为：<b>1-6 位数字</b>。Gist 里只保存加密后的配置，不保存明文 GitHub Token / chatSecret / 管理密码。
+      暗号规则固定为：<b>1-6 位数字</b>。主页面不用进入暗号模式；只要按 <b>%</b>，就会检查 % 前最后一段连续数字的后 6 位，并从后往前做后缀匹配。Gist 里只保存加密后的配置，不保存明文 GitHub Token / chatSecret / 管理密码。
       <br />第一次使用时，index.html 里只需要填写一次 <b>CONFIG_GIST_ID</b>，之后修改配置只需要在本页面保存，不用再复制配置结果到 index.html。
     </div>
 
     <div class="card">
       <div class="section-title">1. 暗号设置</div>
 
-      <label>进入暗号 <span class="hint">1-6 位数字，例如 9 / 9999 / 123456</span></label>
+      <label>进入暗号 <span class="hint">1-6 位数字；可作为 % 前数字尾部后缀匹配</span></label>
       <div class="unlock-box">
         <div class="calc-display" id="unlockDisplay">0</div>
-        <input id="unlockCode" autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="输入 1-6 位数字暗号" style="margin-top:10px;" />
+        <input id="unlockCode" autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="输入 1-6 位数字暗号，例如 56" style="margin-top:10px;" />
         <div class="standard-row">当前暗号：<span id="normalizedPreview">未输入</span></div>
 
         <div class="keypad" aria-label="数字暗号键盘">
@@ -464,7 +464,7 @@
         const bundle = {
           type: "VX_REMOTE_CONFIG_V1",
           version: 1,
-          unlockRule: "numeric_1_6",
+          unlockRule: "percent_tail_suffix_numeric_1_6",
           configFileName: CONFIG_FILE_NAME,
           updatedAt: new Date().toISOString(),
           encryptedConfig
@@ -494,9 +494,9 @@ const CONFIG_GIST_ID = "${configGistId}";
 ${CONFIG_FILE_NAME}
 
 index 测试方式：
-显示 0 → 按 = → 输入 ${unlockCode} → 再按 =
+任意输入以暗号结尾的数字 → 按 %。例如暗号是 ${unlockCode}，可直接输入 ${unlockCode} 后按 %；如果输入 123456%，则只会从后往前尝试 123456 / 23456 / 3456 / 456 / 56 / 6。
 
-说明：Gist 中保存的是加密配置，不是明文 Token / chatSecret / 管理密码。`;
+说明：Gist 中保存的是加密配置，不是明文 Token / chatSecret / 管理密码。暗号识别失败时，index 页面会完全静默，不提示错误。`;
 
         getEl("result").value = resultText;
         await navigator.clipboard.writeText(resultText).catch(() => {});
