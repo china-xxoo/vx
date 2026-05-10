@@ -995,6 +995,11 @@
 
     <div class="admin-screen" id="adminScreen">
       <div class="admin-card">
+        <div class="admin-title">系统状态</div>
+        <div class="admin-small" id="adminOnlineStats">今日在线人数：0 · 当前在线：0</div>
+        <div class="admin-small">在线统计只在管理后台显示；普通房间只显示当前房间在线人数，且不统计管理员。</div>
+      </div>
+      <div class="admin-card">
         <div class="admin-title">公告管理</div>
         <input class="input" id="announcementTitleInput" placeholder="公告标题，例如：系统公告" />
         <textarea class="notice-textarea" id="announcementContentInput" placeholder="公告内容"></textarea>
@@ -1117,6 +1122,8 @@
 </div>
 
 <script>
+  const APP_VERSION = "20260510-layout-admin-auto-update-room-online-v2";
+
   // 仓库配置文件方案：配置页会把加密配置自动保存到同仓库 vx-config.json。
   // index 中任意输入后按 %，会从 % 前最后连续数字中取后 6 位，并从后往前做后缀匹配核对。
   const CONFIG_FILE_NAME = "vx-config.json";
@@ -1332,6 +1339,7 @@
   const roomSearchInput = document.getElementById("roomSearchInput");
   const adminScreen = document.getElementById("adminScreen");
   const adminRoomList = document.getElementById("adminRoomList");
+  const adminOnlineStats = document.getElementById("adminOnlineStats");
   const roomBackBtn = document.getElementById("roomBackBtn");
   const roomTitleBtn = document.getElementById("roomTitleBtn");
   const lobbyActions = document.getElementById("lobbyActions");
@@ -1405,9 +1413,8 @@
   }
 
   function triggerHardReload() {
-    display.textContent = "更新中";
     try {
-      localStorage.setItem("vx_force_reload_at", String(Date.now()));
+      localStorage.setItem("vx_auto_update_applied_at", String(Date.now()));
       if ("caches" in window) {
         caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).finally(() => {
           location.replace(location.pathname + "?v=" + Date.now());
@@ -1526,12 +1533,7 @@
   }
 
   function clearCalc() {
-    const now = Date.now();
-    if (!secretMode && now - cTapTime < 650) {
-      triggerHardReload();
-      return;
-    }
-    cTapTime = now;
+    // C 键只做普通清空，不再承担双击手动更新。
     calcExpression = "";
     resetSecretMode();
     isFakeResult = false;
@@ -2268,6 +2270,7 @@
 
     clearTypingIndicator();
     subscribeRoomTopic(room.roomId);
+    try { publishPresence("online"); } catch (e) {}
 
     historyTip.style.display = "inline";
     historyTip.textContent = "正在检查历史记录...";
@@ -2873,14 +2876,18 @@
       clientId: state.mqtt.clientId,
       senderId: state.senderId,
       senderName: state.displayName || "未命名",
+      roomId: state.currentRoom ? state.currentRoom.roomId : "",
+      isAdmin: !!state.adminMode,
       time: Date.now()
     };
     mqttPublishJson(presenceTopic(), payload);
     if (status === "online") {
       state.onlineClients[state.mqtt.clientId] = payload;
+      recordDailyOnlineClient(payload);
     } else {
       delete state.onlineClients[state.mqtt.clientId];
     }
+    renderAdminOnlineStats();
     setDataStatus(state.mqtt.connected ? "connected" : "disconnected");
   }
 
@@ -2903,9 +2910,13 @@
         clientId: obj.clientId,
         senderId: obj.senderId || "",
         senderName: obj.senderName || "未命名",
+        roomId: obj.roomId || "",
+        isAdmin: !!obj.isAdmin,
         time: Number(obj.time || Date.now())
       };
+      recordDailyOnlineClient(state.onlineClients[obj.clientId]);
     }
+    renderAdminOnlineStats();
     setDataStatus(state.mqtt.connected ? "connected" : "disconnected");
   }
 
@@ -3104,12 +3115,12 @@
   }
 
   function setDataStatus(status) {
-    const onlineCount = pruneOnlineClients(false);
+    pruneOnlineClients(false);
     dataStatus.classList.remove("connected", "connecting");
 
     if (status === "connected") {
       dataStatus.classList.add("connected");
-      setStatusBaseText(onlineCount > 1 ? "在线 " + onlineCount + " 人" : "数据已连接");
+      setStatusBaseText("数据已连接");
     } else if (status === "connecting") {
       dataStatus.classList.add("connecting");
       setStatusBaseText("连接中...");
@@ -3118,22 +3129,67 @@
     }
   }
 
+  function getTodayKey() {
+    const d = new Date();
+    return d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+  }
+
+  function dailyOnlineStorageKey() {
+    return "vx_daily_online_users_" + getTodayKey();
+  }
+
+  function recordDailyOnlineClient(item) {
+    if (!item || item.isAdmin) return;
+    const id = item.senderId || item.clientId;
+    if (!id) return;
+    try {
+      const key = dailyOnlineStorageKey();
+      const arr = JSON.parse(localStorage.getItem(key) || "[]");
+      const list = Array.isArray(arr) ? arr : [];
+      if (!list.includes(id)) {
+        list.push(id);
+        localStorage.setItem(key, JSON.stringify(list.slice(-1000)));
+      }
+    } catch (e) {}
+  }
+
+  function getDailyOnlineCount() {
+    try {
+      const arr = JSON.parse(localStorage.getItem(dailyOnlineStorageKey()) || "[]");
+      return Array.isArray(arr) ? arr.length : 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function renderAdminOnlineStats() {
+    if (!adminOnlineStats) return;
+    const now = Date.now();
+    const currentOnline = Object.values(state.onlineClients || {}).filter(item => item && !item.isAdmin && now - Number(item.time || 0) <= PRESENCE_TTL_MS).length;
+    adminOnlineStats.textContent = "今日在线人数：" + getDailyOnlineCount() + " · 当前在线：" + currentOnline;
+  }
+
+  function getCurrentRoomOnlineCount() {
+    if (!state.currentRoom || state.adminMode) return null;
+    pruneOnlineClients(false);
+    const roomId = state.currentRoom.roomId;
+    const now = Date.now();
+    let count = Object.values(state.onlineClients || {}).filter(item => item && !item.isAdmin && item.roomId === roomId && now - Number(item.time || 0) <= PRESENCE_TTL_MS).length;
+    return Math.max(1, count);
+  }
+
   function pruneOnlineClients(updateText = true) {
     const now = Date.now();
     const clients = state.onlineClients || {};
-
     Object.keys(clients).forEach(id => {
       const item = clients[id];
-      if (!item || now - Number(item.time || 0) > PRESENCE_TTL_MS) {
-        delete clients[id];
-      }
+      if (!item || now - Number(item.time || 0) > PRESENCE_TTL_MS) delete clients[id];
     });
-
-    const count = Object.keys(clients).length;
-    if (updateText && state.mqtt.connected && dataStatusText) {
-      setStatusBaseText(count > 1 ? "在线 " + count + " 人" : "数据已连接");
+    if (updateText) {
+      renderAdminOnlineStats();
+      setDataStatus(state.mqtt.connected ? "connected" : "disconnected");
     }
-    return count;
+    return Object.keys(clients).length;
   }
 
   function sanitizeRoomForRealtime(room) {
@@ -3362,15 +3418,21 @@
     return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
   }
 
+  function getStatusExtraText() {
+    const roomOnline = getCurrentRoomOnlineCount();
+    if (roomOnline === null) return "";
+    return " · 房间在线 " + roomOnline + " 人";
+  }
+
   function withClock(text) {
-    return text + " · " + formatClockTime();
+    return text + " · " + formatClockTime() + getStatusExtraText();
   }
 
   function updateClockLabel() {
     if (!dataStatusText) return;
-    const raw = dataStatusText.dataset.baseText || dataStatusText.textContent.replace(/ · \d{2}:\d{2}$/, "") || "数据已断开";
-    dataStatusText.dataset.baseText = raw;
+    const raw = dataStatusText.dataset.baseText || "数据已断开";
     dataStatusText.textContent = withClock(raw);
+    renderAdminOnlineStats();
   }
 
   function setStatusBaseText(text) {
@@ -3506,6 +3568,8 @@
     document.getElementById("announcementTitleInput").value = (ann && ann.title) || "系统公告";
     document.getElementById("announcementContentInput").value = (ann && ann.content) || "";
     document.getElementById("announcementEnabledInput").checked = !ann || ann.enabled !== false;
+    try { publishPresence("online"); } catch (e) {}
+    renderAdminOnlineStats();
     renderAdminRooms();
   }
 
@@ -3718,6 +3782,7 @@
     roomActions.style.display = "none";
 
     if (nicknameLine) nicknameLine.textContent = state.displayName ? "当前账号：" + state.displayName : "";
+    try { publishPresence("online"); } catch (e) {}
     renderRooms();
     updateUnreadBadge();
 
@@ -3804,6 +3869,38 @@
     updateDisplay();
   }
 
+
+
+  function extractAppVersionFromHtml(html) {
+    const match = String(html || "").match(/const\s+APP_VERSION\s*=\s*["']([^"']+)["']/);
+    return match ? match[1] : "";
+  }
+
+  async function checkForNewAppVersion() {
+    try {
+      const sep = location.pathname.includes("?") ? "&" : "?";
+      const res = await fetch(location.pathname + sep + "auto_update_check=" + Date.now(), { cache: "no-store" });
+      if (!res.ok) return;
+      const html = await res.text();
+      const onlineVersion = extractAppVersionFromHtml(html);
+      if (onlineVersion && onlineVersion !== APP_VERSION) {
+        triggerHardReload();
+      }
+    } catch (e) {}
+  }
+
+  function scheduleDailyAutoUpdateCheck() {
+    try {
+      const key = "vx_auto_update_checked_date";
+      const today = getTodayKey();
+      if (localStorage.getItem(key) === today) return;
+      localStorage.setItem(key, today);
+      setTimeout(checkForNewAppVersion, 60 * 1000);
+    } catch (e) {
+      setTimeout(checkForNewAppVersion, 60 * 1000);
+    }
+  }
+
   // ===== End restored helpers =====
 
 
@@ -3885,6 +3982,7 @@
     });
   }
 
+  scheduleDailyAutoUpdateCheck();
   registerAndroidPWAServiceWorker();
 
 </script>
