@@ -3786,3 +3786,4 @@ document.addEventListener("focusout", () => setTimeout(window.updateAppHeight, 1
   window.sendMessage=sendMessage=async function(){const room=state&&state.currentRoom;const txt=messageInput&&messageInput.value&&messageInput.value.trim();if(room&&room.isService&&!room.adminMode){if(!txt)return;if(!serviceLimitOk())return;await oldSendMessage();showTempServiceReply(room.roomId);return}return oldSendMessage()};
   window.adminEnterServiceChat=async function(id,user){if(!user||!user.accountId)return showToast("未找到用户");const room={type:"service",roomId:id||serviceRoomId(user.accountId),roomNo:"客服",roomName:"客服｜"+publicName(user,true),friend:user,noPassword:true,isDm:true,isService:true,createdAt:now()};await openRoom(room,serviceSecret(user.accountId),{adminMode:true,accessType:"service"})};
 })();
+
