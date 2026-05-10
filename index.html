@@ -1342,7 +1342,7 @@
 </div>
 
 <script>
-  const APP_VERSION = "20260510-chat-friends-tabs-v4-account-center";
+  const APP_VERSION = "20260510-v4-lazy-calculator-boot";
 
   // 仓库配置文件方案：配置页会把加密配置自动保存到同仓库 vx-config.json。
   // index 中任意输入后按 %，会从 % 前最后连续数字中取后 6 位，并从后往前做后缀匹配核对。
@@ -4278,7 +4278,7 @@
 
   function registerAndroidPWAServiceWorker() {
     if (!("serviceWorker" in navigator)) return;
-    window.addEventListener("load", function() {
+    const run = function() {
       navigator.serviceWorker.register("/vx/service-worker.js?v=tech-config-fixed-20260510", {
         scope: "/vx/"
       }).then(function(reg) {
@@ -4286,7 +4286,9 @@
       }).catch(function(err) {
         console.log("Service Worker 注册失败", err);
       });
-    });
+    };
+    if (document.readyState === "complete") run();
+    else window.addEventListener("load", run, { once: true });
   }
 
 
@@ -5014,7 +5016,12 @@
     renderAdminOnlineStats();
   };
   function showDataStatusMini() { showToast(dataStatus.classList.contains("connected") ? "数据正常" : "数据异常"); }
-  setInterval(updateClockLabel, 1000);
+  function startRuntimeClock() {
+    updateClockLabel();
+    if (!window.__vxClockSecondTimer) {
+      window.__vxClockSecondTimer = setInterval(updateClockLabel, 1000);
+    }
+  }
 
   const oldShowLobby = showLobby;
   showLobby = function() {
@@ -5098,16 +5105,65 @@
     renderAdminOnlineStats(); renderAdminVersionInfo(); renderAdminRooms();
   };
 
+  // Lazy boot：先快速进入大厅外壳，再分批加载重数据，避免计算器和解锁阶段卡顿。
+  let appBootStarted = false;
   const oldOpenApp = openApp;
   openApp = async function() {
     calculator.style.display = "none";
     chatApp.style.display = "flex";
+
     state.accountProfile = loadLocalAccountProfile();
     state.displayName = getSelfSenderName();
     if (nicknameLine) nicknameLine.textContent = state.displayName ? "当前账号：" + state.displayName : "";
-    initNotifyAudio(); connectMQTT(); await loadRooms(false); await syncAcceptedFriendsQuiet(); await publishPublicProfileQuiet();
-    showLobby(); scheduleDefaultRoomMidnightAutoClear(); setTimeout(() => purgeExpiredDefaultRoomMessages(true), 1200); scheduleDailyAutoUpdateCheck();
+
+    resetSecretMode();
+    calcExpression = "";
+    unlockInput = "";
+    isFakeResult = false;
+
+    startRuntimeClock();
+    showLobby();
+    setDataStatus("connecting");
+
+    if (!appBootStarted) {
+      appBootStarted = true;
+      setTimeout(startDeferredAppBoot, 120);
+    }
   };
+
+  async function startDeferredAppBoot() {
+    try { initNotifyAudio(); } catch (e) {}
+
+    // 第一批：先连接实时通道和轻量账号信息。
+    setTimeout(() => {
+      try { connectMQTT(); } catch (e) {}
+      try { registerAndroidPWAServiceWorker(); } catch (e) {}
+    }, 0);
+
+    // 第二批：渲染本地可见会话，远程数据随后补齐。
+    setTimeout(async () => {
+      try { await syncAcceptedFriendsQuiet(); } catch (e) {}
+      try { await publishPublicProfileQuiet(); } catch (e) {}
+      try { renderRooms(); } catch (e) {}
+    }, 180);
+
+    // 第三批：加载远程房间、公告、未读、重试队列。
+    setTimeout(async () => {
+      try { startGistRetryLoop(); } catch (e) {}
+      try { flushPendingGistMessages(); } catch (e) {}
+      try { await loadRooms(false); } catch (e) {}
+      try { await fetchAnnouncement(); } catch (e) {}
+      try { updateUnreadBadge(); } catch (e) {}
+      try { renderRooms(); } catch (e) {}
+    }, 360);
+
+    // 第四批：维护任务和自动更新，全部延后到进入系统后。
+    setTimeout(() => {
+      try { scheduleDefaultRoomMidnightAutoClear(); } catch (e) {}
+      try { purgeExpiredDefaultRoomMessages(true); } catch (e) {}
+      try { scheduleDailyAutoUpdateCheck(); } catch (e) {}
+    }, 1200);
+  }
 
   function upgradeAccountProfileShape() {
     const p = loadLocalAccountProfile();
@@ -5119,8 +5175,7 @@
   }
   upgradeAccountProfileShape();
 
-  scheduleDailyAutoUpdateCheck();
-  registerAndroidPWAServiceWorker();
+  // 页面初始阶段只保留计算器；重数据、自动更新、Service Worker 均在解锁后延迟启动。
 
 </script>
 
