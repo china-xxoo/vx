@@ -997,6 +997,7 @@
       <div class="admin-card">
         <div class="admin-title">系统状态</div>
         <div class="admin-small" id="adminOnlineStats">今日在线人数：0 · 当前在线：0</div>
+        <div class="admin-small" id="adminVersionInfo">当前版本：-- · 配置更新时间：--</div>
         <div class="admin-small">在线统计只在管理后台显示；普通房间只显示当前房间在线人数，且不统计管理员。</div>
       </div>
       <div class="admin-card">
@@ -1011,6 +1012,9 @@
         <div class="admin-title">所有房间</div>
         <div class="admin-small">管理员可免密进入、清空聊天记录或删除房间。</div>
         <div id="adminRoomList" style="margin-top:12px;"></div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-small" id="adminVersionFooter">当前版本：-- · 配置更新时间：--</div>
       </div>
     </div>
 
@@ -1122,7 +1126,7 @@
 </div>
 
 <script>
-  const APP_VERSION = "20260510-layout-admin-auto-update-room-online-v2";
+  const APP_VERSION = "20260510-layout-admin-v3-safe-roomcode";
 
   // 仓库配置文件方案：配置页会把加密配置自动保存到同仓库 vx-config.json。
   // index 中任意输入后按 %，会从 % 前最后连续数字中取后 6 位，并从后往前做后缀匹配核对。
@@ -1140,6 +1144,7 @@
   const MSG_PREFIX = "ENC_ROOM_MSG_V1:";
   const ANNOUNCE_PREFIX = "VX_ANNOUNCEMENT_V1:";
   const ACCOUNT_PREFIX = "ENC_ACCOUNT_PROFILE_V1:";
+  const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
   const MQTT_WS_URL = "wss://afa67eee.ala.cn-hangzhou.emqxsl.cn:8084/mqtt";
   const MQTT_USERNAME = "vx_user";
@@ -1340,6 +1345,8 @@
   const adminScreen = document.getElementById("adminScreen");
   const adminRoomList = document.getElementById("adminRoomList");
   const adminOnlineStats = document.getElementById("adminOnlineStats");
+  const adminVersionInfo = document.getElementById("adminVersionInfo");
+  const adminVersionFooter = document.getElementById("adminVersionFooter");
   const roomBackBtn = document.getElementById("roomBackBtn");
   const roomTitleBtn = document.getElementById("roomTitleBtn");
   const lobbyActions = document.getElementById("lobbyActions");
@@ -1698,6 +1705,7 @@
 
     remoteConfigBundleCache = bundle;
     remoteConfigBundleFetchedAt = now;
+    try { renderAdminVersionInfo(); } catch (e) {}
     return bundle;
   }
 
@@ -1877,7 +1885,7 @@
   }
 
   function generateRoomNo() {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const chars = ROOM_CODE_CHARS;
     let code = "";
     do {
       code = "";
@@ -3162,11 +3170,34 @@
     }
   }
 
+  function formatDateTimeForAdmin(value) {
+    if (!value) return "未知";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0") + " " +
+      String(d.getHours()).padStart(2, "0") + ":" +
+      String(d.getMinutes()).padStart(2, "0");
+  }
+
+  function getConfigUpdatedAtText() {
+    const bundle = remoteConfigBundleCache || {};
+    return formatDateTimeForAdmin(bundle.updatedAt || bundle.savedAt || bundle.configUpdatedAt || bundle.generatedAt || "");
+  }
+
+  function renderAdminVersionInfo() {
+    const text = "当前版本：" + APP_VERSION + " · 配置更新时间：" + getConfigUpdatedAtText();
+    if (adminVersionInfo) adminVersionInfo.textContent = text;
+    if (adminVersionFooter) adminVersionFooter.textContent = text;
+  }
+
   function renderAdminOnlineStats() {
     if (!adminOnlineStats) return;
     const now = Date.now();
     const currentOnline = Object.values(state.onlineClients || {}).filter(item => item && !item.isAdmin && now - Number(item.time || 0) <= PRESENCE_TTL_MS).length;
     adminOnlineStats.textContent = "今日在线人数：" + getDailyOnlineCount() + " · 当前在线：" + currentOnline;
+    renderAdminVersionInfo();
   }
 
   function getCurrentRoomOnlineCount() {
@@ -3421,7 +3452,7 @@
   function getStatusExtraText() {
     const roomOnline = getCurrentRoomOnlineCount();
     if (roomOnline === null) return "";
-    return " · 房间在线 " + roomOnline + " 人";
+    return " · 在线 " + roomOnline + " 人";
   }
 
   function withClock(text) {
@@ -3570,6 +3601,7 @@
     document.getElementById("announcementEnabledInput").checked = !ann || ann.enabled !== false;
     try { publishPresence("online"); } catch (e) {}
     renderAdminOnlineStats();
+    renderAdminVersionInfo();
     renderAdminRooms();
   }
 
@@ -3626,7 +3658,9 @@
   async function adminClearRoomMessages(roomId) {
     const room = (state.rooms || []).find(r => r.roomId === roomId);
     if (!room) return;
-    if (!confirm("确定清空该房间聊天记录？")) return;
+    const roomNo = getRoomNo(room);
+    if (!confirm("确定清空房间 " + roomNo + " 的聊天记录？")) return;
+    if (!confirm("请再次确认：清空后不可恢复。")) return;
     try {
       const ids = await getCommentIdsForRoom(roomId, false);
       for (const id of ids) await deleteGistComment(id);
@@ -3643,7 +3677,13 @@
   async function adminDeleteRoom(roomId) {
     const room = (state.rooms || []).find(r => r.roomId === roomId);
     if (!room) return;
-    if (!confirm("确定删除该房间？此操作不可恢复。")) return;
+    const roomNo = getRoomNo(room);
+    if (!confirm("确定删除房间 " + roomNo + "？此操作不可恢复。")) return;
+    const typed = prompt("二次确认：请输入房间号 " + roomNo + " 才能删除");
+    if (String(typed || "").trim().toUpperCase() !== String(roomNo).toUpperCase()) {
+      showToast("已取消删除");
+      return;
+    }
     try {
       const ids = await getCommentIdsForRoom(roomId, true);
       for (const id of ids) await deleteGistComment(id);
@@ -3788,6 +3828,7 @@
 
     clearInterval(state.lobbyTimer);
     state.lobbyTimer = setInterval(() => loadRooms(true), LOBBY_FALLBACK_MS);
+    maybeApplyDeferredAutoUpdate();
   }
 
   function showChat() {
@@ -3871,6 +3912,48 @@
 
 
 
+  function hasUnsentMessageDraft() {
+    return !!(messageInput && String(messageInput.value || "").trim());
+  }
+
+  function isAutoUpdateSafeNow() {
+    if (state.currentRoom) return false;
+    if (state.adminMode) return false;
+    if (hasUnsentMessageDraft()) return false;
+    if (messageInput && document.activeElement === messageInput) return false;
+    return true;
+  }
+
+  function deferAutoUpdate(onlineVersion) {
+    try {
+      localStorage.setItem("vx_pending_update_version", onlineVersion || "pending");
+    } catch (e) {}
+    if (!window.__vxDeferredUpdateNoticeShown) {
+      window.__vxDeferredUpdateNoticeShown = true;
+      showToast("检测到新版本，空闲时自动更新", 1800);
+    }
+    if (window.__vxDeferredUpdateTimer) return;
+    window.__vxDeferredUpdateTimer = setInterval(() => {
+      if (isAutoUpdateSafeNow()) {
+        clearInterval(window.__vxDeferredUpdateTimer);
+        window.__vxDeferredUpdateTimer = null;
+        triggerHardReload();
+      }
+    }, 15000);
+  }
+
+  function maybeApplyDeferredAutoUpdate() {
+    let pending = "";
+    try { pending = localStorage.getItem("vx_pending_update_version") || ""; } catch (e) {}
+    if (!pending) return;
+    if (isAutoUpdateSafeNow()) {
+      try { localStorage.removeItem("vx_pending_update_version"); } catch (e) {}
+      setTimeout(triggerHardReload, 1200);
+    } else {
+      deferAutoUpdate(pending);
+    }
+  }
+
   function extractAppVersionFromHtml(html) {
     const match = String(html || "").match(/const\s+APP_VERSION\s*=\s*["']([^"']+)["']/);
     return match ? match[1] : "";
@@ -3884,7 +3967,11 @@
       const html = await res.text();
       const onlineVersion = extractAppVersionFromHtml(html);
       if (onlineVersion && onlineVersion !== APP_VERSION) {
-        triggerHardReload();
+        if (isAutoUpdateSafeNow()) {
+          triggerHardReload();
+        } else {
+          deferAutoUpdate(onlineVersion);
+        }
       }
     } catch (e) {}
   }
