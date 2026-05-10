@@ -1,5 +1,5 @@
 
-const APP_VERSION = "20260510-v5-complete-logic";
+const APP_VERSION = "20260510-v5-2-admin-compact-users";
 const CONFIG_FILE_NAME = "vx-config.json";
 const CONFIG_FILE_URL = "vx-config.json";
 const CONFIG_FETCH_CACHE_MS = 30000;
@@ -3787,3 +3787,254 @@ document.addEventListener("focusout", () => setTimeout(window.updateAppHeight, 1
   window.adminEnterServiceChat=async function(id,user){if(!user||!user.accountId)return showToast("未找到用户");const room={type:"service",roomId:id||serviceRoomId(user.accountId),roomNo:"客服",roomName:"客服｜"+publicName(user,true),friend:user,noPassword:true,isDm:true,isService:true,createdAt:now()};await openRoom(room,serviceSecret(user.accountId),{adminMode:true,accessType:"service"})};
 })();
 
+/* VX_V5_2_ADMIN_COMPACT_PATCH */
+(function(){
+  const PATCH_VERSION = "20260510-v5-2-admin-compact-users";
+  try { window.__VX_ADMIN_COMPACT_PATCH__ = PATCH_VERSION; } catch(e) {}
+
+  function q(id){ return document.getElementById(id); }
+  function safe(fn, fallback){ try { return fn(); } catch(e) { return fallback; } }
+  function html(s){ return safe(() => htmlEscape(String(s || "")), String(s || "")); }
+  function currentOnlineCount(){
+    return safe(() => {
+      const t = Date.now();
+      return Object.values(state.onlineClients || {}).filter(item => item && !item.isAdmin && t - Number(item.time || 0) <= PRESENCE_TTL_MS).length;
+    }, 0);
+  }
+
+  const oldRenderAdminVersionInfo = window.renderAdminVersionInfo || (typeof renderAdminVersionInfo === "function" ? renderAdminVersionInfo : null);
+  window.renderAdminVersionInfo = renderAdminVersionInfo = function(){
+    const footer = q("adminVersionFooter");
+    const versionInfo = q("adminVersionInfo");
+    const text = "当前版本：" + (typeof APP_VERSION !== "undefined" ? APP_VERSION : PATCH_VERSION) + " · 配置更新时间：" + safe(() => getConfigUpdatedAtText(), "未知");
+    if (footer) footer.textContent = text;
+    if (versionInfo) {
+      versionInfo.textContent = "";
+      versionInfo.style.display = "none";
+    }
+  };
+
+  window.renderAdminOnlineStats = renderAdminOnlineStats = function(){
+    const el = q("adminOnlineStats");
+    if (!el) return;
+    el.textContent = "今日在线：" + safe(() => getDailyOnlineCount(), 0) + " · 当前在线：" + currentOnlineCount();
+  };
+
+  function cleanSystemCard(){
+    const stats = q("adminOnlineStats");
+    if (!stats) return;
+    const card = stats.closest(".admin-card");
+    if (!card) return;
+    card.querySelectorAll(".admin-small").forEach(el => {
+      if (el !== stats) el.style.display = "none";
+    });
+    stats.style.display = "block";
+  }
+
+  function hideAllRoomsCard(){
+    const list = q("adminRoomList");
+    if (list) {
+      const card = list.closest(".admin-card");
+      if (card) card.style.display = "none";
+    }
+  }
+
+  function makeAccordion(card, key, defaultOpen){
+    if (!card || card.dataset.vxAccordionReady === "1") return;
+    const titleEl = card.querySelector(".admin-title");
+    if (!titleEl) return;
+    const titleText = titleEl.textContent.trim() || "展开";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "admin-fold-btn";
+    btn.innerHTML = '<span>' + html(titleText) + '</span><span class="admin-fold-arrow">⌄</span>';
+
+    const panel = document.createElement("div");
+    panel.className = "admin-fold-panel";
+    panel.dataset.section = key || titleText;
+
+    const children = Array.from(card.childNodes);
+    children.forEach(node => {
+      if (node === titleEl) return;
+      panel.appendChild(node);
+    });
+    titleEl.remove();
+    card.appendChild(btn);
+    card.appendChild(panel);
+    card.dataset.vxAccordionReady = "1";
+
+    function setOpen(open){
+      panel.style.display = open ? "block" : "none";
+      btn.classList.toggle("open", open);
+      if (open && key === "users") setTimeout(() => safe(() => renderAdminUsers(), null), 20);
+    }
+    btn.onclick = () => setOpen(panel.style.display !== "block");
+    setOpen(!!defaultOpen);
+  }
+
+  function setupAdminCompactPage(){
+    cleanSystemCard();
+    hideAllRoomsCard();
+
+    const stats = q("adminOnlineStats");
+    const annInput = q("announcementTitleInput");
+    const userList = q("adminUserList");
+
+    const systemCard = stats && stats.closest(".admin-card");
+    const annCard = annInput && annInput.closest(".admin-card");
+    const userCard = userList && userList.closest(".admin-card");
+
+    makeAccordion(systemCard, "system", false);
+    makeAccordion(annCard, "announcement", false);
+    makeAccordion(userCard, "users", false);
+  }
+  window.setupAdminCompactPage = setupAdminCompactPage;
+
+  async function renderUserChatWindowsInside(user, box){
+    if (!box || !user) return;
+    box.innerHTML = '<div class="admin-small">正在加载聊天窗口...</div>';
+    await safe(() => loadRooms(true), null);
+    const allProfiles = await safe(() => fetchPublicProfiles(), []);
+    const map = safe(() => profileMap(allProfiles), {});
+    const groupIds = safe(() => unique((user.createdRooms || []).concat(user.joinedRooms || [])), []);
+    const friendIds = safe(() => unique(user.friends || []), []);
+    const dmIds = safe(() => unique((user.dmConversations || []).concat(friendIds.map(fid => getDmRoomId(user.accountId, fid)))), []);
+    const serviceIds = safe(() => unique(user.serviceChats || []), []);
+
+    box.innerHTML = '<div class="admin-user-chat-title">聊天窗口</div>';
+    let count = 0;
+    function addLine(title, meta, onEnter){
+      count++;
+      const row = document.createElement("div");
+      row.className = "admin-user-chat-row";
+      const info = document.createElement("div");
+      info.className = "admin-user-chat-info";
+      info.innerHTML = '<div class="admin-user-chat-name">' + html(title) + '</div><div class="admin-user-chat-meta">' + html(meta || "") + '</div>';
+      const btn = document.createElement("button");
+      btn.className = "mini-btn";
+      btn.textContent = "进入";
+      btn.onclick = (e) => { e.stopPropagation(); onEnter && onEnter(); };
+      row.appendChild(info);
+      row.appendChild(btn);
+      box.appendChild(row);
+    }
+
+    groupIds.forEach(id => {
+      const room = safe(() => roomById(id), null);
+      if (!room || safe(() => isDefaultPublicRoomId(room.roomId), false)) return;
+      const title = "群｜" + (room.roomName || safe(() => getRoomNo(room), room.roomNo || "群聊"));
+      addLine(title, "房间号：" + safe(() => getRoomNo(room), room.roomNo || "--"), () => adminEnterRoom(room.roomId));
+    });
+
+    dmIds.forEach(roomId => {
+      const parts = String(roomId).replace(/^dm_/, "").split("_");
+      const friendId = parts.find(x => x && x !== user.accountId) || "";
+      if (!friendId) return;
+      const friend = map[friendId] || { accountId: friendId, nicknameNumber: friendId, nickname: "" };
+      addLine("私｜" + safe(() => publicName(friend, true), friendId), "会话ID：" + roomId, () => adminEnterDm(user.accountId, friendId));
+    });
+
+    serviceIds.forEach(id => {
+      addLine("客服｜" + safe(() => publicName(user, true), user.accountId), "客服会话：" + id, () => adminEnterServiceChat(id, user));
+    });
+
+    if (!count) box.innerHTML += '<div class="admin-small">该用户暂无可查询聊天窗口；用户需使用新版登录一次后才会自动同步索引。</div>';
+  }
+
+  window.renderAdminUsers = renderAdminUsers = async function(){
+    const list = q("adminUserList");
+    const oldDetail = q("adminUserDetail");
+    if (!list) return;
+    if (oldDetail) oldDetail.style.display = "none";
+    list.className = "admin-user-grid";
+    list.innerHTML = '<div class="admin-small">正在加载用户...</div>';
+    try {
+      const users = (await fetchPublicProfiles()).sort((a,b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0));
+      if (!users.length) {
+        list.className = "";
+        list.innerHTML = '<div class="admin-small">暂无注册用户。用户使用新版创建/登录一次后会显示在这里。</div>';
+        return;
+      }
+      list.innerHTML = "";
+      users.forEach(u => {
+        const card = document.createElement("div");
+        card.className = "admin-user-card";
+        const title = document.createElement("div");
+        title.className = "admin-user-name";
+        title.textContent = safe(() => publicName(u, true), u.accountId || "未知用户");
+        const meta = document.createElement("div");
+        meta.className = "admin-user-meta";
+        meta.textContent = "邮箱：" + (u.emailMasked || "--") + "\n最后同步：" + (u.updatedAt ? new Date(u.updatedAt).toLocaleString() : "未知");
+        const detail = document.createElement("div");
+        detail.className = "admin-user-card-detail";
+        detail.style.display = "none";
+        card.appendChild(title);
+        card.appendChild(meta);
+        card.appendChild(detail);
+        card.onclick = async () => {
+          const opened = card.classList.contains("expanded");
+          list.querySelectorAll(".admin-user-card.expanded").forEach(el => {
+            el.classList.remove("expanded");
+            const d = el.querySelector(".admin-user-card-detail");
+            if (d) { d.style.display = "none"; d.innerHTML = ""; }
+          });
+          if (opened) return;
+          card.classList.add("expanded");
+          detail.style.display = "block";
+          await renderUserChatWindowsInside(u, detail);
+        };
+        list.appendChild(card);
+      });
+    } catch(e) {
+      list.className = "";
+      list.innerHTML = '<div class="admin-small">用户加载失败</div>';
+    }
+  };
+
+  const previousOpenAdminPageForCompact = window.openAdminPage || (typeof openAdminPage === "function" ? openAdminPage : null);
+  if (previousOpenAdminPageForCompact) {
+    window.openAdminPage = openAdminPage = async function(){
+      await previousOpenAdminPageForCompact();
+      state.adminMode = true;
+      renderAdminOnlineStats();
+      renderAdminVersionInfo();
+      hideAllRoomsCard();
+      setupAdminCompactPage();
+      const usersPanel = q("adminUserList") && q("adminUserList").closest(".admin-card") && q("adminUserList").closest(".admin-card").querySelector(".admin-fold-panel");
+      if (usersPanel && usersPanel.style.display === "block") renderAdminUsers();
+    };
+  }
+
+  const previousBackToLobbyForAdmin = window.backToLobby || (typeof backToLobby === "function" ? backToLobby : null);
+  window.backToLobby = backToLobby = async function(){
+    if (state && state.adminMode && state.currentRoom) {
+      try { publishTyping(false); } catch(e) {}
+      clearInterval(state.timer);
+      unsubscribeActiveRoomTopic();
+      clearTypingIndicator();
+      state.currentRoom = null;
+      if (chatShell) chatShell.style.display = "none";
+      if (sendArea) sendArea.style.display = "none";
+      if (bottomNav) bottomNav.classList.remove("show");
+      if (adminScreen) adminScreen.style.display = "block";
+      if (emergencyBar) emergencyBar.style.display = "block";
+      if (announcementBtn) announcementBtn.style.display = "none";
+      if (roomBackBtn) { roomBackBtn.style.display = "inline-flex"; roomBackBtn.textContent = "返回"; }
+      if (roomTitleBtn) { roomTitleBtn.style.display = "inline-flex"; roomTitleBtn.textContent = "管理后台"; }
+      if (lobbyActions) lobbyActions.style.display = "none";
+      if (roomActions) roomActions.style.display = "none";
+      renderAdminOnlineStats();
+      renderAdminVersionInfo();
+      hideAllRoomsCard();
+      setupAdminCompactPage();
+      setTimeout(() => safe(() => updateAppHeight(), null), 60);
+      return;
+    }
+    if (previousBackToLobbyForAdmin) return previousBackToLobbyForAdmin();
+  };
+
+  setTimeout(() => {
+    try { renderAdminVersionInfo(); } catch(e) {}
+    try { hideAllRoomsCard(); } catch(e) {}
+  }, 200);
+})();
