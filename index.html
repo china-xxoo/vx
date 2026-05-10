@@ -1060,6 +1060,7 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
 
   let calcExpression = "";
   let unlockInput = "";
+  let secretMode = false;
   let isFakeResult = false;
   let cTapTime = 0;
   let appConfig = null;
@@ -1158,14 +1159,32 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
   }, { passive: false });
 
   function updateDisplay() {
+    if (secretMode) {
+      display.textContent = unlockInput || "0";
+      return;
+    }
+
     const showText = (calcExpression || "0").replaceAll("*", "×").replaceAll("/", "÷");
     display.textContent = showText;
+  }
+
+  function resetSecretMode() {
+    secretMode = false;
+    unlockInput = "";
+  }
+
+  function enterSecretMode() {
+    secretMode = true;
+    unlockInput = "";
+    calcExpression = "";
+    isFakeResult = false;
+    updateDisplay();
   }
 
   function showRandomFakeCalculation() {
     const examples = ["128+256=384","96÷3=32","45×7=315","980-275=705","36×12=432","720÷8=90","58+349=407","1500-680=820"];
     calcExpression = examples[Math.floor(Math.random() * examples.length)].replaceAll("×", "*").replaceAll("÷", "/");
-    unlockInput = "";
+    resetSecretMode();
     isFakeResult = true;
     updateDisplay();
   }
@@ -1187,109 +1206,157 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
   }
 
   function appendNumber(num) {
+    if (secretMode) {
+      if (unlockInput.length >= 6) {
+        showToast("暗号最多6位");
+        return;
+      }
+      unlockInput += String(num);
+      updateDisplay();
+      return;
+    }
+
     if (isFakeResult) {
       calcExpression = "";
       isFakeResult = false;
     }
 
-    calcExpression = (calcExpression === "0" || calcExpression === "Error") ? num : calcExpression + num;
-    unlockInput += num;
+    calcExpression = (calcExpression === "0" || calcExpression === "Error") ? String(num) : calcExpression + String(num);
     updateDisplay();
   }
 
   function appendOperator(op) {
-    let secretOp = op;
-    if (op === "*") secretOp = "✖️";
-    if (op === "/") secretOp = "÷";
+    if (secretMode) {
+      // 暗号模式只接受数字，运算符直接忽略，避免误触。
+      return;
+    }
 
     if (isFakeResult) {
       calcExpression = "";
       isFakeResult = false;
     }
-
-    // 密码输入优先：允许连续输入 + - × ÷ 等符号。
-    // 不再自动替换前一个运算符，避免输入暗语时符号被吞掉。
-    unlockInput += secretOp;
 
     if (calcExpression === "Error") {
       calcExpression = "";
     }
 
-    calcExpression += op;
+    const expr = String(calcExpression || "");
+    const last = expr.slice(-1);
+
+    if (!expr) {
+      if (op === "-") {
+        calcExpression = "-";
+        updateDisplay();
+      }
+      return;
+    }
+
+    // 正常计算器逻辑：连续点击运算符时，替换最后一个运算符。
+    if ("+-*/%".includes(last)) {
+      calcExpression = expr.slice(0, -1) + op;
+    } else {
+      calcExpression = expr + op;
+    }
+
     updateDisplay();
   }
 
   function appendDot() {
+    if (secretMode) {
+      // 暗号模式只接受数字，小数点直接忽略。
+      return;
+    }
+
     if (isFakeResult) {
       calcExpression = "";
       isFakeResult = false;
     }
+
     if (calcExpression === "Error") calcExpression = "";
-    calcExpression += ".";
-    unlockInput += ".";
+
+    const parts = String(calcExpression || "").split(/[+\-*/%]/);
+    const currentPart = parts[parts.length - 1] || "";
+    if (currentPart.includes(".")) return;
+
+    calcExpression += currentPart ? "." : "0.";
     updateDisplay();
   }
 
   function clearCalc() {
     const now = Date.now();
-    if (now - cTapTime < 650) {
+    if (!secretMode && now - cTapTime < 650) {
       triggerHardReload();
       return;
     }
     cTapTime = now;
     calcExpression = "";
-    unlockInput = "";
+    resetSecretMode();
     isFakeResult = false;
     updateDisplay();
   }
 
   function backspaceCalc() {
+    if (secretMode) {
+      unlockInput = unlockInput.slice(0, -1);
+      updateDisplay();
+      return;
+    }
+
     if (isFakeResult) {
       calcExpression = "";
-      unlockInput = "";
+      resetSecretMode();
       isFakeResult = false;
       updateDisplay();
       return;
     }
+
     calcExpression = calcExpression.slice(0, -1);
-    unlockInput = unlockInput.slice(0, -1);
     updateDisplay();
   }
 
   async function calculateResult() {
     try {
-      if (isFakeResult) {
-        calcExpression = "";
-        unlockInput = "";
-        isFakeResult = false;
-        updateDisplay();
-        return;
-      }
+      if (secretMode) {
+        if (!/^\d{1,6}$/.test(unlockInput)) {
+          calcExpression = "";
+          resetSecretMode();
+          isFakeResult = false;
+          showToast("暗号需1-6位数字");
+          updateDisplay();
+          return;
+        }
 
-      if (!calcExpression) return;
-
-      const expr = String(calcExpression || "").trim();
-      const last = expr.slice(-1);
-
-      // 计算器优先保持正常计算器逻辑：
-      // 只有当最后一个输入是 + - × ÷ 之一，并且紧接着按 = 时，才把整串内容当作暗号识别。
-      // 例如：99999+ = 会尝试解锁；1+1 = 会正常计算。
-      if ("+-*/".includes(last)) {
         const unlocked = await tryUnlock();
         if (unlocked) return;
 
-        calcExpression = "Error";
-        unlockInput = "";
+        calcExpression = "";
+        resetSecretMode();
+        isFakeResult = false;
         showToast("输入有误");
         updateDisplay();
         return;
       }
 
-      // 没有以运算符结尾，就按普通计算器计算。
-      // 连续运算符、非法表达式等，都只在这里显示输入有误，不暴露暗号逻辑。
-      if (!/^[0-9+\-*/%. ]+$/.test(expr)) {
+      if (isFakeResult) {
+        calcExpression = "";
+        resetSecretMode();
+        isFakeResult = false;
+        updateDisplay();
+        return;
+      }
+
+      // 只有显示 0 / 空表达式时按 =，才进入暗号模式。
+      if (!calcExpression || calcExpression === "0") {
+        enterSecretMode();
+        return;
+      }
+
+      const expr = String(calcExpression || "").trim();
+      const last = expr.slice(-1);
+
+      if (!/^[0-9+\-*/%. ]+$/.test(expr) || "+-*/%.".includes(last)) {
         calcExpression = "Error";
-        unlockInput = "";
+        resetSecretMode();
         showToast("输入有误");
         updateDisplay();
         return;
@@ -1302,11 +1369,11 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
         calcExpression = String(Number(result.toFixed(8)));
       }
 
-      unlockInput = "";
+      resetSecretMode();
       updateDisplay();
     } catch (e) {
       calcExpression = "Error";
-      unlockInput = "";
+      resetSecretMode();
       showToast("输入有误");
       updateDisplay();
     }
@@ -1397,54 +1464,14 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
   }
 
   function normalizeUnlockCode(input) {
-    // 与 encrypt-config.html 配置页保持完全一致：
-    // 暗号不做数学计算，只把加减乘除符号统一成标准字符。
-    return String(input || "")
-      .trim()
-      .replace(/\s+/g, "")
-      .replace(/✖️/g, "*")
-      .replace(/[×✖xX＊﹡]/g, "*")
-      .replace(/[÷／]/g, "/")
-      .replace(/[−－—–]/g, "-")
-      .replace(/[＋﹢]/g, "+");
+    // 新规则：暗号只允许 1-6 位数字。配置页和 index 页必须保持一致。
+    return String(input || "").trim().replace(/\s+/g, "");
   }
 
   function getUnlockCodeCandidates(input) {
-    const variants = new Set();
-    const raw = String(input || "").trim().replace(/\s+/g, "");
-    const canonical = normalizeUnlockCode(raw);
-
-    if (!raw && !canonical) return [];
-
-    // 第一优先级：配置页面生成时使用的标准暗号。
-    if (canonical) variants.add(canonical);
-
-    // 兼容极少数旧配置：也尝试原始输入。
-    if (raw) variants.add(raw);
-
-    // 兼容旧版配置里可能保存的乘除符号形式。
-    const multiplyForms = ["*", "×", "X", "x", "✖", "✖️"];
-    const divideForms = ["/", "÷"];
-    const minusForms = ["-", "−", "－"];
-    const plusForms = ["+", "＋"];
-
-    multiplyForms.forEach(mul => {
-      divideForms.forEach(div => {
-        minusForms.forEach(minus => {
-          plusForms.forEach(plus => {
-            variants.add(
-              canonical
-                .replace(/\*/g, mul)
-                .replace(/\//g, div)
-                .replace(/-/g, minus)
-                .replace(/\+/g, plus)
-            );
-          });
-        });
-      });
-    });
-
-    return Array.from(variants).filter(Boolean);
+    const canonical = normalizeUnlockCode(input);
+    if (!/^\d{1,6}$/.test(canonical)) return [];
+    return [canonical];
   }
 
   async function tryUnlock() {
