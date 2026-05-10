@@ -920,6 +920,7 @@
   // 配置 Gist 方案：这里只需要填写一次配置 Gist ID。
   // 配置页会把加密配置保存到这个 Gist 里的 vx-config.json，index 按 =数字= 时自动读取。
   const CONFIG_GIST_ID = "61f4f69eebaa74b79a86d01ab6e08e89";
+  const CONFIG_GIST_OWNER = "china-xxoo";
   const CONFIG_FILE_NAME = "vx-config.json";
   const CONFIG_FETCH_CACHE_MS = 30000;
 
@@ -1465,23 +1466,53 @@
     }
 
     const gistId = getConfigGistId();
-    const res = await fetch(`${API}/gists/${encodeURIComponent(gistId)}?t=${Date.now()}`, {
-      headers: {
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28"
-      },
-      cache: "no-store"
-    });
+    const ownerFromQuery = new URLSearchParams(location.search).get("owner") || "";
+    const gistOwner = String(ownerFromQuery || CONFIG_GIST_OWNER || "").trim();
+    let contentText = "";
+    let lastError = null;
 
-    if (!res.ok) throw new Error("配置读取失败：" + res.status);
+    // 方式一：GitHub Gist API 读取。正常情况下这里就能读到 vx-config.json。
+    try {
+      const res = await fetch(`${API}/gists/${encodeURIComponent(gistId)}?t=${Date.now()}`, {
+        headers: {
+          "Accept": "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28"
+        },
+        cache: "no-store"
+      });
 
-    const gist = await res.json();
-    const file = gist.files && gist.files[CONFIG_FILE_NAME];
-    if (!file || typeof file.content !== "string") {
-      throw new Error("配置 Gist 中找不到 " + CONFIG_FILE_NAME);
+      if (!res.ok) throw new Error("配置 API 读取失败：" + res.status);
+
+      const gist = await res.json();
+      const file = gist.files && gist.files[CONFIG_FILE_NAME];
+      if (!file || typeof file.content !== "string") {
+        throw new Error("配置 Gist 中找不到 " + CONFIG_FILE_NAME);
+      }
+
+      contentText = file.content;
+    } catch (e) {
+      lastError = e;
+      console.warn("config api read failed, trying raw url", e);
     }
 
-    const bundle = normalizeRemoteConfigBundle(JSON.parse(file.content));
+    // 方式二：Raw URL 兜底读取。用于避免 GitHub API 缓存、权限或接口异常导致误判。
+    if (!contentText && gistOwner) {
+      try {
+        const rawUrl = `https://gist.githubusercontent.com/${encodeURIComponent(gistOwner)}/${encodeURIComponent(gistId)}/raw/${encodeURIComponent(CONFIG_FILE_NAME)}?t=${Date.now()}`;
+        const rawRes = await fetch(rawUrl, { cache: "no-store" });
+        if (!rawRes.ok) throw new Error("配置 Raw 读取失败：" + rawRes.status);
+        contentText = await rawRes.text();
+      } catch (e) {
+        lastError = e;
+        console.warn("config raw read failed", e);
+      }
+    }
+
+    if (!contentText) {
+      throw lastError || new Error("配置读取失败");
+    }
+
+    const bundle = normalizeRemoteConfigBundle(JSON.parse(contentText));
     if (!bundle) throw new Error("配置文件格式不正确");
 
     remoteConfigBundleCache = bundle;
@@ -1533,8 +1564,23 @@
   function normalizeAppConfig(config) {
     const normalized = { ...(config || {}) };
 
-    // 兼容旧配置页字段名：githubToken -> token
+    // 兼容不同配置页里的 GitHub Token 字段名
     if (!normalized.token && normalized.githubToken) normalized.token = normalized.githubToken;
+    if (!normalized.token && normalized.github_token) normalized.token = normalized.github_token;
+    if (!normalized.token && normalized.githubPAT) normalized.token = normalized.githubPAT;
+
+    // 兼容不同配置页里的“聊天数据 Gist ID”字段名
+    if (!normalized.gistId && normalized.chatGistId) normalized.gistId = normalized.chatGistId;
+    if (!normalized.gistId && normalized.chatDataGistId) normalized.gistId = normalized.chatDataGistId;
+    if (!normalized.gistId && normalized.chatDataGistID) normalized.gistId = normalized.chatDataGistID;
+    if (!normalized.gistId && normalized.dataGistId) normalized.gistId = normalized.dataGistId;
+    if (!normalized.gistId && normalized.messageGistId) normalized.gistId = normalized.messageGistId;
+    if (!normalized.gistId && normalized.messagesGistId) normalized.gistId = normalized.messagesGistId;
+    if (!normalized.gistId && normalized.gist_id) normalized.gistId = normalized.gist_id;
+
+    // 兼容 chatSecret 字段名
+    if (!normalized.chatSecret && normalized.chat_secret) normalized.chatSecret = normalized.chat_secret;
+    if (!normalized.chatSecret && normalized.secret) normalized.chatSecret = normalized.secret;
 
     return normalized;
   }
