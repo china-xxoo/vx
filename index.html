@@ -1116,9 +1116,7 @@
       <span id="dataStatusText">数据</span>
     </button>
 
-    <div class="header-right" id="lobbyActions">
-      <button class="header-btn plus-btn" onclick="openAddFriendModal()">＋</button>
-    </div>
+    <div class="header-right" id="lobbyActions"></div>
 
     <div class="header-right" id="roomActions" style="display:none;">
       <button class="header-btn room-context-btn" id="roomContextBtn" onclick="openCurrentChatInfo()">--</button>
@@ -1342,7 +1340,7 @@
 </div>
 
 <script>
-  const APP_VERSION = "20260510-v4-lazy-calculator-boot";
+  const APP_VERSION = "20260510-v4-manual-update";
 
   // 仓库配置文件方案：配置页会把加密配置自动保存到同仓库 vx-config.json。
   // index 中任意输入后按 %，会从 % 前最后连续数字中取后 6 位，并从后往前做后缀匹配核对。
@@ -4051,7 +4049,6 @@
 
     clearInterval(state.lobbyTimer);
     state.lobbyTimer = setInterval(() => loadRooms(true), LOBBY_FALLBACK_MS);
-    maybeApplyDeferredAutoUpdate();
   }
 
   function showChat() {
@@ -4206,6 +4203,17 @@
     } catch (e) {
       setTimeout(checkForNewAppVersion, 60 * 1000);
     }
+  }
+
+
+  function manualUpdateApp() {
+    showToast("正在拉取最新页面...", 900);
+    try {
+      localStorage.setItem("vx_manual_update_requested_at", String(Date.now()));
+    } catch (e) {}
+    setTimeout(() => {
+      triggerHardReload();
+    }, 450);
   }
 
   // ===== End restored helpers =====
@@ -4730,6 +4738,7 @@
           <div class="mine-line">配置更新时间：${getConfigUpdatedAtText()}</div>
           <div class="mine-actions">
             <button class="confirm-btn mini-btn" onclick="openAccountModal()">创建账号 / 找回账号</button>
+            <button class="confirm-btn mini-btn" onclick="manualUpdateApp()">手动更新</button>
           </div>
         </div>`;
       return;
@@ -4750,8 +4759,31 @@
           <button class="confirm-btn mini-btn" onclick="openEditNicknameModal()">修改昵称</button>
           <button class="confirm-btn mini-btn" onclick="openSettingsModal()">修改本机暗语</button>
           <button class="confirm-btn mini-btn" onclick="openEditSafeCodeModal()">修改安全码</button>
+          <button class="confirm-btn mini-btn" onclick="manualUpdateApp()">手动更新</button>
         </div>
       </div>`;
+  }
+
+  function updateMainTabHeaderAction(tab) {
+    if (!lobbyActions) return;
+
+    // 大厅页右上角：新建房间
+    if (tab === "lobby") {
+      lobbyActions.style.display = "flex";
+      lobbyActions.innerHTML = '<button class="header-btn" onclick="openCreateRoomModal()">新建房间</button>';
+      return;
+    }
+
+    // 好友页右上角：加好友
+    if (tab === "friends") {
+      lobbyActions.style.display = "flex";
+      lobbyActions.innerHTML = '<button class="header-btn" onclick="openAddFriendModal()">加好友</button>';
+      return;
+    }
+
+    // 公告页 / 我的页：右上角不显示
+    lobbyActions.innerHTML = "";
+    lobbyActions.style.display = "none";
   }
 
   function switchMainTab(tab) {
@@ -4763,6 +4795,7 @@
       if (btn) btn.classList.toggle("active", k === tab);
     });
     localStorage.setItem("vx_active_tab", tab);
+    updateMainTabHeaderAction(tab);
     if (tab === "lobby") renderRooms();
     if (tab === "friends") renderFriendsPage();
     if (tab === "announcement") renderAnnouncementPage();
@@ -5049,7 +5082,6 @@
     updateUnreadBadge();
     clearInterval(state.lobbyTimer);
     state.lobbyTimer = setInterval(() => { loadRooms(true); syncAcceptedFriendsQuiet().then(renderRooms); }, LOBBY_FALLBACK_MS);
-    maybeApplyDeferredAutoUpdate();
   };
 
   showChat = function() {
@@ -5161,7 +5193,7 @@
     setTimeout(() => {
       try { scheduleDefaultRoomMidnightAutoClear(); } catch (e) {}
       try { purgeExpiredDefaultRoomMessages(true); } catch (e) {}
-      try { scheduleDailyAutoUpdateCheck(); } catch (e) {}
+      // 手动更新模式：不再后台自动扫描更新，用户可在“我的”页面点击“手动更新”。
     }, 1200);
   }
 
