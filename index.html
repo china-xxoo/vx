@@ -1266,18 +1266,43 @@ const ADMIN_PASSWORD_HASH = "86e91f687073093dcd376fc7df69e1d999ec5c46c928a439131
         return;
       }
 
-      if (!unlockInput && !calcExpression) return;
+      if (!calcExpression) return;
 
-      // 安全逻辑：先识别暗语；不是暗语就一律按普通计算错误处理，
-      // 不显示“输入有误”等暴露入口性质的提示。
-      if (unlockInput) {
+      const expr = String(calcExpression || "").trim();
+      const last = expr.slice(-1);
+
+      // 计算器优先保持正常计算器逻辑：
+      // 只有当最后一个输入是 + - × ÷ 之一，并且紧接着按 = 时，才把整串内容当作暗号识别。
+      // 例如：99999+ = 会尝试解锁；1+1 = 会正常计算。
+      if ("+-*/".includes(last)) {
         const unlocked = await tryUnlock();
         if (unlocked) return;
+
+        calcExpression = "Error";
+        unlockInput = "";
+        showToast("输入有误");
+        updateDisplay();
+        return;
       }
 
-      calcExpression = "Error";
+      // 没有以运算符结尾，就按普通计算器计算。
+      // 连续运算符、非法表达式等，都只在这里显示输入有误，不暴露暗号逻辑。
+      if (!/^[0-9+\-*/%. ]+$/.test(expr)) {
+        calcExpression = "Error";
+        unlockInput = "";
+        showToast("输入有误");
+        updateDisplay();
+        return;
+      }
+
+      const result = Function('"use strict"; return (' + expr + ')')();
+      if (!Number.isFinite(result)) {
+        calcExpression = "Error";
+      } else {
+        calcExpression = String(Number(result.toFixed(8)));
+      }
+
       unlockInput = "";
-      showToast("输入有误");
       updateDisplay();
     } catch (e) {
       calcExpression = "Error";
