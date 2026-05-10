@@ -917,11 +917,10 @@
 </div>
 
 <script>
-  // 配置 Gist 方案：这里只需要填写一次配置 Gist ID。
-  // 配置页会把加密配置保存到这个 Gist 里的 vx-config.json。index 中任意输入后按 %，会从 % 前最后连续数字中取后 6 位，并从后往前做后缀匹配核对。
-  const CONFIG_GIST_ID = "61f4f69eebaa74b79a86d01ab6e08e89";
-  const CONFIG_GIST_OWNER = "china-xxoo";
+  // 仓库配置文件方案：配置页会把加密配置自动保存到同仓库 vx-config.json。
+  // index 中任意输入后按 %，会从 % 前最后连续数字中取后 6 位，并从后往前做后缀匹配核对。
   const CONFIG_FILE_NAME = "vx-config.json";
+  const CONFIG_FILE_URL = "vx-config.json";
   const CONFIG_FETCH_CACHE_MS = 30000;
 
   // 备用内置配置：远程配置读取失败时才会尝试。正常使用配置 Gist 后，不需要再复制配置到这里。
@@ -1447,14 +1446,9 @@
     return JSON.parse(decoder.decode(decrypted));
   }
 
-  function getConfigGistId() {
-    const fromQuery = new URLSearchParams(location.search).get("config") || "";
-    return String(fromQuery || CONFIG_GIST_ID || "").trim();
-  }
-
-  function hasValidConfigGistId() {
-    const id = getConfigGistId();
-    return !!id && id !== "PASTE_CONFIG_GIST_ID_HERE";
+  function getConfigFileUrl() {
+    const fromQuery = new URLSearchParams(location.search).get("configUrl") || "";
+    return String(fromQuery || CONFIG_FILE_URL || CONFIG_FILE_NAME).trim();
   }
 
   function normalizeRemoteConfigBundle(data) {
@@ -1465,7 +1459,7 @@
       return data;
     }
 
-    // 兼容：Gist 文件里直接就是 { salt, iv, data }
+    // 兼容：配置文件里直接就是 { salt, iv, data }
     if (data.salt && data.iv && data.data) {
       return { type: "VX_REMOTE_CONFIG_V1", encryptedConfig: data };
     }
@@ -1474,61 +1468,21 @@
   }
 
   async function fetchRemoteConfigBundle(force = false) {
-    if (!hasValidConfigGistId()) return null;
-
     const now = Date.now();
     if (!force && remoteConfigBundleCache && now - remoteConfigBundleFetchedAt < CONFIG_FETCH_CACHE_MS) {
       return remoteConfigBundleCache;
     }
 
-    const gistId = getConfigGistId();
-    const ownerFromQuery = new URLSearchParams(location.search).get("owner") || "";
-    const gistOwner = String(ownerFromQuery || CONFIG_GIST_OWNER || "").trim();
-    let contentText = "";
-    let lastError = null;
+    const configUrl = getConfigFileUrl();
+    const sep = configUrl.includes("?") ? "&" : "?";
+    const res = await fetch(configUrl + sep + "t=" + Date.now(), { cache: "no-store" });
 
-    // 方式一：GitHub Gist API 读取。正常情况下这里就能读到 vx-config.json。
-    try {
-      const res = await fetch(`${API}/gists/${encodeURIComponent(gistId)}?t=${Date.now()}`, {
-        headers: {
-          "Accept": "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28"
-        },
-        cache: "no-store"
-      });
-
-      if (!res.ok) throw new Error("配置 API 读取失败：" + res.status);
-
-      const gist = await res.json();
-      const file = gist.files && gist.files[CONFIG_FILE_NAME];
-      if (!file || typeof file.content !== "string") {
-        throw new Error("配置 Gist 中找不到 " + CONFIG_FILE_NAME);
-      }
-
-      contentText = file.content;
-    } catch (e) {
-      lastError = e;
-      console.warn("config api read failed, trying raw url", e);
+    if (!res.ok) {
+      throw new Error("配置文件读取失败：" + res.status);
     }
 
-    // 方式二：Raw URL 兜底读取。用于避免 GitHub API 缓存、权限或接口异常导致误判。
-    if (!contentText && gistOwner) {
-      try {
-        const rawUrl = `https://gist.githubusercontent.com/${encodeURIComponent(gistOwner)}/${encodeURIComponent(gistId)}/raw/${encodeURIComponent(CONFIG_FILE_NAME)}?t=${Date.now()}`;
-        const rawRes = await fetch(rawUrl, { cache: "no-store" });
-        if (!rawRes.ok) throw new Error("配置 Raw 读取失败：" + rawRes.status);
-        contentText = await rawRes.text();
-      } catch (e) {
-        lastError = e;
-        console.warn("config raw read failed", e);
-      }
-    }
-
-    if (!contentText) {
-      throw lastError || new Error("配置读取失败");
-    }
-
-    const bundle = normalizeRemoteConfigBundle(JSON.parse(contentText));
+    const text = await res.text();
+    const bundle = normalizeRemoteConfigBundle(JSON.parse(text));
     if (!bundle) throw new Error("配置文件格式不正确");
 
     remoteConfigBundleCache = bundle;
