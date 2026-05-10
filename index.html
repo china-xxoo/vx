@@ -924,6 +924,129 @@
       .account-choice { grid-template-columns: 1fr; }
     }
 
+
+    /* ===== v4 tabs/friends/layout patch ===== */
+    :root { --bottom-nav-height: calc(64px + var(--bottom-safe)); }
+    .data-status {
+      border-radius: 999px;
+      cursor: default;
+      min-width: 148px;
+      width: auto;
+      max-width: 48vw;
+      padding: 0 11px;
+      transition: border-color .18s ease, background .18s ease, color .18s ease;
+    }
+    .data-status.connected {
+      border-color: rgba(34,197,94,.38);
+      background: rgba(22,101,52,.28);
+      color: #dcfce7;
+    }
+    .data-status:not(.connected) {
+      border-color: rgba(248,113,113,.42);
+      background: rgba(127,29,29,.28);
+      color: #fecaca;
+    }
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: calc(var(--vv-top) + var(--visible-height) - var(--bottom-nav-height));
+      height: var(--bottom-nav-height);
+      padding: 7px 10px calc(7px + var(--bottom-safe));
+      background: rgba(2, 6, 23, .88);
+      border-top: 1px solid rgba(56,189,248,.16);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      z-index: 18;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .bottom-nav.show { display: grid; }
+    .nav-btn {
+      border: 1px solid rgba(56,189,248,.18);
+      background: rgba(15,23,42,.68);
+      color: rgba(226,232,240,.72);
+      border-radius: 15px;
+      font-weight: 950;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .nav-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, rgba(37,99,235,.85), rgba(6,182,212,.75));
+      box-shadow: 0 0 18px rgba(14,165,233,.22);
+    }
+    .screen.with-bottom-nav, .admin-screen.with-bottom-nav { padding-bottom: calc(110px + var(--bottom-safe)); }
+    .tab-page { display: none; }
+    .tab-page.active { display: block; }
+    .section-label {
+      margin: 12px 4px 8px;
+      color: rgba(226,232,240,.58);
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: .08em;
+    }
+    .empty-tip {
+      padding: 18px 14px;
+      border: 1px dashed rgba(56,189,248,.20);
+      border-radius: 18px;
+      background: rgba(15,23,42,.45);
+      color: rgba(226,232,240,.62);
+      font-size: 13px;
+      line-height: 1.6;
+      text-align: center;
+    }
+    .friend-row, .mine-card, .announcement-card {
+      border: 1px solid rgba(56,189,248,.18);
+      background: linear-gradient(135deg, rgba(15,23,42,.86), rgba(2,6,23,.72));
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.18), inset 0 0 22px rgba(56,189,248,.035);
+    }
+    .friend-name, .mine-title, .announcement-title {
+      font-size: 16px;
+      font-weight: 950;
+      color: #effbff;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+    .friend-meta, .mine-line, .announcement-content {
+      font-size: 13px;
+      color: rgba(226,232,240,.66);
+      line-height: 1.65;
+      word-break: break-word;
+    }
+    .row-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .row-actions .mini-btn { min-width: 76px; }
+    .header-btn.plus-btn { min-width: 44px; font-size: 18px; padding: 5px 12px; }
+    .header-right .room-context-btn {
+      max-width: 115px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .chat-box {
+      padding-top: 14px;
+    }
+    .meta {
+      max-width: 78%;
+      font-weight: 800;
+    }
+    .mine-actions { display: grid; grid-template-columns: 1fr; gap: 9px; margin-top: 12px; }
+    @media (max-width: 420px) {
+      .data-status { min-width: 132px; max-width: 45vw; font-size: 10.5px; padding: 0 8px; }
+      .nav-btn { font-size: 12px; }
+      .header-right .room-context-btn { max-width: 96px; }
+    }
+
   </style>
   <!-- tech-style-restored + keypad-config-fixed: 20260510 -->
 </head>
@@ -963,34 +1086,51 @@
 <div class="chat-app" id="chatApp">
   <div class="app-header">
     <div class="header-left">
-      <button class="room-back-btn" id="announcementBtn" onclick="openAnnouncementModal()">公告</button>
-      <button class="room-back-btn" id="roomBackBtn" onclick="backToLobby()" style="display:none;">返回大厅</button>
-      <button class="room-title-btn" id="roomTitleBtn" onclick="backToLobby()" style="display:none;">【聊天大厅】</button>
+      <button class="room-back-btn" id="announcementBtn" onclick="switchMainTab('announcement')" style="display:none;">公告</button>
+      <button class="room-back-btn" id="roomBackBtn" onclick="backToLobby()" style="display:none;">返回</button>
+      <button class="room-title-btn" id="roomTitleBtn" onclick="backToLobby()" style="display:none;"></button>
     </div>
 
-    <div class="data-status" id="dataStatus">
+    <button class="data-status" id="dataStatus" type="button" onclick="showDataStatusMini()">
       <span class="status-dot"></span>
-      <span id="dataStatusText">数据已断开</span>
-    </div>
+      <span id="dataStatusText">数据</span>
+    </button>
 
     <div class="header-right" id="lobbyActions">
-      <button class="header-btn" onclick="openCreateRoomModal()">新建</button>
-      <button class="header-btn" onclick="openSettingsModal()">设置</button>
+      <button class="header-btn plus-btn" onclick="openAddFriendModal()">＋</button>
     </div>
 
     <div class="header-right" id="roomActions" style="display:none;">
-      <button class="header-btn" onclick="openSettingsModal()">设置</button>
+      <button class="header-btn room-context-btn" id="roomContextBtn" onclick="openCurrentChatInfo()">--</button>
     </div>
   </div>
 
   <div class="app-body">
-    <div class="screen" id="lobbyScreen">
+    <div class="screen with-bottom-nav" id="lobbyScreen">
       <div class="nickname-line" id="nicknameLine"></div>
       <div class="lobby-search-wrap">
-        <input class="lobby-search-input" id="roomSearchInput" placeholder="请输入6位房间号" autocomplete="off" maxlength="64" />
+        <input class="lobby-search-input" id="roomSearchInput" placeholder="搜索好友或6位房间号" autocomplete="off" maxlength="64" />
         <button class="lobby-search-btn" onclick="handleLobbySearch()">搜索</button>
       </div>
       <div class="room-list" id="roomList"></div>
+    </div>
+
+    <div class="screen with-bottom-nav" id="friendsScreen">
+      <div class="section-label">好友申请</div>
+      <div id="friendRequestList"></div>
+      <div class="section-label">我的好友</div>
+      <div id="friendList"></div>
+    </div>
+
+    <div class="screen with-bottom-nav" id="announcementScreen">
+      <div class="announcement-card">
+        <div class="announcement-title" id="announcementPageTitle">公告</div>
+        <div class="announcement-content" id="announcementPageContent">暂无公告，谢谢使用。</div>
+      </div>
+    </div>
+
+    <div class="screen with-bottom-nav" id="mineScreen">
+      <div id="mineContent"></div>
     </div>
 
     <div class="admin-screen" id="adminScreen">
@@ -1026,6 +1166,13 @@
       <div class="chat-box" id="chatBox"></div>
       <div class="typing-tip" id="typingTip"></div>
     </div>
+  </div>
+
+  <div class="bottom-nav" id="bottomNav">
+    <button class="nav-btn active" id="navLobby" onclick="switchMainTab('lobby')">大厅</button>
+    <button class="nav-btn" id="navFriends" onclick="switchMainTab('friends')">好友</button>
+    <button class="nav-btn" id="navAnnouncement" onclick="switchMainTab('announcement')">公告</button>
+    <button class="nav-btn" id="navMine" onclick="switchMainTab('mine')">我的</button>
   </div>
 
   <div class="send-area" id="sendArea">
@@ -1103,6 +1250,55 @@
   </div>
 </div>
 
+
+<div class="modal-mask" id="addFriendModal">
+  <div class="modal">
+    <h3>添加好友</h3>
+    <input class="input" id="addFriendNumberInput" inputmode="numeric" maxlength="7" placeholder="输入对方7位编号" />
+    <div class="admin-small" id="addFriendTip">发送申请后，需要对方在好友页同意。</div>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeAddFriendModal()">取消</button>
+      <button class="confirm-btn" onclick="sendFriendRequestFromModal()">发送申请</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="chatInfoModal">
+  <div class="modal">
+    <h3 id="chatInfoTitle">聊天信息</h3>
+    <div class="admin-small" id="chatInfoContent"></div>
+    <input class="input" id="roomNameEditInput" maxlength="24" placeholder="群名称" style="display:none; margin-top:10px;" />
+    <div class="modal-actions" id="chatInfoActions">
+      <button class="cancel-btn" onclick="closeChatInfoModal()">关闭</button>
+      <button class="confirm-btn" id="saveRoomNameBtn" onclick="saveCurrentRoomName()" style="display:none;">保存群名称</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="editNicknameModal">
+  <div class="modal">
+    <h3>修改昵称</h3>
+    <input class="input" id="nicknameEditInput" maxlength="12" placeholder="输入昵称，可留空" />
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeEditNicknameModal()">取消</button>
+      <button class="confirm-btn" onclick="saveNicknameEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="editSafeCodeModal">
+  <div class="modal">
+    <h3>修改安全码</h3>
+    <input class="input" id="oldSafeCodeInput" inputmode="numeric" maxlength="6" placeholder="当前安全码" />
+    <input class="input" id="newSafeCodeInput" inputmode="numeric" maxlength="6" placeholder="新安全码，1-6位数字" />
+    <input class="input" id="newSafeCodeConfirmInput" inputmode="numeric" maxlength="6" placeholder="确认新安全码" />
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeEditSafeCodeModal()">取消</button>
+      <button class="confirm-btn" onclick="saveSafeCodeEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-mask" id="accountModal">
   <div class="modal">
     <h3>账号初始化</h3>
@@ -1126,7 +1322,7 @@
 </div>
 
 <script>
-  const APP_VERSION = "20260510-layout-admin-v3-safe-roomcode";
+  const APP_VERSION = "20260510-chat-friends-tabs-v4";
 
   // 仓库配置文件方案：配置页会把加密配置自动保存到同仓库 vx-config.json。
   // index 中任意输入后按 %，会从 % 前最后连续数字中取后 6 位，并从后往前做后缀匹配核对。
@@ -4068,6 +4264,815 @@
       });
     });
   }
+
+
+
+  // ===== v4 friends / tabs / mine / header refinement patch =====
+  const USER_PREFIX = "VX_PUBLIC_ACCOUNT_V1:";
+  const FRIEND_PREFIX = "VX_FRIEND_REQUEST_V1:";
+  const DM_PREFIX = "dm_";
+
+  const friendsScreen = document.getElementById("friendsScreen");
+  const announcementScreen = document.getElementById("announcementScreen");
+  const mineScreen = document.getElementById("mineScreen");
+  const bottomNav = document.getElementById("bottomNav");
+  const roomContextBtn = document.getElementById("roomContextBtn");
+
+  function profileNickname(profile) {
+    return String((profile && profile.nickname) || "").trim();
+  }
+
+  function profileNumber(profile) {
+    return String((profile && profile.nicknameNumber) || "").trim();
+  }
+
+  function formatAccountName(profile, withNumber = true) {
+    const nick = profileNickname(profile);
+    const num = profileNumber(profile);
+    if (nick && num && withNumber) return nick + "（" + num + "）";
+    if (nick) return nick;
+    return num || "未初始化";
+  }
+
+  function getSelfProfile() {
+    return state.accountProfile || loadLocalAccountProfile();
+  }
+
+  function getSelfDisplayName(withNumber = false) {
+    return formatAccountName(getSelfProfile(), withNumber);
+  }
+
+  function getSelfSenderName() {
+    return formatAccountName(getSelfProfile(), false);
+  }
+
+  const oldSaveLocalAccountProfile = saveLocalAccountProfile;
+  saveLocalAccountProfile = function(profile) {
+    if (!profile) return;
+    profile.nickname = String(profile.nickname || "").trim();
+    profile.friends = Array.isArray(profile.friends) ? profile.friends : [];
+    profile.dmConversations = Array.isArray(profile.dmConversations) ? profile.dmConversations : [];
+    profile.updatedAt = Date.now();
+    state.accountProfile = profile;
+    state.displayName = formatAccountName(profile, false);
+    localStorage.setItem(accountLocalKey(), JSON.stringify(profile));
+    localStorage.setItem("vx_display_name", state.displayName);
+    if (nicknameLine) nicknameLine.textContent = state.displayName ? "当前账号：" + state.displayName : "";
+    try { publishPresence("online"); } catch (e) {}
+  };
+
+  function friendLocalKey() {
+    const p = getSelfProfile();
+    return "vx_friends_v1_" + (p && p.accountId ? p.accountId : "guest");
+  }
+
+  function loadLocalFriends() {
+    try {
+      const arr = JSON.parse(localStorage.getItem(friendLocalKey()) || "[]");
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+
+  function saveLocalFriends(list) {
+    const uniq = [];
+    const seen = new Set();
+    (Array.isArray(list) ? list : []).forEach(f => {
+      if (!f || !f.accountId) return;
+      if (seen.has(f.accountId)) return;
+      seen.add(f.accountId);
+      uniq.push(f);
+    });
+    localStorage.setItem(friendLocalKey(), JSON.stringify(uniq));
+    const profile = getSelfProfile();
+    if (profile) {
+      profile.friends = uniq.map(f => f.accountId);
+      profile.dmConversations = uniq.map(f => getDmRoomId(profile.accountId, f.accountId));
+      saveLocalAccountProfile(profile);
+      updateAccountProfileRemoteQuiet();
+    }
+  }
+
+  function addLocalFriend(friend) {
+    if (!friend || !friend.accountId) return;
+    const list = loadLocalFriends();
+    const idx = list.findIndex(f => f.accountId === friend.accountId);
+    if (idx >= 0) list[idx] = { ...list[idx], ...friend, updatedAt: Date.now() };
+    else list.push({ ...friend, addedAt: Date.now(), updatedAt: Date.now() });
+    saveLocalFriends(list);
+  }
+
+  function getDmRoomId(a, b) {
+    const ids = [String(a || ""), String(b || "")].sort();
+    return DM_PREFIX + ids.join("_");
+  }
+
+  function getDmSecret(a, b) {
+    const ids = [String(a || ""), String(b || "")].sort();
+    return String(appConfig && appConfig.chatSecret || "") + "::dm::" + ids.join("::");
+  }
+
+  function makeDmRoom(friend) {
+    const me = getSelfProfile();
+    const roomId = getDmRoomId(me.accountId, friend.accountId);
+    return {
+      type: "dm",
+      roomId,
+      roomNo: friend.nicknameNumber || friend.accountId,
+      roomName: formatAccountName(friend, false),
+      friend,
+      noPassword: true,
+      isDm: true,
+      createdAt: friend.addedAt || Date.now()
+    };
+  }
+
+  async function publishPublicProfileQuiet() {
+    const p = getSelfProfile();
+    if (!appConfig || !p || !p.accountId || !p.nicknameNumber) return;
+    try {
+      const publicProfile = {
+        type: "publicProfile",
+        accountId: p.accountId,
+        nicknameNumber: p.nicknameNumber,
+        nickname: String(p.nickname || "").trim(),
+        emailMasked: p.emailMasked || "",
+        updatedAt: Date.now()
+      };
+      await postGistComment(USER_PREFIX + JSON.stringify(publicProfile));
+    } catch (e) { console.warn("public profile save failed", e); }
+  }
+
+  async function fetchPublicProfiles() {
+    const comments = await fetchAllComments();
+    const map = {};
+    comments.forEach(c => {
+      if (typeof c.body !== "string" || !c.body.startsWith(USER_PREFIX)) return;
+      try {
+        const p = JSON.parse(c.body.slice(USER_PREFIX.length));
+        if (!p || !p.accountId || !p.nicknameNumber) return;
+        const old = map[p.accountId];
+        if (!old || Number(p.updatedAt || 0) >= Number(old.updatedAt || 0)) map[p.accountId] = p;
+      } catch (e) {}
+    });
+    return Object.values(map);
+  }
+
+  async function findPublicProfileByNumber(number) {
+    const num = String(number || "").trim();
+    const all = await fetchPublicProfiles();
+    return all.find(p => String(p.nicknameNumber) === num) || null;
+  }
+
+  async function fetchFriendRequests() {
+    const me = getSelfProfile();
+    if (!me) return { incoming: [], outgoing: [], accepted: [] };
+    const comments = await fetchAllComments();
+    const latest = {};
+    comments.forEach(c => {
+      if (typeof c.body !== "string" || !c.body.startsWith(FRIEND_PREFIX)) return;
+      try {
+        const r = JSON.parse(c.body.slice(FRIEND_PREFIX.length));
+        if (!r || !r.requestId) return;
+        const old = latest[r.requestId];
+        if (!old || Number(r.updatedAt || r.createdAt || 0) >= Number(old.updatedAt || old.createdAt || 0)) latest[r.requestId] = r;
+      } catch (e) {}
+    });
+    const arr = Object.values(latest);
+    const incoming = arr.filter(r => r.status === "pending" && r.toAccountId === me.accountId);
+    const outgoing = arr.filter(r => r.status === "pending" && r.fromAccountId === me.accountId);
+    const accepted = arr.filter(r => r.status === "accepted" && (r.fromAccountId === me.accountId || r.toAccountId === me.accountId));
+    return { incoming, outgoing, accepted };
+  }
+
+  async function syncAcceptedFriendsQuiet() {
+    const me = getSelfProfile();
+    if (!me || !appConfig) return;
+    try {
+      const reqs = await fetchFriendRequests();
+      reqs.accepted.forEach(r => {
+        const other = r.fromAccountId === me.accountId
+          ? { accountId: r.toAccountId, nicknameNumber: r.toNumber, nickname: r.toNickname || "" }
+          : { accountId: r.fromAccountId, nicknameNumber: r.fromNumber, nickname: r.fromNickname || "" };
+        addLocalFriend(other);
+      });
+    } catch (e) {}
+  }
+
+  async function sendFriendRequestToNumber(number) {
+    const me = getSelfProfile();
+    if (!me) return showToast("请先初始化账号");
+    const num = String(number || "").trim();
+    if (!/^\d{7}$/.test(num)) return showToast("请输入7位好友编号");
+    if (num === me.nicknameNumber) return showToast("不能添加自己");
+    const target = await findPublicProfileByNumber(num);
+    if (!target) return showToast("未找到用户");
+    const request = {
+      type: "friendRequest",
+      requestId: crypto.randomUUID(),
+      status: "pending",
+      fromAccountId: me.accountId,
+      fromNumber: me.nicknameNumber,
+      fromNickname: profileNickname(me),
+      toAccountId: target.accountId,
+      toNumber: target.nicknameNumber,
+      toNickname: profileNickname(target),
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    await postGistComment(FRIEND_PREFIX + JSON.stringify(request));
+    showToast("好友申请已发送");
+    closeAddFriendModal();
+    renderFriendsPage();
+  }
+
+  async function acceptFriendRequest(requestId) {
+    const reqs = await fetchFriendRequests();
+    const req = reqs.incoming.find(r => r.requestId === requestId);
+    if (!req) return showToast("申请不存在");
+    const accepted = { ...req, status: "accepted", updatedAt: Date.now() };
+    await postGistComment(FRIEND_PREFIX + JSON.stringify(accepted));
+    addLocalFriend({ accountId: req.fromAccountId, nicknameNumber: req.fromNumber, nickname: req.fromNickname || "", addedAt: Date.now() });
+    showToast("已添加好友");
+    renderFriendsPage();
+    renderRooms();
+  }
+
+  async function rejectFriendRequest(requestId) {
+    const reqs = await fetchFriendRequests();
+    const req = reqs.incoming.find(r => r.requestId === requestId);
+    if (!req) return;
+    await postGistComment(FRIEND_PREFIX + JSON.stringify({ ...req, status: "rejected", updatedAt: Date.now() }));
+    showToast("已拒绝");
+    renderFriendsPage();
+  }
+
+  function openAddFriendModal() {
+    if (!requireNickname()) return;
+    const input = document.getElementById("addFriendNumberInput");
+    if (input) input.value = "";
+    openModal("addFriendModal");
+    setTimeout(() => input && input.focus(), 80);
+  }
+
+  function closeAddFriendModal() { closeModal("addFriendModal"); }
+
+  async function sendFriendRequestFromModal() {
+    const input = document.getElementById("addFriendNumberInput");
+    await sendFriendRequestToNumber(input && input.value);
+  }
+
+  function getConversationLastTime(roomId, fallback = 0) {
+    const cached = loadRoomCache(roomId);
+    if (cached.length) return Math.max(...cached.map(m => Number(m.time || 0)));
+    return Number(fallback || 0);
+  }
+
+  function getRoomDisplayTitle(room) {
+    if (!room) return "群｜未知房间";
+    if (room.isDm) return "私｜" + formatAccountName(room.friend, true);
+    const title = String(room.roomName || "").trim() || ((room.ownerNickname || room.ownerNicknameNumber || room.createdBy || getRoomNo(room)) + "的房间");
+    return "群｜" + title;
+  }
+
+  function buildConversationItems() {
+    const rooms = getVisibleRooms().filter(room => !isDefaultPublicRoomId(room.roomId));
+    const groupItems = rooms.map(room => ({
+      kind: "group",
+      room,
+      title: getRoomDisplayTitle(room),
+      meta: "房间号：" + getRoomNo(room),
+      lastTime: getConversationLastTime(room.roomId, room.createdAt),
+      unread: getRoomUnreadCount(room.roomId)
+    }));
+    const friendItems = loadLocalFriends().map(friend => {
+      const room = makeDmRoom(friend);
+      return {
+        kind: "dm",
+        room,
+        friend,
+        title: "私｜" + formatAccountName(friend, true),
+        meta: "好友编号：" + friend.nicknameNumber,
+        lastTime: getConversationLastTime(room.roomId, friend.addedAt),
+        unread: getRoomUnreadCount(room.roomId)
+      };
+    });
+    return groupItems.concat(friendItems).sort((a, b) => (b.lastTime || 0) - (a.lastTime || 0));
+  }
+
+  renderRooms = function() {
+    roomList.innerHTML = "";
+    const items = buildConversationItems();
+    if (!items.length) {
+      roomList.innerHTML = '<div class="empty-tip">暂无聊天<br/>点击右上角 ＋ 添加好友，或搜索房间号加入群聊。</div>';
+      return;
+    }
+    const privateItems = items.filter(i => i.kind === "dm");
+    const groupItems = items.filter(i => i.kind === "group");
+    function renderSection(label, arr) {
+      if (!arr.length) return;
+      const h = document.createElement("div");
+      h.className = "section-label";
+      h.textContent = label;
+      roomList.appendChild(h);
+      arr.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "room-row";
+        div.onclick = () => item.kind === "dm" ? openDmConversation(item.friend) : openJoinModal(item.room.roomId);
+        const main = document.createElement("div");
+        main.className = "room-main";
+        const name = document.createElement("div");
+        name.className = "room-name";
+        name.textContent = item.title;
+        const meta = document.createElement("div");
+        meta.className = "room-meta";
+        meta.style.display = "block";
+        const t = item.lastTime ? new Date(item.lastTime).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}) : "无消息";
+        meta.textContent = item.meta + " · " + t;
+        main.appendChild(name);
+        main.appendChild(meta);
+        const side = document.createElement("div");
+        side.className = "room-side";
+        const badge = document.createElement("div");
+        badge.className = "room-badge";
+        badge.textContent = item.kind === "dm" ? "私" : getRoomNo(item.room);
+        side.appendChild(badge);
+        if (item.unread > 0) {
+          const unread = document.createElement("div");
+          unread.className = "room-unread";
+          unread.textContent = item.unread > 99 ? "99+" : String(item.unread);
+          side.appendChild(unread);
+        }
+        div.appendChild(main);
+        div.appendChild(side);
+        roomList.appendChild(div);
+      });
+    }
+    renderSection("私聊", privateItems);
+    renderSection("群聊", groupItems);
+  };
+
+  async function openDmConversation(friend) {
+    if (!requireNickname()) return;
+    const me = getSelfProfile();
+    if (!me || !friend) return;
+    addLocalFriend(friend);
+    const room = makeDmRoom(friend);
+    const secret = getDmSecret(me.accountId, friend.accountId);
+    openRoom(room, secret, { accessType: "friend", isDm: true });
+  }
+
+  async function renderFriendsPage() {
+    const reqBox = document.getElementById("friendRequestList");
+    const listBox = document.getElementById("friendList");
+    if (!reqBox || !listBox) return;
+    reqBox.innerHTML = '<div class="empty-tip">正在加载好友申请...</div>';
+    listBox.innerHTML = "";
+    await syncAcceptedFriendsQuiet();
+    try {
+      const reqs = await fetchFriendRequests();
+      reqBox.innerHTML = "";
+      if (!reqs.incoming.length && !reqs.outgoing.length) {
+        reqBox.innerHTML = '<div class="empty-tip">暂无好友申请</div>';
+      } else {
+        reqs.incoming.forEach(r => {
+          const row = document.createElement("div");
+          row.className = "friend-row";
+          row.innerHTML = '<div class="friend-name">' + (r.fromNickname ? r.fromNickname + '（' + r.fromNumber + '）' : r.fromNumber) + '</div><div class="friend-meta">请求添加你为好友</div>';
+          const actions = document.createElement("div");
+          actions.className = "row-actions";
+          const ok = document.createElement("button"); ok.className = "mini-btn"; ok.textContent = "同意"; ok.onclick = () => acceptFriendRequest(r.requestId);
+          const no = document.createElement("button"); no.className = "mini-btn danger"; no.textContent = "拒绝"; no.onclick = () => rejectFriendRequest(r.requestId);
+          actions.appendChild(ok); actions.appendChild(no); row.appendChild(actions); reqBox.appendChild(row);
+        });
+        reqs.outgoing.forEach(r => {
+          const row = document.createElement("div");
+          row.className = "friend-row";
+          row.innerHTML = '<div class="friend-name">' + (r.toNickname ? r.toNickname + '（' + r.toNumber + '）' : r.toNumber) + '</div><div class="friend-meta">等待对方确认</div>';
+          reqBox.appendChild(row);
+        });
+      }
+    } catch (e) {
+      reqBox.innerHTML = '<div class="empty-tip">好友申请加载失败</div>';
+    }
+    const friends = loadLocalFriends();
+    listBox.innerHTML = "";
+    if (!friends.length) {
+      listBox.innerHTML = '<div class="empty-tip">暂无好友<br/>点击右上角 ＋ 添加好友。</div>';
+    } else {
+      friends.forEach(f => {
+        const row = document.createElement("div");
+        row.className = "friend-row";
+        row.onclick = () => openDmConversation(f);
+        row.innerHTML = '<div class="friend-name">' + formatAccountName(f, true) + '</div><div class="friend-meta">点击进入私聊</div>';
+        listBox.appendChild(row);
+      });
+    }
+  }
+
+  async function renderAnnouncementPage() {
+    const ann = await fetchAnnouncement();
+    const titleEl = document.getElementById("announcementPageTitle");
+    const contentEl = document.getElementById("announcementPageContent");
+    if (ann && ann.enabled !== false && String(ann.content || "").trim()) {
+      titleEl.textContent = ann.title || "公告";
+      contentEl.textContent = String(ann.content || "").trim() + (ann.updatedAt ? "\n\n更新时间：" + new Date(ann.updatedAt).toLocaleString() : "");
+    } else {
+      titleEl.textContent = "公告";
+      contentEl.textContent = "暂无公告，谢谢使用。";
+    }
+  }
+
+  function renderMinePage() {
+    const box = document.getElementById("mineContent");
+    if (!box) return;
+    const p = getSelfProfile();
+    if (!p) {
+      box.innerHTML = '<div class="empty-tip">账号未初始化</div>';
+      return;
+    }
+    const localSet = !!localStorage.getItem("vx_custom_encrypted_config");
+    box.innerHTML = `
+      <div class="mine-card">
+        <div class="mine-title">我的信息</div>
+        <div class="mine-line">我的编号：${p.nicknameNumber || "--"}</div>
+        <div class="mine-line">我的昵称：${profileNickname(p) || "未设置昵称"}</div>
+        <div class="mine-line">我的邮箱：${p.emailMasked || "--"}</div>
+        <div class="mine-line">安全码：已设置</div>
+        <div class="mine-line">系统默认暗语：仍然有效</div>
+        <div class="mine-line">本机暗语：${localSet ? "已设置" : "未设置"}</div>
+        <div class="mine-line">当前版本：${APP_VERSION}</div>
+        <div class="mine-line">配置更新时间：${getConfigUpdatedAtText()}</div>
+        <div class="mine-actions">
+          <button class="confirm-btn mini-btn" onclick="openEditNicknameModal()">修改昵称</button>
+          <button class="confirm-btn mini-btn" onclick="openSettingsModal()">修改本机暗语</button>
+          <button class="confirm-btn mini-btn" onclick="openEditSafeCodeModal()">修改安全码</button>
+        </div>
+      </div>`;
+  }
+
+  function switchMainTab(tab) {
+    if (state.currentRoom || state.adminMode) return;
+    const tabs = { lobby: lobbyScreen, friends: friendsScreen, announcement: announcementScreen, mine: mineScreen };
+    Object.keys(tabs).forEach(k => {
+      if (tabs[k]) tabs[k].style.display = k === tab ? "block" : "none";
+      const btn = document.getElementById("nav" + k.charAt(0).toUpperCase() + k.slice(1));
+      if (btn) btn.classList.toggle("active", k === tab);
+    });
+    localStorage.setItem("vx_active_tab", tab);
+    if (tab === "lobby") renderRooms();
+    if (tab === "friends") renderFriendsPage();
+    if (tab === "announcement") renderAnnouncementPage();
+    if (tab === "mine") renderMinePage();
+  }
+
+  function openEditNicknameModal() {
+    const p = getSelfProfile();
+    const input = document.getElementById("nicknameEditInput");
+    if (input) input.value = p && p.nickname ? p.nickname : "";
+    openModal("editNicknameModal");
+  }
+  function closeEditNicknameModal() { closeModal("editNicknameModal"); }
+
+  async function saveNicknameEdit() {
+    const p = getSelfProfile();
+    if (!p) return showToast("账号未初始化");
+    const input = document.getElementById("nicknameEditInput");
+    p.nickname = String(input && input.value || "").trim().slice(0, 12);
+    saveLocalAccountProfile(p);
+    await updateAccountProfileRemoteQuiet();
+    await publishPublicProfileQuiet();
+    closeEditNicknameModal();
+    showToast("昵称已保存");
+    renderMinePage();
+    renderRooms();
+  }
+
+  function openEditSafeCodeModal() {
+    ["oldSafeCodeInput","newSafeCodeInput","newSafeCodeConfirmInput"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+    openModal("editSafeCodeModal");
+  }
+  function closeEditSafeCodeModal() { closeModal("editSafeCodeModal"); }
+
+  async function saveSafeCodeEdit() {
+    const oldCode = normalizeSafeCode(document.getElementById("oldSafeCodeInput").value);
+    const newCode = normalizeSafeCode(document.getElementById("newSafeCodeInput").value);
+    const confirmCode = normalizeSafeCode(document.getElementById("newSafeCodeConfirmInput").value);
+    const saved = localStorage.getItem("vx_account_safe_plain") || "";
+    const email = localStorage.getItem("vx_account_email_plain") || "";
+    if (!saved || !email) return showToast("当前设备缺少找回信息");
+    if (oldCode !== saved) return showToast("当前安全码不正确");
+    if (!/^\d{1,6}$/.test(newCode)) return showToast("新安全码需1-6位数字");
+    if (newCode !== confirmCode) return showToast("两次新安全码不一致");
+    localStorage.setItem("vx_account_safe_plain", newCode);
+    await updateAccountProfileRemoteQuiet();
+    closeEditSafeCodeModal();
+    showToast("安全码已修改");
+  }
+
+  const oldCreateAutoAccount = createAutoAccount;
+  createAutoAccount = async function() {
+    await oldCreateAutoAccount();
+    await publishPublicProfileQuiet();
+    renderMinePage();
+  };
+
+  const oldRecoverAccount = recoverAccount;
+  recoverAccount = async function() {
+    await oldRecoverAccount();
+    await publishPublicProfileQuiet();
+    renderMinePage();
+  };
+
+  createRoom = async function() {
+    if (!requireNickname()) return;
+    const roomPassword = document.getElementById("newRoomPassword").value.trim();
+    if (roomPassword.length < 4) return showToast("密码至少4位");
+    await loadRooms(false);
+    try {
+      const roomId = crypto.randomUUID();
+      const roomSecret = makeRoomSecret();
+      let roomNo = generateRoomNo();
+      const used = new Set((state.rooms || []).map(r => String(r.roomNo || "").toUpperCase()));
+      let guard = 0;
+      while (used.has(roomNo) && guard < 50) { roomNo = generateRoomNo(); guard++; }
+      const self = getSelfProfile();
+      const ownerDisplay = getSelfDisplayName(false);
+      const roomName = ownerDisplay + "的房间";
+      const check = await encryptPayload({ ok: true, roomId, roomSecret }, roomPassword, "vx-room-check:" + roomId);
+      const adminSecret = await encryptAdminRoomSecret(roomId, roomSecret);
+      const meta = {
+        type: "room", roomId, roomNo, roomName,
+        createdBy: ownerDisplay,
+        ownerAccountId: self && self.accountId,
+        ownerNicknameNumber: self && self.nicknameNumber,
+        ownerNickname: self && self.nickname || "",
+        createdAt: Date.now(), noPassword: false, check, adminSecret, version: 5
+      };
+      const encryptedMeta = await encryptRoomMeta(meta);
+      const comment = await postGistComment(ROOM_PREFIX + JSON.stringify(encryptedMeta));
+      meta.commentId = comment.id;
+      rememberRoomAccess(meta, roomSecret, "created");
+      closeCreateRoomModal();
+      await loadRooms(false);
+      mqttPublishJson(roomsTopic(), { type: "roomCreated", room: sanitizeRoomForRealtime(meta), senderId: state.senderId, time: Date.now() });
+      mqttPublishJson(roomsTopic(), { type: "roomsUpdate", time: Date.now() });
+      showToast("房间已创建：" + roomNo);
+      openRoom(meta, roomSecret, { accessType: "owner" });
+    } catch (e) { showToast("创建失败"); console.error(e); }
+  };
+
+  const oldSendMessage = sendMessage;
+  sendMessage = async function() {
+    const old = state.displayName;
+    state.displayName = getSelfSenderName();
+    try { await oldSendMessage(); }
+    finally { state.displayName = getSelfSenderName(); renderRooms(); }
+  };
+
+  const oldRenderMessage = renderMessage;
+  renderMessage = function(msg) {
+    const id = getMessageKey(msg);
+    const isMe = msg.senderId === state.senderId;
+    const wrap = document.createElement("div");
+    wrap.className = "msg-wrap " + (isMe ? "me" : "other");
+    wrap.dataset.messageId = id;
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const time = new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    meta.textContent = (msg.senderName || "未命名") + " · " + time;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = msg.text || "";
+    wrap.appendChild(meta); wrap.appendChild(bubble); chatBox.appendChild(wrap);
+  };
+
+  function getCurrentChatContextText() {
+    if (!state.currentRoom) return "--";
+    if (state.currentRoom.isDm) return formatAccountName(state.currentRoom.friend, false);
+    return state.currentRoom.roomName || getRoomNo(state.currentRoom);
+  }
+
+  const oldOpenRoom = openRoom;
+  openRoom = async function(room, roomSecret, options = {}) {
+    await oldOpenRoom(room, roomSecret, options);
+    if (options && options.isDm && state.currentRoom) {
+      state.currentRoom.isDm = true;
+      state.currentRoom.friend = room.friend;
+    }
+    markRoomEntered(room.roomId);
+    if (roomSecret) localStorage.setItem(roomSecretKey(room.roomId), roomSecret);
+    if (roomContextBtn) roomContextBtn.textContent = getCurrentChatContextText();
+    renderRooms();
+  };
+
+  function openCurrentChatInfo() {
+    if (!state.currentRoom) return;
+    const title = document.getElementById("chatInfoTitle");
+    const content = document.getElementById("chatInfoContent");
+    const input = document.getElementById("roomNameEditInput");
+    const save = document.getElementById("saveRoomNameBtn");
+    if (state.currentRoom.isDm) {
+      title.textContent = "好友信息";
+      content.textContent = "好友：" + formatAccountName(state.currentRoom.friend, true);
+      input.style.display = "none"; save.style.display = "none";
+    } else {
+      title.textContent = "群信息";
+      content.textContent = "房间号：" + getRoomNo(state.currentRoom) + "\n群名称：" + (state.currentRoom.roomName || "未命名");
+      const me = getSelfProfile();
+      const canEdit = me && state.currentRoom.ownerAccountId && me.accountId === state.currentRoom.ownerAccountId;
+      input.style.display = canEdit ? "block" : "none";
+      save.style.display = canEdit ? "block" : "none";
+      input.value = state.currentRoom.roomName || "";
+    }
+    openModal("chatInfoModal");
+  }
+  function closeChatInfoModal() { closeModal("chatInfoModal"); }
+
+  async function saveCurrentRoomName() {
+    if (!state.currentRoom || state.currentRoom.isDm) return;
+    const me = getSelfProfile();
+    if (!me || me.accountId !== state.currentRoom.ownerAccountId) return showToast("只有建立者可以修改群名称");
+    const input = document.getElementById("roomNameEditInput");
+    const newName = String(input && input.value || "").trim().slice(0, 24);
+    if (!newName) return showToast("请输入群名称");
+    try {
+      const oldId = state.currentRoom.commentId;
+      const room = (state.rooms || []).find(r => r.roomId === state.currentRoom.roomId) || state.currentRoom;
+      room.roomName = newName;
+      room.ownerNickname = me.nickname || "";
+      const encryptedMeta = await encryptRoomMeta(room);
+      if (oldId) { try { await deleteGistComment(oldId); } catch (e) {} }
+      const c = await postGistComment(ROOM_PREFIX + JSON.stringify(encryptedMeta));
+      room.commentId = c.id;
+      state.currentRoom.roomName = newName;
+      closeChatInfoModal();
+      if (roomContextBtn) roomContextBtn.textContent = getCurrentChatContextText();
+      mqttPublishJson(roomsTopic(), { type: "roomsUpdate", time: Date.now() });
+      await loadRooms(false);
+      showToast("群名称已修改");
+    } catch (e) { showToast("修改失败"); }
+  }
+
+  handleLobbySearch = async function() {
+    const input = document.getElementById("roomSearchInput");
+    const value = String(input && input.value || "").trim();
+    if (!value) return;
+    const adminOk = await checkAdminPassword(value);
+    if (adminOk) { input.value = ""; await openAdminPage(); return; }
+    if (/^[A-Za-z0-9]{6}$/.test(value)) {
+      await loadRooms(true);
+      const code = value.toUpperCase();
+      const room = (state.rooms || []).find(r => String(getRoomNo(r) || "").toUpperCase() === code);
+      if (!room) return showToast("未找到房间");
+      openJoinModal(room.roomId); return;
+    }
+    if (/^\d{7}$/.test(value)) {
+      try {
+        const user = await findPublicProfileByNumber(value);
+        if (!user) return showToast("未找到用户");
+        await sendFriendRequestToNumber(value);
+      } catch (e) { showToast("未找到用户"); }
+      return;
+    }
+    const items = buildConversationItems().filter(item => item.title.includes(value) || item.meta.includes(value));
+    if (items.length === 1) {
+      const item = items[0];
+      item.kind === "dm" ? openDmConversation(item.friend) : openJoinModal(item.room.roomId);
+    } else if (items.length > 1) {
+      roomList.innerHTML = "";
+      items.forEach(item => {
+        const row = document.createElement("div"); row.className = "room-row";
+        row.onclick = () => item.kind === "dm" ? openDmConversation(item.friend) : openJoinModal(item.room.roomId);
+        row.innerHTML = '<div class="room-main"><div class="room-name">' + item.title + '</div><div class="room-meta" style="display:block">' + item.meta + '</div></div>';
+        roomList.appendChild(row);
+      });
+    } else showToast("未找到");
+  };
+
+  formatClockTime = function() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0");
+  };
+  getStatusExtraText = function() {
+    const roomOnline = getCurrentRoomOnlineCount();
+    if (roomOnline === null) return "";
+    return " 在线" + roomOnline;
+  };
+  withClock = function(text) { return "数据 " + formatClockTime() + getStatusExtraText(); };
+  setDataStatus = function(status) {
+    pruneOnlineClients(false);
+    dataStatus.classList.remove("connected", "connecting");
+    if (status === "connected") dataStatus.classList.add("connected");
+    dataStatusText.dataset.baseText = "数据";
+    dataStatusText.textContent = withClock("数据");
+    renderAdminOnlineStats();
+  };
+  function showDataStatusMini() { showToast(dataStatus.classList.contains("connected") ? "数据正常" : "数据异常"); }
+  setInterval(updateClockLabel, 1000);
+
+  const oldShowLobby = showLobby;
+  showLobby = function() {
+    state.currentRoom = null;
+    state.adminMode = false;
+    clearInterval(state.timer);
+    unsubscribeActiveRoomTopic();
+    clearTypingIndicator();
+    chatShell.style.display = "none";
+    adminScreen.style.display = "none";
+    if (friendsScreen) friendsScreen.style.display = "none";
+    if (announcementScreen) announcementScreen.style.display = "none";
+    if (mineScreen) mineScreen.style.display = "none";
+    sendArea.style.display = "none";
+    emergencyBar.style.display = "none";
+    if (announcementBtn) announcementBtn.style.display = "none";
+    roomBackBtn.style.display = "none";
+    roomTitleBtn.style.display = "none";
+    lobbyActions.style.display = "flex";
+    roomActions.style.display = "none";
+    if (bottomNav) bottomNav.classList.add("show");
+    try { publishPresence("online"); } catch (e) {}
+    const tab = localStorage.getItem("vx_active_tab") || "lobby";
+    switchMainTab(tab);
+    updateUnreadBadge();
+    clearInterval(state.lobbyTimer);
+    state.lobbyTimer = setInterval(() => { loadRooms(true); syncAcceptedFriendsQuiet().then(renderRooms); }, LOBBY_FALLBACK_MS);
+    maybeApplyDeferredAutoUpdate();
+  };
+
+  showChat = function() {
+    lobbyScreen.style.display = "none";
+    if (friendsScreen) friendsScreen.style.display = "none";
+    if (announcementScreen) announcementScreen.style.display = "none";
+    if (mineScreen) mineScreen.style.display = "none";
+    adminScreen.style.display = "none";
+    chatShell.style.display = "flex";
+    sendArea.style.display = "flex";
+    emergencyBar.style.display = "block";
+    if (bottomNav) bottomNav.classList.remove("show");
+    if (announcementBtn) announcementBtn.style.display = "none";
+    roomBackBtn.style.display = "inline-flex";
+    roomBackBtn.textContent = "返回";
+    roomTitleBtn.style.display = "none";
+    lobbyActions.style.display = "none";
+    roomActions.style.display = "flex";
+    if (roomContextBtn) roomContextBtn.textContent = getCurrentChatContextText();
+    updateAppHeight();
+    setTimeout(() => { updateAppHeight(); chatBox.scrollTop = chatBox.scrollHeight; }, 80);
+  };
+
+  const oldOpenAdminPage = openAdminPage;
+  openAdminPage = async function() {
+    state.adminMode = true;
+    state.currentRoom = null;
+    clearInterval(state.timer);
+    unsubscribeActiveRoomTopic();
+    clearTypingIndicator();
+    await loadRooms(false);
+    lobbyScreen.style.display = "none";
+    if (friendsScreen) friendsScreen.style.display = "none";
+    if (announcementScreen) announcementScreen.style.display = "none";
+    if (mineScreen) mineScreen.style.display = "none";
+    chatShell.style.display = "none";
+    adminScreen.style.display = "block";
+    sendArea.style.display = "none";
+    emergencyBar.style.display = "none";
+    if (bottomNav) bottomNav.classList.remove("show");
+    if (announcementBtn) announcementBtn.style.display = "none";
+    roomBackBtn.style.display = "inline-flex";
+    roomBackBtn.textContent = "返回";
+    roomTitleBtn.style.display = "inline-flex";
+    roomTitleBtn.textContent = "管理后台";
+    lobbyActions.style.display = "none";
+    roomActions.style.display = "none";
+    const ann = await fetchAnnouncement();
+    document.getElementById("announcementTitleInput").value = (ann && ann.title) || "系统公告";
+    document.getElementById("announcementContentInput").value = (ann && ann.content) || "";
+    document.getElementById("announcementEnabledInput").checked = !ann || ann.enabled !== false;
+    try { publishPresence("online"); } catch (e) {}
+    renderAdminOnlineStats(); renderAdminVersionInfo(); renderAdminRooms();
+  };
+
+  const oldOpenApp = openApp;
+  openApp = async function() {
+    calculator.style.display = "none";
+    chatApp.style.display = "flex";
+    state.accountProfile = loadLocalAccountProfile();
+    state.displayName = getSelfSenderName();
+    if (nicknameLine) nicknameLine.textContent = state.displayName ? "当前账号：" + state.displayName : "";
+    initNotifyAudio(); connectMQTT(); await loadRooms(false); await syncAcceptedFriendsQuiet(); await publishPublicProfileQuiet();
+    if (!state.accountProfile && !hasNickname()) openAccountModal();
+    showLobby(); scheduleDefaultRoomMidnightAutoClear(); setTimeout(() => purgeExpiredDefaultRoomMessages(true), 1200); scheduleDailyAutoUpdateCheck();
+  };
+
+  function upgradeAccountProfileShape() {
+    const p = loadLocalAccountProfile();
+    if (!p) return;
+    p.nickname = String(p.nickname || "").trim();
+    p.friends = Array.isArray(p.friends) ? p.friends : [];
+    p.dmConversations = Array.isArray(p.dmConversations) ? p.dmConversations : [];
+    saveLocalAccountProfile(p);
+  }
+  upgradeAccountProfileShape();
 
   scheduleDailyAutoUpdateCheck();
   registerAndroidPWAServiceWorker();
