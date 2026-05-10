@@ -7,9 +7,7 @@
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
-      margin: 0;
-      padding: 0;
-      min-height: 100%;
+      margin: 0; padding: 0; min-height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: #e5f3ff;
       background:
@@ -18,22 +16,13 @@
         linear-gradient(135deg, #061526, #0a1021 45%, #120d2b);
     }
     body { padding: 22px 14px 46px; }
-    .wrap { width: min(780px, 100%); margin: 0 auto; }
+    .wrap { width: min(760px, 100%); margin: 0 auto; }
     h1 {
-      text-align: center;
-      margin: 6px 0 8px;
-      font-size: 26px;
-      letter-spacing: .04em;
-      color: #fff;
+      text-align: center; margin: 6px 0 8px;
+      font-size: 26px; letter-spacing: .04em; color: #fff;
       text-shadow: 0 0 18px rgba(80, 220, 255, .5);
     }
-    .sub {
-      text-align: center;
-      color: rgba(229,243,255,.78);
-      font-size: 13px;
-      margin-bottom: 18px;
-      line-height: 1.6;
-    }
+    .sub { text-align: center; color: rgba(229,243,255,.78); font-size: 13px; margin-bottom: 18px; }
     .notice {
       border: 1px solid rgba(251, 191, 36, .38);
       background: rgba(251, 191, 36, .08);
@@ -41,7 +30,7 @@
       border-radius: 16px;
       padding: 12px 14px;
       font-size: 13px;
-      line-height: 1.65;
+      line-height: 1.6;
       margin-bottom: 16px;
     }
     .card {
@@ -54,147 +43,55 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
     }
-    .section-title {
-      font-size: 18px;
-      font-weight: 900;
-      color: #fff;
-      margin: 0 0 14px;
-    }
+    .section-title { font-size: 18px; font-weight: 900; color: #fff; margin: 0 0 14px; }
     label {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      font-weight: 800;
-      color: rgba(229,243,255,.88);
-      font-size: 13px;
-      margin: 14px 0 7px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-weight: 800; color: rgba(229,243,255,.88);
+      font-size: 13px; margin: 14px 0 7px;
     }
-    .hint {
-      color: rgba(229,243,255,.48);
-      font-weight: 700;
-      font-size: 12px;
-      white-space: nowrap;
-    }
+    .hint { color: rgba(229,243,255,.48); font-weight: 700; font-size: 12px; }
     input, textarea {
-      width: 100%;
-      border: 1px solid rgba(103, 232, 249, .20);
-      border-radius: 14px;
-      outline: none;
-      background: rgba(2, 8, 23, .72);
-      color: #fff;
-      padding: 13px 14px;
-      font-size: 14px;
+      width: 100%; border: 1px solid rgba(103, 232, 249, .20); border-radius: 14px;
+      outline: none; background: rgba(2, 8, 23, .72); color: #fff;
+      padding: 13px 14px; font-size: 14px;
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
     }
-    input:focus, textarea:focus {
-      border-color: rgba(103, 232, 249, .6);
-      box-shadow: 0 0 0 3px rgba(34, 211, 238, .12);
-    }
-    textarea {
-      min-height: 230px;
-      resize: vertical;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12px;
-      line-height: 1.55;
-    }
-    .unlock-box {
-      border-radius: 18px;
-      padding: 14px;
-      background: linear-gradient(180deg, rgba(2, 8, 23, .68), rgba(15, 23, 42, .58));
-      border: 1px solid rgba(103, 232, 249, .18);
-    }
+    input:focus, textarea:focus { border-color: rgba(103, 232, 249, .6); box-shadow: 0 0 0 3px rgba(34, 211, 238, .12); }
+    textarea { min-height: 220px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.55; }
+    .unlock-box { border-radius: 18px; padding: 14px; background: linear-gradient(180deg, rgba(2, 8, 23, .68), rgba(15, 23, 42, .58)); border: 1px solid rgba(103, 232, 249, .18); }
     .calc-display {
-      width: 100%;
-      min-height: 58px;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      border-radius: 16px;
-      padding: 13px 14px;
-      background: rgba(0, 0, 0, .28);
-      border: 1px solid rgba(255,255,255,.10);
-      color: #fff;
-      font-size: 26px;
-      font-weight: 900;
-      letter-spacing: .03em;
-      overflow-x: auto;
-      white-space: nowrap;
+      width: 100%; min-height: 58px; display: flex; align-items: center; justify-content: flex-end;
+      border-radius: 16px; padding: 13px 14px; background: rgba(0, 0, 0, .28);
+      border: 1px solid rgba(255,255,255,.10); color: #fff; font-size: 26px; font-weight: 900;
+      letter-spacing: .03em; overflow-x: auto; white-space: nowrap;
     }
-    .standard-row {
-      margin-top: 8px;
-      color: #7dd3fc;
-      font-size: 12px;
-      font-weight: 800;
-      word-break: break-all;
-    }
-    .keypad {
-      margin-top: 12px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-    }
+    .standard-row { margin-top: 8px; color: #7dd3fc; font-size: 12px; font-weight: 800; word-break: break-all; }
+    .keypad { margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     .key {
-      height: 54px;
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      color: #f8fbff;
-      background: rgba(255,255,255,.09);
-      font-size: 20px;
-      font-weight: 900;
-      cursor: pointer;
-      box-shadow: 0 10px 24px rgba(0,0,0,.20);
-      user-select: none;
+      height: 54px; border: 1px solid rgba(255,255,255,.10); border-radius: 16px;
+      color: #f8fbff; background: rgba(255,255,255,.09); font-size: 20px; font-weight: 900;
+      cursor: pointer; box-shadow: 0 10px 24px rgba(0,0,0,.20); user-select: none;
     }
     .key:active { transform: scale(.97); opacity: .82; }
     .key.danger { color: #fecaca; background: rgba(239,68,68,.16); border-color: rgba(248,113,113,.30); }
-    .key.equal { color: #020617; background: linear-gradient(135deg, #67e8f9, #a78bfa); }
-    .actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 14px;
-    }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
     .btn {
-      border: none;
-      border-radius: 16px;
-      padding: 15px 16px;
-      font-weight: 900;
-      font-size: 15px;
-      cursor: pointer;
-      color: #061526;
-      background: linear-gradient(135deg, #67e8f9, #a78bfa);
+      border: none; border-radius: 16px; padding: 15px 16px; font-weight: 900; font-size: 15px;
+      cursor: pointer; color: #061526; background: linear-gradient(135deg, #67e8f9, #a78bfa);
       box-shadow: 0 12px 32px rgba(96,165,250,.25);
     }
-    .btn.secondary {
-      background: rgba(255,255,255,.10);
-      color: #e5f3ff;
-      border: 1px solid rgba(255,255,255,.12);
-    }
+    .btn.secondary { background: rgba(255,255,255,.10); color: #e5f3ff; border: 1px solid rgba(255,255,255,.12); }
     .btn:active { transform: scale(.99); opacity: .9; }
-    .status {
-      text-align: center;
-      color: #86efac;
-      font-size: 13px;
-      margin-top: 10px;
-      font-weight: 900;
-      min-height: 18px;
-      line-height: 1.5;
-      word-break: break-all;
-    }
-    .small {
-      color: rgba(229,243,255,.56);
-      font-size: 12px;
-      line-height: 1.65;
-      margin-top: 10px;
-    }
+    .status { text-align: center; color: #86efac; font-size: 13px; margin-top: 10px; font-weight: 900; min-height: 18px; line-height: 1.5; word-break: break-all; }
+    .small { color: rgba(229,243,255,.56); font-size: 12px; line-height: 1.65; margin-top: 10px; }
     .danger-text { color: #fecaca; }
     .ok-text { color: #86efac; }
     @media (max-width: 520px) {
       body { padding: 16px 10px 34px; }
       h1 { font-size: 23px; }
       .card { padding: 14px; border-radius: 20px; }
-      .actions { grid-template-columns: 1fr; }
+      .actions, .grid2 { grid-template-columns: 1fr; }
       label { align-items: flex-start; flex-direction: column; gap: 4px; }
       .hint { white-space: normal; }
     }
@@ -204,22 +101,20 @@
 <body>
   <div class="wrap">
     <h1>VX 配置生成器</h1>
-    <div class="sub">新版逻辑：配置页把加密配置保存到 Gist；index 页面按 <b>%</b> 时自动读取并核对。</div>
+    <div class="sub">新版逻辑：配置页把加密配置自动保存到 GitHub 仓库里的 <b>vx-config.json</b>；index 页面按 <b>%</b> 时读取并核对。</div>
 
     <div class="notice">
-      暗号规则固定为：<b>1-6 位数字</b>。主页面不用进入暗号模式；只要按 <b>%</b>，就会检查 % 前最后一段连续数字的后 6 位，并从后往前做后缀匹配。Gist 里只保存加密后的配置，不保存明文 GitHub Token / chatSecret / 管理密码。
-      <br />第一次使用时，index.html 里只需要填写一次 <b>CONFIG_GIST_ID</b>，之后修改配置只需要在本页面保存，不用再复制配置结果到 index.html。
+      暗号规则固定为：<b>1-6 位数字</b>。主页面不用进入暗号模式；只要按 <b>%</b>，就会检查 % 前最后一段连续数字的后 6 位，并从后往前做后缀匹配。
+      <br />配置会保存到仓库文件 <b>vx-config.json</b>，文件内容是加密配置，不是明文 GitHub Token / chatSecret / 管理密码。
     </div>
 
     <div class="card">
       <div class="section-title">1. 暗号设置</div>
-
       <label>进入暗号 <span class="hint">1-6 位数字；可作为 % 前数字尾部后缀匹配</span></label>
       <div class="unlock-box">
         <div class="calc-display" id="unlockDisplay">0</div>
         <input id="unlockCode" autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="输入 1-6 位数字暗号，例如 56" style="margin-top:10px;" />
         <div class="standard-row">当前暗号：<span id="normalizedPreview">未输入</span></div>
-
         <div class="keypad" aria-label="数字暗号键盘">
           <button class="key" data-value="1">1</button>
           <button class="key" data-value="2">2</button>
@@ -238,13 +133,32 @@
     </div>
 
     <div class="card">
-      <div class="section-title">2. Gist 与聊天配置</div>
+      <div class="section-title">2. 仓库与聊天配置</div>
 
-      <label>GitHub Token <span class="hint">需要 gist 权限，用于保存配置和写入聊天 Gist</span></label>
-      <input id="githubToken" type="password" autocomplete="off" placeholder="github_pat_..." />
+      <label>GitHub Token <span class="hint">需要仓库 Contents 写入权限；同时需要 Gist 权限供聊天使用</span></label>
+      <input id="githubToken" type="password" autocomplete="off" placeholder="github_pat_... / ghp_..." />
 
-      <label>配置 Gist ID <span class="hint">可留空，留空会自动新建一个 secret Gist</span></label>
-      <input id="configGistId" autocomplete="off" placeholder="保存 vx-config.json 的 Gist ID" />
+      <div class="grid2">
+        <div>
+          <label>仓库 Owner</label>
+          <input id="repoOwner" autocomplete="off" value="china-xxoo" />
+        </div>
+        <div>
+          <label>仓库名</label>
+          <input id="repoName" autocomplete="off" value="vx" />
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>分支</label>
+          <input id="repoBranch" autocomplete="off" value="main" />
+        </div>
+        <div>
+          <label>配置文件路径</label>
+          <input id="configPath" autocomplete="off" value="vx-config.json" />
+        </div>
+      </div>
 
       <label>聊天数据 Gist ID <span class="hint">index 聊天室实际读写消息的 Gist</span></label>
       <input id="chatGistId" autocomplete="off" placeholder="聊天数据 Gist ID" />
@@ -255,32 +169,29 @@
       <label>万能管理密码 <span class="hint">用于房间管理，hash 会放进加密配置里</span></label>
       <input id="adminPassword" type="password" autocomplete="new-password" placeholder="管理密码" />
 
-      <button class="btn" style="width:100%; margin-top:14px;" onclick="saveConfigToGist()">生成并保存配置到 Gist</button>
+      <button class="btn" style="width:100%; margin-top:14px;" onclick="saveConfigToRepo()">生成并保存到仓库 vx-config.json</button>
       <div class="status" id="statusTip"></div>
     </div>
 
     <div class="card">
       <div class="section-title">3. 保存结果</div>
-      <textarea id="result" readonly placeholder="保存成功后，这里会显示配置 Gist ID 和 index.html 需要填写的一行常量"></textarea>
+      <textarea id="result" readonly placeholder="保存成功后，这里会显示仓库文件地址和测试方式"></textarea>
       <div class="actions">
         <button class="btn secondary" onclick="copyResult()">复制结果</button>
         <button class="btn secondary" onclick="clearPage()">清空页面</button>
       </div>
       <div class="small">
-        <span class="ok-text">推荐流程：</span>先用本页保存配置到 Gist → 把返回的 <b>CONFIG_GIST_ID</b> 填进 index.html 一次 → 以后只在本页更新配置。<br />
-        <span class="danger-text">注意：</span>如果更换配置 Gist ID，index.html 里的 CONFIG_GIST_ID 也要跟着换。
+        <span class="ok-text">推荐流程：</span>本页保存配置到仓库 → 等 GitHub Pages 部署几十秒 → 打开 index 测试。<br />
+        <span class="danger-text">注意：</span>如果刚保存后立刻测试无反应，通常是 GitHub Pages 还没部署或浏览器缓存没刷新。
       </div>
     </div>
   </div>
 
   <script>
     const API = "https://api.github.com";
-    const CONFIG_FILE_NAME = "vx-config.json";
     const PBKDF2_ITERATIONS = 180000;
 
-    function getEl(id) {
-      return document.getElementById(id);
-    }
+    function getEl(id) { return document.getElementById(id); }
 
     function setStatus(text, ok = true) {
       const el = getEl("statusTip");
@@ -294,9 +205,7 @@
 
     function validateUnlockCode(input) {
       const code = normalizeUnlockCode(input);
-      if (!/^\d{1,6}$/.test(code)) {
-        throw new Error("进入暗号必须是 1-6 位数字");
-      }
+      if (!/^\d{1,6}$/.test(code)) throw new Error("进入暗号必须是 1-6 位数字");
       return code;
     }
 
@@ -305,7 +214,6 @@
       const display = getEl("unlockDisplay");
       const preview = getEl("normalizedPreview");
       const code = normalizeUnlockCode(input.value);
-
       input.value = code;
       display.textContent = code || "0";
       preview.textContent = code || "未输入";
@@ -318,22 +226,14 @@
         const input = getEl("unlockCode");
         const value = btn.dataset.value;
         const action = btn.dataset.action;
-
-        if (action === "clear") {
-          input.value = "";
-        } else if (action === "back") {
-          input.value = input.value.slice(0, -1);
-        } else if (value && input.value.length < 6) {
-          input.value += value;
-        }
-
+        if (action === "clear") input.value = "";
+        else if (action === "back") input.value = input.value.slice(0, -1);
+        else if (value && input.value.length < 6) input.value += value;
         updateUnlockUI();
       });
     });
 
-    function utf8ToBytes(str) {
-      return new TextEncoder().encode(str);
-    }
+    function utf8ToBytes(str) { return new TextEncoder().encode(str); }
 
     function bytesToBase64(bytes) {
       let binary = "";
@@ -343,9 +243,7 @@
     }
 
     function bufferToHex(buffer) {
-      return Array.from(new Uint8Array(buffer))
-        .map(b => b.toString(16).padStart(2, "0"))
-        .join("");
+      return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, "0")).join("");
     }
 
     async function sha256Hex(text) {
@@ -354,14 +252,7 @@
     }
 
     async function deriveKey(unlockCode, saltBytes) {
-      const baseKey = await crypto.subtle.importKey(
-        "raw",
-        utf8ToBytes(unlockCode),
-        "PBKDF2",
-        false,
-        ["deriveKey"]
-      );
-
+      const baseKey = await crypto.subtle.importKey("raw", utf8ToBytes(unlockCode), "PBKDF2", false, ["deriveKey"]);
       return crypto.subtle.deriveKey(
         { name: "PBKDF2", salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
         baseKey,
@@ -377,15 +268,10 @@
       const key = await deriveKey(unlockCode, salt);
       const plaintext = utf8ToBytes(JSON.stringify(configObject));
       const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
-
-      return {
-        salt: bytesToBase64(salt),
-        iv: bytesToBase64(iv),
-        data: bytesToBase64(encrypted)
-      };
+      return { salt: bytesToBase64(salt), iv: bytesToBase64(iv), data: bytesToBase64(encrypted) };
     }
 
-    async function githubApi(path, token, options = {}) {
+    async function githubRequest(path, token, options = {}, allow404 = false) {
       const res = await fetch(API + path, {
         ...options,
         headers: {
@@ -395,6 +281,8 @@
           ...(options.headers || {})
         }
       });
+
+      if (allow404 && res.status === 404) return null;
 
       if (!res.ok) {
         let msg = "GitHub 请求失败：" + res.status;
@@ -408,45 +296,54 @@
       return res.json();
     }
 
-    async function createConfigGist(token, content) {
-      return githubApi("/gists", token, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          description: "VX encrypted remote config",
-          public: false,
-          files: {
-            [CONFIG_FILE_NAME]: { content }
-          }
-        })
-      });
+    async function getRepoFileSha(token, owner, repo, path, branch) {
+      const data = await githubRequest(
+        `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`,
+        token,
+        { method: "GET" },
+        true
+      );
+      return data && data.sha ? data.sha : null;
     }
 
-    async function updateConfigGist(token, gistId, content) {
-      return githubApi("/gists/" + encodeURIComponent(gistId), token, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          files: {
-            [CONFIG_FILE_NAME]: { content }
-          }
-        })
-      });
+    async function putRepoFile(token, owner, repo, path, branch, contentText, message) {
+      const sha = await getRepoFileSha(token, owner, repo, path, branch);
+      const body = {
+        message,
+        content: bytesToBase64(utf8ToBytes(contentText)),
+        branch
+      };
+      if (sha) body.sha = sha;
+
+      return githubRequest(
+        `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodeURIComponent(path)}`,
+        token,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        }
+      );
     }
 
-    async function saveConfigToGist() {
+    async function saveConfigToRepo() {
       setStatus("正在生成加密配置...", true);
       getEl("result").value = "";
 
       try {
         const unlockCode = validateUnlockCode(getEl("unlockCode").value);
         const githubToken = getEl("githubToken").value.trim();
-        const configGistIdInput = getEl("configGistId").value.trim();
+        const repoOwner = getEl("repoOwner").value.trim();
+        const repoName = getEl("repoName").value.trim();
+        const repoBranch = getEl("repoBranch").value.trim() || "main";
+        const configPath = getEl("configPath").value.trim() || "vx-config.json";
         const chatGistId = getEl("chatGistId").value.trim();
         const chatSecret = getEl("chatSecret").value.trim();
         const adminPassword = getEl("adminPassword").value;
 
         if (!githubToken) throw new Error("请输入 GitHub Token");
+        if (!repoOwner) throw new Error("请输入仓库 Owner");
+        if (!repoName) throw new Error("请输入仓库名");
         if (!chatGistId) throw new Error("请输入聊天数据 Gist ID");
         if (!chatSecret) throw new Error("请输入聊天加密密钥 chatSecret");
         if (!adminPassword) throw new Error("请输入万能管理密码");
@@ -457,50 +354,57 @@
           gistId: chatGistId,
           chatSecret,
           adminHash,
-          version: 2,
+          version: 3,
           savedAt: new Date().toISOString()
         });
 
         const bundle = {
           type: "VX_REMOTE_CONFIG_V1",
-          version: 1,
+          version: 2,
           unlockRule: "percent_tail_suffix_numeric_1_6",
-          configFileName: CONFIG_FILE_NAME,
+          storage: "github_repo_contents",
+          configFileName: configPath,
           updatedAt: new Date().toISOString(),
           encryptedConfig
         };
 
-        const content = JSON.stringify(bundle, null, 2);
+        const content = JSON.stringify(bundle, null, 2) + "\n";
+        setStatus("正在写入仓库文件 " + configPath + " ...", true);
 
-        setStatus(configGistIdInput ? "正在更新配置 Gist..." : "正在新建配置 Gist...", true);
+        await putRepoFile(
+          githubToken,
+          repoOwner,
+          repoName,
+          configPath,
+          repoBranch,
+          content,
+          "Update VX encrypted config"
+        );
 
-        const gist = configGistIdInput
-          ? await updateConfigGist(githubToken, configGistIdInput, content)
-          : await createConfigGist(githubToken, content);
-
-        const configGistId = gist.id;
-        getEl("configGistId").value = configGistId;
-
+        const pagesUrl = `https://${repoOwner}.github.io/${repoName}/${configPath}`;
+        const indexUrl = `https://${repoOwner}.github.io/${repoName}/index.html?v=${Date.now()}`;
         const resultText =
 `保存成功！
 
-配置 Gist ID：
-${configGistId}
+配置文件已写入仓库：
+${repoOwner}/${repoName}/${configPath}
 
-请把 index.html 顶部这行改成：
-const CONFIG_GIST_ID = "${configGistId}";
+GitHub Pages 配置文件地址：
+${pagesUrl}
 
-配置文件名：
-${CONFIG_FILE_NAME}
+index 测试地址：
+${indexUrl}
 
-index 测试方式：
-任意输入以暗号结尾的数字 → 按 %。例如暗号是 ${unlockCode}，可直接输入 ${unlockCode} 后按 %；如果输入 123456%，则只会从后往前尝试 123456 / 23456 / 3456 / 456 / 56 / 6。
+测试方式：
+任意输入以暗号结尾的数字 → 按 %。
+例如你的暗号是 ${unlockCode}，可以输入 ${unlockCode}% 测试。
+如果暗号是 56，那么 123456% 也可以进入；34 不可以，因为必须从后往前后缀匹配。
 
-说明：Gist 中保存的是加密配置，不是明文 Token / chatSecret / 管理密码。暗号识别失败时，index 页面会完全静默，不提示错误。`;
+说明：vx-config.json 中保存的是加密配置，不是明文 Token / chatSecret / 管理密码。保存后 GitHub Pages 可能需要几十秒才更新。`;
 
         getEl("result").value = resultText;
         await navigator.clipboard.writeText(resultText).catch(() => {});
-        setStatus("配置已保存到 Gist，并已尝试复制结果", true);
+        setStatus("配置已保存到仓库，并已尝试复制结果", true);
       } catch (err) {
         setStatus(err.message || "保存失败", false);
       }
@@ -516,7 +420,10 @@ index 测试方式：
     function clearPage() {
       getEl("unlockCode").value = "";
       getEl("githubToken").value = "";
-      getEl("configGistId").value = "";
+      getEl("repoOwner").value = "china-xxoo";
+      getEl("repoName").value = "vx";
+      getEl("repoBranch").value = "main";
+      getEl("configPath").value = "vx-config.json";
       getEl("chatGistId").value = "";
       getEl("chatSecret").value = "";
       getEl("adminPassword").value = "";
