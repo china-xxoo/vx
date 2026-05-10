@@ -18,7 +18,7 @@
         linear-gradient(135deg, #061526, #0a1021 45%, #120d2b);
     }
     body { padding: 22px 14px 46px; }
-    .wrap { width: min(760px, 100%); margin: 0 auto; }
+    .wrap { width: min(780px, 100%); margin: 0 auto; }
     h1 {
       text-align: center;
       margin: 6px 0 8px;
@@ -32,6 +32,7 @@
       color: rgba(229,243,255,.78);
       font-size: 13px;
       margin-bottom: 18px;
+      line-height: 1.6;
     }
     .notice {
       border: 1px solid rgba(251, 191, 36, .38);
@@ -40,7 +41,7 @@
       border-radius: 16px;
       padding: 12px 14px;
       font-size: 13px;
-      line-height: 1.55;
+      line-height: 1.65;
       margin-bottom: 16px;
     }
     .card {
@@ -63,12 +64,18 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
       font-weight: 800;
       color: rgba(229,243,255,.88);
       font-size: 13px;
       margin: 14px 0 7px;
     }
-    .hint { color: rgba(229,243,255,.48); font-weight: 700; font-size: 12px; }
+    .hint {
+      color: rgba(229,243,255,.48);
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+    }
     input, textarea {
       width: 100%;
       border: 1px solid rgba(103, 232, 249, .20);
@@ -110,7 +117,7 @@
       color: #fff;
       font-size: 26px;
       font-weight: 900;
-      letter-spacing: .08em;
+      letter-spacing: .03em;
       overflow-x: auto;
       white-space: nowrap;
     }
@@ -142,7 +149,12 @@
     .key:active { transform: scale(.97); opacity: .82; }
     .key.danger { color: #fecaca; background: rgba(239,68,68,.16); border-color: rgba(248,113,113,.30); }
     .key.equal { color: #020617; background: linear-gradient(135deg, #67e8f9, #a78bfa); }
-    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
     .btn {
       border: none;
       border-radius: 16px;
@@ -160,19 +172,31 @@
       border: 1px solid rgba(255,255,255,.12);
     }
     .btn:active { transform: scale(.99); opacity: .9; }
-    .copied {
+    .status {
       text-align: center;
       color: #86efac;
       font-size: 13px;
       margin-top: 10px;
       font-weight: 900;
       min-height: 18px;
+      line-height: 1.5;
+      word-break: break-all;
     }
     .small {
       color: rgba(229,243,255,.56);
       font-size: 12px;
-      line-height: 1.55;
+      line-height: 1.65;
       margin-top: 10px;
+    }
+    .danger-text { color: #fecaca; }
+    .ok-text { color: #86efac; }
+    @media (max-width: 520px) {
+      body { padding: 16px 10px 34px; }
+      h1 { font-size: 23px; }
+      .card { padding: 14px; border-radius: 20px; }
+      .actions { grid-template-columns: 1fr; }
+      label { align-items: flex-start; flex-direction: column; gap: 4px; }
+      .hint { white-space: normal; }
     }
   </style>
 </head>
@@ -180,71 +204,89 @@
 <body>
   <div class="wrap">
     <h1>VX 配置生成器</h1>
-    <div class="sub">只在当前浏览器本地生成配置，不上传任何信息。</div>
+    <div class="sub">新版逻辑：配置页把加密配置保存到 Gist；index 页面按 <b>=数字=</b> 时自动读取并核对。</div>
 
     <div class="notice">
-      新规则：进入暗号只允许 <b>1-6 位数字</b>。index 页面中，只有计算器显示 <b>0</b> 时按一次 <b>=</b> 才会进入暗号模式；输入数字暗号后，再按一次 <b>=</b> 才会核对暗语。
+      暗号规则已经固定为：<b>1-6 位数字</b>。Gist 里只保存加密后的配置，不保存明文 GitHub Token / chatSecret / 管理密码。
+      <br />第一次使用时，index.html 里只需要填写一次 <b>CONFIG_GIST_ID</b>，之后修改配置只需要在本页面保存，不用再复制配置结果到 index.html。
     </div>
 
     <div class="card">
-      <div class="section-title">基础配置</div>
+      <div class="section-title">1. 暗号设置</div>
 
-      <label>进入暗号 <span class="hint">1-6位数字</span></label>
+      <label>进入暗号 <span class="hint">1-6 位数字，例如 9 / 9999 / 123456</span></label>
       <div class="unlock-box">
-        <div class="calc-display" id="unlockDisplay">未输入</div>
-        <input id="unlockCode" autocomplete="off" inputmode="numeric" maxlength="6" placeholder="输入1-6位数字，例如：9999" style="margin-top:10px;" />
-        <div class="standard-row">标准化暗号：<span id="normalizedPreview">未输入</span></div>
+        <div class="calc-display" id="unlockDisplay">0</div>
+        <input id="unlockCode" autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="输入 1-6 位数字暗号" style="margin-top:10px;" />
+        <div class="standard-row">当前暗号：<span id="normalizedPreview">未输入</span></div>
 
         <div class="keypad" aria-label="数字暗号键盘">
           <button class="key" data-value="1">1</button>
           <button class="key" data-value="2">2</button>
           <button class="key" data-value="3">3</button>
-
           <button class="key" data-value="4">4</button>
           <button class="key" data-value="5">5</button>
           <button class="key" data-value="6">6</button>
-
           <button class="key" data-value="7">7</button>
           <button class="key" data-value="8">8</button>
           <button class="key" data-value="9">9</button>
-
           <button class="key danger" data-action="clear">C</button>
           <button class="key" data-value="0">0</button>
           <button class="key danger" data-action="back">⌫</button>
         </div>
       </div>
-
-      <label>GitHub Token</label>
-      <input id="githubToken" autocomplete="off" placeholder="github_pat_..." />
-
-      <label>Gist ID</label>
-      <input id="gistId" autocomplete="off" placeholder="Gist ID" />
-
-      <label>聊天加密密钥 <span class="hint">chatSecret</span></label>
-      <input id="chatSecret" autocomplete="off" placeholder="例如：2026" />
-
-      <label>万能管理密码</label>
-      <input id="adminPassword" type="password" autocomplete="new-password" placeholder="管理密码" />
-
-      <button class="btn" style="width:100%; margin-top:14px;" onclick="generateConfig()">生成配置</button>
-      <div class="copied" id="copiedTip"></div>
     </div>
 
     <div class="card">
-      <div class="section-title">生成结果</div>
-      <textarea id="result" readonly placeholder="生成后结果会显示在这里"></textarea>
+      <div class="section-title">2. Gist 与聊天配置</div>
+
+      <label>GitHub Token <span class="hint">需要 gist 权限，用于保存配置和写入聊天 Gist</span></label>
+      <input id="githubToken" type="password" autocomplete="off" placeholder="github_pat_..." />
+
+      <label>配置 Gist ID <span class="hint">可留空，留空会自动新建一个 secret Gist</span></label>
+      <input id="configGistId" autocomplete="off" placeholder="保存 vx-config.json 的 Gist ID" />
+
+      <label>聊天数据 Gist ID <span class="hint">index 聊天室实际读写消息的 Gist</span></label>
+      <input id="chatGistId" autocomplete="off" placeholder="聊天数据 Gist ID" />
+
+      <label>聊天加密密钥 <span class="hint">chatSecret</span></label>
+      <input id="chatSecret" autocomplete="off" placeholder="例如：2026 或一串自定义密钥" />
+
+      <label>万能管理密码 <span class="hint">用于房间管理，hash 会放进加密配置里</span></label>
+      <input id="adminPassword" type="password" autocomplete="new-password" placeholder="管理密码" />
+
+      <button class="btn" style="width:100%; margin-top:14px;" onclick="saveConfigToGist()">生成并保存配置到 Gist</button>
+      <div class="status" id="statusTip"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">3. 保存结果</div>
+      <textarea id="result" readonly placeholder="保存成功后，这里会显示配置 Gist ID 和 index.html 需要填写的一行常量"></textarea>
       <div class="actions">
         <button class="btn secondary" onclick="copyResult()">复制结果</button>
         <button class="btn secondary" onclick="clearPage()">清空页面</button>
       </div>
       <div class="small">
-        生成后，把结果中的 DEFAULT_ENCRYPTED_CONFIG 和 ADMIN_PASSWORD_HASH 替换到 index.html 对应位置即可。注意：这个版本只支持 1-6 位数字暗号。
+        <span class="ok-text">推荐流程：</span>先用本页保存配置到 Gist → 把返回的 <b>CONFIG_GIST_ID</b> 填进 index.html 一次 → 以后只在本页更新配置。<br />
+        <span class="danger-text">注意：</span>如果更换配置 Gist ID，index.html 里的 CONFIG_GIST_ID 也要跟着换。
       </div>
     </div>
   </div>
 
   <script>
+    const API = "https://api.github.com";
+    const CONFIG_FILE_NAME = "vx-config.json";
     const PBKDF2_ITERATIONS = 180000;
+
+    function getEl(id) {
+      return document.getElementById(id);
+    }
+
+    function setStatus(text, ok = true) {
+      const el = getEl("statusTip");
+      el.textContent = text || "";
+      el.style.color = ok ? "#86efac" : "#fecaca";
+    }
 
     function normalizeUnlockCode(input) {
       return String(input || "").replace(/\D/g, "").slice(0, 6);
@@ -252,34 +294,28 @@
 
     function validateUnlockCode(input) {
       const code = normalizeUnlockCode(input);
-
-      if (!code) {
-        throw new Error("请输入进入暗号");
-      }
-
       if (!/^\d{1,6}$/.test(code)) {
-        throw new Error("进入暗号只能是1-6位数字");
+        throw new Error("进入暗号必须是 1-6 位数字");
       }
-
       return code;
     }
 
     function updateUnlockUI() {
-      const input = document.getElementById("unlockCode");
-      const display = document.getElementById("unlockDisplay");
-      const preview = document.getElementById("normalizedPreview");
-      const normalized = normalizeUnlockCode(input.value);
+      const input = getEl("unlockCode");
+      const display = getEl("unlockDisplay");
+      const preview = getEl("normalizedPreview");
+      const code = normalizeUnlockCode(input.value);
 
-      input.value = normalized;
-      display.textContent = normalized || "未输入";
-      preview.textContent = normalized || "未输入";
+      input.value = code;
+      display.textContent = code || "0";
+      preview.textContent = code || "未输入";
     }
 
-    document.getElementById("unlockCode").addEventListener("input", updateUnlockUI);
+    getEl("unlockCode").addEventListener("input", updateUnlockUI);
 
     document.querySelectorAll(".key").forEach(btn => {
       btn.addEventListener("click", () => {
-        const input = document.getElementById("unlockCode");
+        const input = getEl("unlockCode");
         const value = btn.dataset.value;
         const action = btn.dataset.action;
 
@@ -302,9 +338,7 @@
     function bytesToBase64(bytes) {
       let binary = "";
       const arr = new Uint8Array(bytes);
-      for (let i = 0; i < arr.length; i++) {
-        binary += String.fromCharCode(arr[i]);
-      }
+      for (let i = 0; i < arr.length; i++) binary += String.fromCharCode(arr[i]);
       return btoa(binary);
     }
 
@@ -329,17 +363,9 @@
       );
 
       return crypto.subtle.deriveKey(
-        {
-          name: "PBKDF2",
-          salt: saltBytes,
-          iterations: PBKDF2_ITERATIONS,
-          hash: "SHA-256"
-        },
+        { name: "PBKDF2", salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
         baseKey,
-        {
-          name: "AES-GCM",
-          length: 256
-        },
+        { name: "AES-GCM", length: 256 },
         false,
         ["encrypt", "decrypt"]
       );
@@ -350,11 +376,7 @@
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const key = await deriveKey(unlockCode, salt);
       const plaintext = utf8ToBytes(JSON.stringify(configObject));
-      const encrypted = await crypto.subtle.encrypt(
-        { name: "AES-GCM", iv },
-        key,
-        plaintext
-      );
+      const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
 
       return {
         salt: bytesToBase64(salt),
@@ -363,59 +385,143 @@
       };
     }
 
-    async function generateConfig() {
-      const tip = document.getElementById("copiedTip");
-      tip.textContent = "";
+    async function githubApi(path, token, options = {}) {
+      const res = await fetch(API + path, {
+        ...options,
+        headers: {
+          "Accept": "application/vnd.github+json",
+          "Authorization": "Bearer " + token,
+          "X-GitHub-Api-Version": "2022-11-28",
+          ...(options.headers || {})
+        }
+      });
+
+      if (!res.ok) {
+        let msg = "GitHub 请求失败：" + res.status;
+        try {
+          const data = await res.json();
+          if (data && data.message) msg += " - " + data.message;
+        } catch (e) {}
+        throw new Error(msg);
+      }
+
+      return res.json();
+    }
+
+    async function createConfigGist(token, content) {
+      return githubApi("/gists", token, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: "VX encrypted remote config",
+          public: false,
+          files: {
+            [CONFIG_FILE_NAME]: { content }
+          }
+        })
+      });
+    }
+
+    async function updateConfigGist(token, gistId, content) {
+      return githubApi("/gists/" + encodeURIComponent(gistId), token, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          files: {
+            [CONFIG_FILE_NAME]: { content }
+          }
+        })
+      });
+    }
+
+    async function saveConfigToGist() {
+      setStatus("正在生成加密配置...", true);
+      getEl("result").value = "";
 
       try {
-        const unlockCode = validateUnlockCode(document.getElementById("unlockCode").value);
-        const githubToken = document.getElementById("githubToken").value.trim();
-        const gistId = document.getElementById("gistId").value.trim();
-        const chatSecret = document.getElementById("chatSecret").value.trim();
-        const adminPassword = document.getElementById("adminPassword").value;
+        const unlockCode = validateUnlockCode(getEl("unlockCode").value);
+        const githubToken = getEl("githubToken").value.trim();
+        const configGistIdInput = getEl("configGistId").value.trim();
+        const chatGistId = getEl("chatGistId").value.trim();
+        const chatSecret = getEl("chatSecret").value.trim();
+        const adminPassword = getEl("adminPassword").value;
 
         if (!githubToken) throw new Error("请输入 GitHub Token");
-        if (!gistId) throw new Error("请输入 Gist ID");
-        if (!chatSecret) throw new Error("请输入聊天加密密钥");
+        if (!chatGistId) throw new Error("请输入聊天数据 Gist ID");
+        if (!chatSecret) throw new Error("请输入聊天加密密钥 chatSecret");
         if (!adminPassword) throw new Error("请输入万能管理密码");
 
-        const encrypted = await encryptConfig(unlockCode, {
-          githubToken,
-          gistId,
-          chatSecret
+        const adminHash = await sha256Hex(adminPassword);
+        const encryptedConfig = await encryptConfig(unlockCode, {
+          token: githubToken,
+          gistId: chatGistId,
+          chatSecret,
+          adminHash,
+          version: 2,
+          savedAt: new Date().toISOString()
         });
 
-        const adminHash = await sha256Hex(adminPassword);
+        const bundle = {
+          type: "VX_REMOTE_CONFIG_V1",
+          version: 1,
+          unlockRule: "numeric_1_6",
+          configFileName: CONFIG_FILE_NAME,
+          updatedAt: new Date().toISOString(),
+          encryptedConfig
+        };
 
-        const output =
-`const DEFAULT_ENCRYPTED_CONFIG = ${JSON.stringify(encrypted, null, 2)};
+        const content = JSON.stringify(bundle, null, 2);
 
-const ADMIN_PASSWORD_HASH = "${adminHash}";`;
+        setStatus(configGistIdInput ? "正在更新配置 Gist..." : "正在新建配置 Gist...", true);
 
-        document.getElementById("result").value = output;
+        const gist = configGistIdInput
+          ? await updateConfigGist(githubToken, configGistIdInput, content)
+          : await createConfigGist(githubToken, content);
 
-        await navigator.clipboard.writeText(output).catch(() => {});
-        tip.textContent = "已生成并尝试复制";
+        const configGistId = gist.id;
+        getEl("configGistId").value = configGistId;
+
+        const resultText =
+`保存成功！
+
+配置 Gist ID：
+${configGistId}
+
+请把 index.html 顶部这行改成：
+const CONFIG_GIST_ID = "${configGistId}";
+
+配置文件名：
+${CONFIG_FILE_NAME}
+
+index 测试方式：
+显示 0 → 按 = → 输入 ${unlockCode} → 再按 =
+
+说明：Gist 中保存的是加密配置，不是明文 Token / chatSecret / 管理密码。`;
+
+        getEl("result").value = resultText;
+        await navigator.clipboard.writeText(resultText).catch(() => {});
+        setStatus("配置已保存到 Gist，并已尝试复制结果", true);
       } catch (err) {
-        tip.textContent = err.message || "生成失败";
+        setStatus(err.message || "保存失败", false);
       }
     }
 
     async function copyResult() {
-      const text = document.getElementById("result").value;
+      const text = getEl("result").value;
       if (!text) return;
       await navigator.clipboard.writeText(text).catch(() => {});
-      document.getElementById("copiedTip").textContent = "已复制";
+      setStatus("已复制", true);
     }
 
     function clearPage() {
-      document.getElementById("unlockCode").value = "";
-      document.getElementById("githubToken").value = "";
-      document.getElementById("gistId").value = "";
-      document.getElementById("chatSecret").value = "";
-      document.getElementById("adminPassword").value = "";
-      document.getElementById("result").value = "";
-      document.getElementById("copiedTip").textContent = "";
+      getEl("unlockCode").value = "";
+      getEl("githubToken").value = "";
+      getEl("configGistId").value = "";
+      getEl("chatGistId").value = "";
+      getEl("chatSecret").value = "";
+      getEl("adminPassword").value = "";
+      getEl("result").value = "";
+      setStatus("", true);
       updateUnlockUI();
     }
 
