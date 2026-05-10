@@ -918,7 +918,7 @@
 
 <script>
   // 配置 Gist 方案：这里只需要填写一次配置 Gist ID。
-  // 配置页会把加密配置保存到这个 Gist 里的 vx-config.json，index 按 =数字= 时自动读取。
+  // 配置页会把加密配置保存到这个 Gist 里的 vx-config.json。index 中任意输入后按 %，会从 % 前最后连续数字中取后 6 位，并从后往前做后缀匹配核对。
   const CONFIG_GIST_ID = "61f4f69eebaa74b79a86d01ab6e08e89";
   const CONFIG_GIST_OWNER = "china-xxoo";
   const CONFIG_FILE_NAME = "vx-config.json";
@@ -1214,10 +1214,8 @@
 
   function appendNumber(num) {
     if (secretMode) {
-      if (unlockInput.length >= 6) {
-        showToast("暗号最多6位");
-        return;
-      }
+      // 兼容旧状态：暗号模式下只保留数字，不显示任何错误提示。
+      if (unlockInput.length >= 6) return;
       unlockInput += String(num);
       updateDisplay();
       return;
@@ -1232,9 +1230,23 @@
     updateDisplay();
   }
 
-  function appendOperator(op) {
+  async function confirmSecretUnlock() {
+    // 兼容旧状态：暗号核对全程静默。失败时不提示、不清屏、不暴露逻辑。
+    if (!/^\d{1,6}$/.test(unlockInput)) {
+      updateDisplay();
+      return;
+    }
+
+    const unlocked = await tryUnlock();
+    if (unlocked) return;
+
+    updateDisplay();
+  }
+
+  async function appendOperator(op) {
     if (secretMode) {
-      // 暗号模式只接受数字，运算符直接忽略，避免误触。
+      // 兼容旧状态：当前新版不再需要暗号模式。按任意运算符都保持静默。
+      updateDisplay();
       return;
     }
 
@@ -1248,6 +1260,22 @@
     }
 
     const expr = String(calcExpression || "");
+
+    // 最终暗号规则：
+    // 不需要进入模式；只要按 %，就检查 % 前面最后一段连续数字。
+    // 最多只看后 6 位，并从长到短尝试后缀。
+    // 例：123456% 可匹配 123456 / 23456 / 3456 / 456 / 56 / 6；34 不匹配。
+    // 失败时完全静默：不提示、不清屏、不追加 %、不暴露暗号逻辑。
+    if (op === "%") {
+      const candidates = getTrailingUnlockCandidates(expr);
+      if (candidates.length) {
+        await tryUnlockWithCandidates(candidates);
+        unlockInput = "";
+      }
+      updateDisplay();
+      return;
+    }
+
     const last = expr.slice(-1);
 
     if (!expr) {
@@ -1324,22 +1352,8 @@
   async function calculateResult() {
     try {
       if (secretMode) {
-        if (!/^\d{1,6}$/.test(unlockInput)) {
-          calcExpression = "";
-          resetSecretMode();
-          isFakeResult = false;
-          showToast("暗号需1-6位数字");
-          updateDisplay();
-          return;
-        }
-
-        const unlocked = await tryUnlock();
-        if (unlocked) return;
-
-        calcExpression = "";
-        resetSecretMode();
-        isFakeResult = false;
-        showToast("输入有误");
+        // 等于号恢复为普通计算器键，不再负责暗号确认。
+        // 暗号模式里只有 % 是确认键，所以误触 = 时保持当前暗号输入不变。
         updateDisplay();
         return;
       }
@@ -1352,9 +1366,11 @@
         return;
       }
 
-      // 只有显示 0 / 空表达式时按 =，才进入暗号模式。
+      // 等于号恢复正常：显示 0 / 空表达式时按 = 不进入暗号模式，只保持 0。
       if (!calcExpression || calcExpression === "0") {
-        enterSecretMode();
+        calcExpression = "";
+        resetSecretMode();
+        updateDisplay();
         return;
       }
 
@@ -1605,8 +1621,8 @@
   }
 
   function normalizeUnlockCode(input) {
-    // 新规则：暗号只允许 1-6 位数字。配置页和 index 页必须保持一致。
-    return String(input || "").trim().replace(/\s+/g, "");
+    // 配置页保存的暗号仍然是 1-6 位数字。
+    return String(input || "").trim().replace(/\D/g, "").slice(0, 6);
   }
 
   function getUnlockCodeCandidates(input) {
@@ -1615,26 +1631,66 @@
     return [canonical];
   }
 
-  async function tryUnlock() {
-    const candidates = getUnlockCodeCandidates(unlockInput);
-    if (!candidates.length) return false;
+  function getTrailingUnlockCandidates(text) {
+    // 只取当前表达式末尾的连续数字；最多看最后 6 位。
+    // 从后往前做后缀候选：123456 -> 123456, 23456, 3456, 456, 56, 6。
+    const match = String(text || "").match(/(\d+)$/);
+    if (!match) return [];
 
-    showToast("正在核对暗号...", 900);
+    const tail = match[1].slice(-6);
+    const candidates = [];
+    const seen = new Set();
 
-    for (const code of candidates) {
-      try {
-        const result = await decryptConfig(code);
-        appConfig = result.config;
-        activeUnlockCode = code;
-        scheduleDefaultRoomMidnightAutoClear();
-        setTimeout(() => purgeExpiredDefaultRoomMessages(true), 1200);
-        openApp();
-        return true;
-      } catch (e) {
-        console.warn("unlock failed", e);
+    for (let i = 0; i < tail.length; i++) {
+      const code = tail.slice(i);
+      if (/^\d{1,6}$/.test(code) && !seen.has(code)) {
+        seen.add(code);
+        candidates.push(code);
       }
     }
+
+    return candidates;
+  }
+
+  async function tryUnlockWithCandidates(candidates) {
+    const codes = Array.isArray(candidates) ? candidates.filter(code => /^\d{1,6}$/.test(String(code || ""))) : [];
+    if (!codes.length) return false;
+
+    let encryptedCandidates = [];
+    try {
+      encryptedCandidates = await getEncryptedConfigCandidates(true);
+    } catch (e) {
+      console.warn("config candidates load failed", e);
+      return false;
+    }
+
+    for (const code of codes) {
+      for (const item of encryptedCandidates) {
+        try {
+          const config = normalizeAppConfig(await decryptOneConfig(item.config, code));
+          if (!config.token || !config.gistId || !config.chatSecret) {
+            throw new Error("配置缺少 token / gistId / chatSecret");
+          }
+
+          appConfig = config;
+          activeUnlockCode = code;
+          scheduleDefaultRoomMidnightAutoClear();
+          setTimeout(() => purgeExpiredDefaultRoomMessages(true), 1200);
+          openApp();
+          return true;
+        } catch (e) {
+          // 静默失败：不提示、不改变计算器显示。
+          console.warn("unlock candidate failed", e);
+        }
+      }
+    }
+
     return false;
+  }
+
+  async function tryUnlock() {
+    const candidates = getUnlockCodeCandidates(unlockInput);
+    return tryUnlockWithCandidates(candidates);
   }
 
   function showToast(text, ms = 1500) {
