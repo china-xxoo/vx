@@ -1,0 +1,13 @@
+{
+  "type": "VX_REMOTE_CONFIG_V1",
+  "version": 2,
+  "unlockRule": "percent_tail_suffix_numeric_1_6",
+  "storage": "github_repo_contents",
+  "configFileName": "vx-config.json",
+  "updatedAt": "2026-05-10T06:23:19.785Z",
+  "encryptedConfig": {
+    "salt": "fbWlRTngqS5dtujMrWEtNw==",
+    "iv": "E4iuHxBBUCMaNmYG",
+    "data": "eV2ZQRomkGnf3YNcPxkNn7YVemeWadnyMNPr9w2Ww4hbMiBB7gHpVcXMJns+e5x8DEk7e+CtOgD98SSCLQTmVvGKG5yV9YxuWtdUHmfTk34sT9PzYuyFDzDcu1ygbroMopSLDaBVacKVw4asWmWETvJhDSssMuNtGETDev1FyYrWkHiu7ZIlZnOdXqVdEgsZO5IGMP1pLNtM++Cv6kGDfyRosCK+e1F/2llwSPYcs4uAIT8DPlE2aNPbVEtu488vxunDX3aRD59XoUV/BNCmOuhLi0moZzCYBxSetugYRTCJTkdi8qrTSxw93v5Y62lb2s6kHCe/PCZ9xXHg3xeRCD7mh8zzIf37v1Qe604FzycJ+Jmo+tETfjvO7rpsA8+MuvUIbntV90bCHZBzasH9VOBkwoMtYvOn/w=="
+  }
+}
