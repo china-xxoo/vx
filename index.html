@@ -1,1 +1,266 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8" /><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" /><meta http-equiv="Pragma" content="no-cache" /><meta http-equiv="Expires" content="0" /><script>window.VX_APP_VERSION="20260510-v5-3-cache-fix";window.VX_ASSET_VERSION="20260510-v5-3-cache-fix";</script><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=overlays-content" /><title>Calculator</title><link rel="manifest" href="/vx/manifest.webmanifest?v=20260510-v5-3-cache-fix" /><link rel="icon" type="image/png" sizes="192x192" href="/vx/vx-logo-192.png?v=20260510-v5-3-cache-fix" /><link rel="icon" type="image/png" sizes="512x512" href="/vx/vx-logo-512.png?v=20260510-v5-3-cache-fix" /><link rel="shortcut icon" type="image/png" href="/vx/vx-logo-192.png?v=20260510-v5-3-cache-fix" /><link rel="apple-touch-icon" href="/vx/vx-logo-180.png?v=20260510-v5-3-cache-fix" /><link rel="apple-touch-icon" sizes="180x180" href="/vx/vx-logo-180.png?v=20260510-v5-3-cache-fix" /><link rel="apple-touch-icon-precomposed" href="/vx/vx-logo-180.png?v=20260510-v5-3-cache-fix" /><meta name="theme-color" content="#020617" /><meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /><meta name="apple-mobile-web-app-title" content="Calculator" /><meta name="application-name" content="Calculator" /><meta name="format-detection" content="telephone=no" /><link rel="stylesheet" href="/vx/vx-style.css?v=20260510-v5-3-cache-fix" /></head><body><div class="calculator" id="calculator"><div class="display" id="display">0</div><div class="grid"><button class="btn function" onclick="clearCalc()">C</button><button class="btn function" onclick="backspaceCalc()">⌫</button><button class="btn function" onclick="appendOperator('%')">%</button><button class="btn operator" onclick="appendOperator('/')">÷</button><button class="btn" onclick="appendNumber('1')">1</button><button class="btn" onclick="appendNumber('2')">2</button><button class="btn" onclick="appendNumber('3')">3</button><button class="btn operator" onclick="appendOperator('*')">×</button><button class="btn" onclick="appendNumber('4')">4</button><button class="btn" onclick="appendNumber('5')">5</button><button class="btn" onclick="appendNumber('6')">6</button><button class="btn operator" onclick="appendOperator('-')">−</button><button class="btn" onclick="appendNumber('7')">7</button><button class="btn" onclick="appendNumber('8')">8</button><button class="btn" onclick="appendNumber('9')">9</button><button class="btn operator" onclick="appendOperator('+')">+</button><button class="btn zero" onclick="appendNumber('0')">0</button><button class="btn" onclick="appendDot()">.</button><button class="btn operator" onclick="calculateResult()">=</button></div></div><div class="chat-app" id="chatApp"><div class="app-header"><div class="header-left"><button class="room-back-btn" id="announcementBtn" onclick="switchMainTab('announcement')" style="display:none;">公告</button><button class="room-back-btn" id="roomBackBtn" onclick="backToLobby()" style="display:none;">返回</button><button class="room-title-btn" id="roomTitleBtn" onclick="backToLobby()" style="display:none;"></button></div><button class="data-status" id="dataStatus" type="button" onclick="showDataStatusMini()"><span class="status-dot"></span><span id="dataStatusText">数据</span></button><div class="header-right" id="lobbyActions"></div><div class="header-right" id="roomActions" style="display:none;"><button class="header-btn room-context-btn" id="roomContextBtn" onclick="openCurrentChatInfo()">--</button></div></div><div class="app-body"><div class="screen with-bottom-nav" id="lobbyScreen"><div class="nickname-line" id="nicknameLine"></div><div class="lobby-search-wrap"><input class="lobby-search-input" id="roomSearchInput" placeholder="搜索好友或6位房间号" autocomplete="off" maxlength="64" /><button class="lobby-search-btn" onclick="handleLobbySearch()">搜索</button></div><div class="room-list" id="roomList"></div></div><div class="screen with-bottom-nav" id="friendsScreen"><div class="section-label">好友申请</div><div id="friendRequestList"></div><div class="section-label">我的好友</div><div id="friendList"></div></div><div class="screen with-bottom-nav" id="announcementScreen"><div class="announcement-card"><div class="announcement-title" id="announcementPageTitle">公告</div><div class="announcement-content" id="announcementPageContent">暂无公告，谢谢使用。</div></div></div><div class="screen with-bottom-nav" id="mineScreen"><div id="mineContent"></div></div><div class="admin-screen" id="adminScreen"><div class="admin-card"><div class="admin-title">系统状态</div><div class="admin-small" id="adminOnlineStats">今日在线人数：0 · 当前在线：0</div><div class="admin-small" id="adminVersionInfo">当前版本：-- · 配置更新时间：--</div><div class="admin-small">在线统计只在管理后台显示；普通房间只显示当前房间在线人数，且不统计管理员。</div></div><div class="admin-card"><div class="admin-title">公告管理</div><input class="input" id="announcementTitleInput" placeholder="公告标题，例如：系统公告" /><textarea class="notice-textarea" id="announcementContentInput" placeholder="公告内容"></textarea><label class="switch-line"><input type="checkbox" id="announcementEnabledInput" checked /> 开启公告</label><button class="confirm-btn mini-btn" onclick="saveAnnouncementFromAdmin()">保存公告</button><div class="admin-small" id="announcementAdminTip">公告会显示在大厅左上角公告按钮中。</div></div><div class="admin-card"><div class="admin-title">所有房间</div><div class="admin-small">管理员可免密进入、清空聊天记录或删除房间。</div><div id="adminRoomList" style="margin-top:12px;"></div></div><div class="admin-card"><div class="admin-title">用户</div><div class="admin-small">显示所有已注册并同步过资料的用户；点击用户可查看该用户的所有聊天窗口。</div><div id="adminUserList" style="margin-top:12px;"></div><div id="adminUserDetail" style="margin-top:12px;"></div></div><div class="admin-card"><div class="admin-small" id="adminVersionFooter">当前版本：-- · 配置更新时间：--</div></div></div><div class="chat-shell" id="chatShell"><div class="room-subbar"><span id="roomInfoText" style="display:none;"></span><span class="history-tip" id="historyTip"></span></div><div class="chat-box" id="chatBox"></div><div class="typing-tip" id="typingTip"></div></div></div><div class="bottom-nav" id="bottomNav"><button class="nav-btn active" id="navLobby" onclick="switchMainTab('lobby')">大厅</button><button class="nav-btn" id="navFriends" onclick="switchMainTab('friends')">好友</button><button class="nav-btn" id="navAnnouncement" onclick="switchMainTab('announcement')">公告</button><button class="nav-btn" id="navMine" onclick="switchMainTab('mine')">我的</button></div><div class="send-area" id="sendArea"><input id="messageInput" placeholder="输入消息..." autocomplete="off" /><button onclick="sendMessage()">发送</button></div><div class="emergency-bar" id="emergencyBar"><button class="emergency-close-btn" onclick="emergencyClose()"><span class="emergency-main">有内鬼</span><span class="emergency-sub">紧急关闭</span></button></div></div><div class="toast" id="toast"></div><div class="modal-mask" id="settingsModal"><div class="modal"><h3>设置</h3><div class="admin-small" id="currentAccountTip">当前账号：</div><input class="input" id="localUnlockCodeInput" inputmode="numeric" maxlength="6" placeholder="本机进入暗语，1-6位数字" /><div class="admin-small">本机暗语只保存在当前设备，用于本机快速进入。修改后不会影响系统默认暗语，系统默认暗语仍然有效。</div><div class="modal-actions"><button class="cancel-btn" onclick="closeSettingsModal()">取消</button><button class="confirm-btn" onclick="saveLocalUnlockCode()">保存</button></div></div></div><div class="modal-mask" id="createRoomModal"><div class="modal"><h3>新建房间</h3><div class="admin-small">房间号由系统自动生成，6位数字与字母混合，房间名不可修改。</div><input class="input" id="newRoomPassword" placeholder="房间密码，至少4位" type="password" /><div class="modal-actions"><button class="cancel-btn" onclick="closeCreateRoomModal()">取消</button><button class="confirm-btn" onclick="createRoom()">创建</button></div></div></div><div class="modal-mask" id="joinModal"><div class="modal"><h3>进入房间</h3><input class="input" id="joinRoomPassword" placeholder="房间密码或管理密码" type="password" /><div class="modal-actions"><button class="cancel-btn" onclick="closeJoinModal()">取消</button><button class="confirm-btn" onclick="confirmJoinRoom()">进入</button></div></div></div><div class="modal-mask" id="adminModal"><div class="modal"><h3>房间管理</h3><input class="input" id="adminPassword" placeholder="管理密码" type="password" /><div class="modal-actions vertical"><button class="confirm-btn" onclick="clearCurrentRoomMessagesWithAdmin()">清空当前房间聊天</button><button class="danger-btn" onclick="deleteCurrentRoomWithAdmin()">删除当前房间</button><button class="cancel-btn" onclick="closeAdminModal()">取消</button></div></div></div><div class="modal-mask" id="announcementModal"><div class="modal"><h3 id="announcementModalTitle">公告</h3><div class="modal-text" id="announcementModalContent">暂无公告，谢谢使用。</div><div class="modal-actions"><button class="confirm-btn" onclick="closeAnnouncementModal()">知道了</button></div></div></div><div class="modal-mask" id="addFriendModal"><div class="modal"><h3>添加好友</h3><input class="input" id="addFriendNumberInput" inputmode="numeric" maxlength="7" placeholder="输入对方7位编号" /><div class="admin-small" id="addFriendTip">发送申请后，需要对方在好友页同意。</div><div class="modal-actions"><button class="cancel-btn" onclick="closeAddFriendModal()">取消</button><button class="confirm-btn" onclick="sendFriendRequestFromModal()">发送申请</button></div></div></div><div class="modal-mask" id="chatInfoModal"><div class="modal"><h3 id="chatInfoTitle">聊天信息</h3><div class="admin-small" id="chatInfoContent"></div><input class="input" id="roomNameEditInput" maxlength="24" placeholder="群名称" style="display:none; margin-top:10px;" /><div class="modal-actions" id="chatInfoActions"><button class="cancel-btn" onclick="closeChatInfoModal()">关闭</button><button class="confirm-btn" id="saveRoomNameBtn" onclick="saveCurrentRoomName()" style="display:none;">保存群名称</button></div></div></div><div class="modal-mask" id="editNicknameModal"><div class="modal"><h3>修改昵称</h3><input class="input" id="nicknameEditInput" maxlength="12" placeholder="输入昵称，可留空" /><div class="modal-actions"><button class="cancel-btn" onclick="closeEditNicknameModal()">取消</button><button class="confirm-btn" onclick="saveNicknameEdit()">保存</button></div></div></div><div class="modal-mask" id="editSafeCodeModal"><div class="modal"><h3>修改安全码</h3><input class="input" id="oldSafeCodeInput" inputmode="numeric" maxlength="6" placeholder="当前安全码" /><input class="input" id="newSafeCodeInput" inputmode="numeric" maxlength="6" placeholder="新安全码，1-6位数字" /><input class="input" id="newSafeCodeConfirmInput" inputmode="numeric" maxlength="6" placeholder="确认新安全码" /><div class="modal-actions"><button class="cancel-btn" onclick="closeEditSafeCodeModal()">取消</button><button class="confirm-btn" onclick="saveSafeCodeEdit()">保存</button></div></div></div><div class="modal-mask" id="accountModal"><div class="modal"><h3>创建账号 / 找回账号</h3><div class="admin-small">请选择自动分配账号，或用绑定邮箱和安全码找回账号。完成后可添加好友、新建房间和恢复聊天记录。</div><div class="account-choice"><button class="confirm-btn" onclick="showAutoAccountPane()">自动分配账号</button><button class="cancel-btn" onclick="showRecoverAccountPane()">找回账号</button></div><div class="account-pane" id="autoAccountPane"><input class="input" id="autoEmailInput" type="email" placeholder="找回邮箱" /><input class="input" id="autoSafeCodeInput" inputmode="numeric" maxlength="6" placeholder="安全码，1-6位数字" /><div class="admin-small">安全码建议使用你容易记住的常用数字，最多6位。找回时需要邮箱和安全码同时正确。</div><button class="confirm-btn" style="width:100%; margin-top:8px;" onclick="createAutoAccount()">生成并进入</button></div><div class="account-pane" id="recoverAccountPane"><input class="input" id="recoverEmailInput" type="email" placeholder="绑定邮箱" /><input class="input" id="recoverSafeCodeInput" inputmode="numeric" maxlength="6" placeholder="安全码，1-6位数字" /><button class="confirm-btn" style="width:100%; margin-top:8px;" onclick="recoverAccount()">找回账号</button></div></div></div><script src="/vx/vx-app.js?v=20260510-v5-3-cache-fix"></script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="theme-color" content="#020617" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Calculator" />
+  <meta name="application-name" content="Calculator" />
+  <link rel="manifest" href="/vx/manifest.webmanifest?v=simple-single-v1" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/vx/vx-logo-512.png?v=simple-single-v1" />
+  <link rel="apple-touch-icon" href="/vx/vx-logo-180.png?v=simple-single-v1" />
+  <title>Calculator</title>
+  <style>
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020617;color:#eaf7ff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+    body{position:fixed;inset:0}
+    button,input,textarea{font:inherit}
+    button{border:0;cursor:pointer}
+    #calc,#app{position:fixed;inset:0}
+
+    .calc{display:flex;flex-direction:column;justify-content:flex-end;padding:calc(18px + env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom));background:radial-gradient(circle at 50% -10%,rgba(56,189,248,.16),transparent 38%),radial-gradient(circle at 15% 28%,rgba(139,92,246,.13),transparent 34%),radial-gradient(circle at bottom,rgba(15,23,42,.96),#020617 72%)}
+    #disp{flex:1;display:flex;align-items:flex-end;justify-content:flex-end;font-size:58px;font-weight:300;padding:20px 8px 28px;word-break:break-all;text-align:right;color:#fff;text-shadow:0 2px 18px rgba(56,189,248,.22)}
+    .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .k{height:72px;border-radius:23px;background:linear-gradient(180deg,rgba(55,65,81,.94),rgba(15,23,42,.96));color:white;font-size:28px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 24px rgba(0,0,0,.26)}
+    .k:active{transform:scale(.96);opacity:.88}
+    .fn{background:linear-gradient(180deg,#cbd5e1,#94a3b8);color:#111827}
+    .op{background:linear-gradient(180deg,#f59e0b,#ea580c)}
+    .zero{grid-column:span 2}
+
+    #app{display:none;background:linear-gradient(rgba(56,189,248,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.035) 1px,transparent 1px),radial-gradient(circle at 12% 8%,rgba(59,130,246,.22),transparent 30%),radial-gradient(circle at 88% 18%,rgba(139,92,246,.20),transparent 32%),#020617;background-size:34px 34px,34px 34px,auto,auto,auto}
+    .top{position:fixed;z-index:8;left:0;right:0;top:0;height:calc(58px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 10px 0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;background:rgba(2,6,23,.82);border-bottom:1px solid rgba(56,189,248,.22);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+    .left,.right{display:flex;align-items:center;gap:8px;min-width:0}.right{justify-content:flex-end}
+    .btn{border-radius:999px;background:rgba(15,23,42,.76);color:#dff7ff;border:1px solid rgba(56,189,248,.28);padding:9px 12px;font-weight:900;white-space:nowrap}
+    .btn:active{transform:scale(.97);opacity:.86}
+    .primary{background:linear-gradient(135deg,#2563eb,#06b6d4);color:white;border-color:rgba(125,211,252,.35)}
+    .danger{background:rgba(127,29,29,.72);color:#fecaca;border-color:rgba(239,68,68,.45)}
+    .data{min-width:150px;border-radius:999px;padding:8px 10px;background:rgba(15,23,42,.78);border:1px solid rgba(34,197,94,.45);color:#dcfce7;font-size:12px;font-weight:900;white-space:nowrap;text-align:center;box-shadow:inset 0 0 18px rgba(34,197,94,.08)}
+    .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#22c55e;box-shadow:0 0 10px #22c55e}
+    .bad{border-color:rgba(239,68,68,.45);color:#fecaca}.bad .dot{background:#ef4444;box-shadow:0 0 10px #ef4444}
+
+    .main{position:fixed;left:0;right:0;top:calc(58px + env(safe-area-inset-top));bottom:calc(58px + env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px}
+    .nav{position:fixed;z-index:8;left:0;right:0;bottom:0;height:calc(58px + env(safe-area-inset-bottom));padding:6px 10px env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:rgba(2,6,23,.92);border-top:1px solid rgba(56,189,248,.20);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+    .nav button{border-radius:16px;background:#0f172a;color:#94a3b8;font-weight:950}
+    .nav button.on{color:white;background:#1d4ed8}
+
+    .search{display:flex;gap:8px;margin-bottom:12px}
+    .search input,.inp,textarea,#msg{width:100%;border:1px solid rgba(56,189,248,.28);border-radius:15px;background:rgba(15,23,42,.78);color:white;padding:13px 14px;outline:0;font-size:16px}
+    textarea{min-height:130px;resize:vertical;line-height:1.5}
+    .card{border:1px solid rgba(56,189,248,.18);background:linear-gradient(135deg,rgba(15,23,42,.88),rgba(2,6,23,.74));border-radius:18px;padding:14px;margin:10px 0;box-shadow:0 14px 30px rgba(0,0,0,.20),inset 0 0 22px rgba(56,189,248,.035)}
+    .card.click{cursor:pointer}.card.click:active{transform:scale(.99)}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .title{font-weight:950;font-size:17px;color:#f8fbff}
+    .muted{color:#94a3b8;font-size:12px;line-height:1.55;margin-top:5px;word-break:break-all}
+    .empty{text-align:center;color:#94a3b8;padding:50px 10px;border:1px dashed rgba(56,189,248,.22);border-radius:18px;background:rgba(15,23,42,.32)}
+    .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .actions button{flex:1;min-width:120px}
+
+    #send{position:fixed;left:0;right:0;bottom:0;z-index:9;display:none;gap:8px;padding:9px 10px calc(9px + env(safe-area-inset-bottom));background:rgba(2,6,23,.92);border-top:1px solid rgba(56,189,248,.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+    #send input{flex:1;border-radius:999px}
+    #chat{padding-bottom:78px}
+    .msg{margin:10px 0;display:flex;flex-direction:column;max-width:100%}
+    .me{align-items:flex-end}.other{align-items:flex-start}
+    .meta{font-size:11px;color:#94a3b8;margin:0 6px 4px}
+    .bubble{max-width:78%;padding:11px 13px;border-radius:17px;background:#111827;border:1px solid #334155;word-break:break-word;line-height:1.45;box-shadow:0 10px 20px rgba(0,0,0,.16)}
+    .me .bubble{background:linear-gradient(135deg,#2563eb,#06b6d4);border-top-right-radius:5px;color:white}
+    .other .bubble{border-top-left-radius:5px;color:#e5f4ff}
+
+    .modal{position:fixed;z-index:20;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.52);padding:18px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+    .box{width:min(92vw,380px);border:1px solid rgba(56,189,248,.28);border-radius:22px;background:#020617;padding:17px;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+    .box h3{margin:0 0 12px;font-size:18px}
+    .ghost{position:fixed;right:12px;top:50%;z-index:10;width:86px;height:86px;border-radius:50%;opacity:.10;background:rgba(239,68,68,.10);color:white;border:1px solid rgba(255,255,255,.18);font-weight:950;line-height:1.2}
+    body.kb .nav{display:none}body.kb .main{bottom:0}.hide{display:none!important}
+  </style>
+</head>
+<body>
+<div id="calc" class="calc">
+  <div id="disp">0</div>
+  <div class="keys">
+    <button class="k fn" onclick="clr()">C</button><button class="k fn" onclick="bs()">⌫</button><button class="k fn" onclick="op('%')">%</button><button class="k op" onclick="op('/')">÷</button>
+    <button class="k" onclick="num('1')">1</button><button class="k" onclick="num('2')">2</button><button class="k" onclick="num('3')">3</button><button class="k op" onclick="op('*')">×</button>
+    <button class="k" onclick="num('4')">4</button><button class="k" onclick="num('5')">5</button><button class="k" onclick="num('6')">6</button><button class="k op" onclick="op('-')">−</button>
+    <button class="k" onclick="num('7')">7</button><button class="k" onclick="num('8')">8</button><button class="k" onclick="num('9')">9</button><button class="k op" onclick="op('+')">+</button>
+    <button class="k zero" onclick="num('0')">0</button><button class="k" onclick="dot()">.</button><button class="k op" onclick="eq()">=</button>
+  </div>
+</div>
+
+<div id="app">
+  <header class="top">
+    <div class="left"><button id="backBtn" class="btn hide" onclick="back()">返回</button></div>
+    <button id="dataBtn" class="data"><span class="dot"></span>数据 00:00:00</button>
+    <div class="right"><button id="newBtn" class="btn primary" onclick="newRoom()">新建房间</button><span id="roomTag" class="btn hide"></span></div>
+  </header>
+  <main id="main" class="main"></main>
+  <nav id="nav" class="nav">
+    <button onclick="tab('hall')" id="nHall" class="on">大厅</button>
+    <button onclick="tab('ann')" id="nAnn">公告</button>
+    <button onclick="tab('me')" id="nMe">我的</button>
+  </nav>
+  <form id="send" onsubmit="sendMsg();return false">
+    <input id="msg" autocomplete="off" placeholder="输入消息..." />
+    <button class="btn primary">发送</button>
+  </form>
+  <button class="ghost" onclick="location.reload()">有内鬼<br>紧急关闭</button>
+</div>
+
+<div id="modal" class="modal"><div class="box" id="mbox"></div></div>
+
+<script>
+/***********************
+ * 配置区：只改这里
+ ***********************/
+const CONFIG = {
+  TOKEN: "PASTE_GITHUB_TOKEN_HERE",
+  GIST_ID: "PASTE_CHAT_GIST_ID_HERE",
+  UNLOCK_CODE: "5555",
+  ADMIN_PASSWORD: "admin123",
+  ROOM_CHARS: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+};
+/***********************
+ * 配置区结束
+ ***********************/
+
+const VER="2026.05.11-simple-single-v1";
+const API="https://api.github.com";
+const ROOM_PREFIX="VX_ROOM_V1:";
+const MSG_PREFIX="VX_MSG_V1:";
+const ANN_PREFIX="VX_ANN_V1:";
+
+let calcExp="",unlocked=false,admin=false,currentTab="hall",currentRoom=null,rooms=[],comments=[],announcement=null;
+let deviceId=localStorage.getItem("vx_simple_device_id") || ("U"+Math.random().toString(36).slice(2,10));
+localStorage.setItem("vx_simple_device_id",deviceId);
+
+const $=id=>document.getElementById(id);
+const now=()=>Date.now();
+const json=o=>JSON.stringify(o);
+const fmt=t=>t?new Date(t).toLocaleString():"";
+const safe=s=>String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+
+function updateDisplay(){ $("disp").textContent=(calcExp||"0").replaceAll("*","×").replaceAll("/","÷").slice(-18); }
+function num(x){ if(calcExp==="0"||calcExp==="Error")calcExp=""; calcExp+=x; updateDisplay(); }
+function op(x){
+  if(x==="%"){ tryUnlock(); return; }
+  if(calcExp==="Error")calcExp="";
+  if(!calcExp && x!=="-")return;
+  if("+-*/%".includes(calcExp.slice(-1)))calcExp=calcExp.slice(0,-1);
+  calcExp+=x; updateDisplay();
+}
+function dot(){ let p=calcExp.split(/[+\-*/%]/).pop(); if(!p.includes(".")){calcExp+=p?".":"0.";updateDisplay();} }
+function clr(){ calcExp=""; updateDisplay(); }
+function bs(){ calcExp=calcExp.slice(0,-1); updateDisplay(); }
+function eq(){
+  try{
+    if(!calcExp)return updateDisplay();
+    if(!/^[0-9+\-*/%. ]+$/.test(calcExp)||"+-*/%.".includes(calcExp.slice(-1)))throw 0;
+    let r=Function('"use strict";return('+calcExp+')')();
+    calcExp=Number.isFinite(r)?String(Number(r.toFixed(8))):"Error";
+  }catch(e){calcExp="Error";}
+  updateDisplay();
+}
+function tails(s){
+  let m=String(s||"").match(/(\d+)$/);
+  if(!m)return[];
+  let t=m[1].slice(-6), arr=[];
+  for(let i=0;i<t.length;i++)arr.push(t.slice(i));
+  return arr;
+}
+function tryUnlock(){
+  if(tails(calcExp).includes(String(CONFIG.UNLOCK_CODE))){
+    $("calc").style.display="none";
+    $("app").style.display="block";
+    unlocked=true;
+    startApp();
+  }
+}
+
+function headers(extra={}){return{"Accept":"application/vnd.github+json","Authorization":"Bearer "+CONFIG.TOKEN,"X-GitHub-Api-Version":"2022-11-28",...extra};}
+async function api(path,opt={}){
+  const res=await fetch(API+path,{...opt,headers:headers(opt.headers||{})});
+  if(!res.ok){let msg="请求失败："+res.status;try{let d=await res.json();if(d.message)msg+=" - "+d.message;}catch(e){}throw Error(msg);}
+  return res.status===204?null:res.json();
+}
+async function loadComments(){
+  comments=[];let page=1;
+  while(true){
+    const arr=await api(`/gists/${encodeURIComponent(CONFIG.GIST_ID)}/comments?per_page=100&page=${page++}&t=${Date.now()}`,{cache:"no-store"});
+    comments.push(...arr); if(arr.length<100)break;
+  }
+  return comments;
+}
+async function postComment(body){return api(`/gists/${encodeURIComponent(CONFIG.GIST_ID)}/comments`,{method:"POST",headers:{"Content-Type":"application/json"},body:json({body})});}
+async function deleteComment(id){return api(`/gists/${encodeURIComponent(CONFIG.GIST_ID)}/comments/${id}`,{method:"DELETE"});}
+function parseData(){
+  rooms=[];announcement=null;
+  for(const c of comments){const b=c.body||"";try{
+    if(b.startsWith(ROOM_PREFIX)){const r=JSON.parse(b.slice(ROOM_PREFIX.length));r.commentId=c.id;rooms.push(r)}
+    else if(b.startsWith(ANN_PREFIX)){const a=JSON.parse(b.slice(ANN_PREFIX.length));a.commentId=c.id;if(!announcement||Number(a.time||0)>Number(announcement.time||0))announcement=a}
+  }catch(e){}}
+  rooms.sort((a,b)=>Number(b.updatedAt||b.createdAt||0)-Number(a.updatedAt||a.createdAt||0));
+}
+async function refresh(){
+  try{
+    $("dataBtn").classList.remove("bad");
+    await loadComments(); parseData();
+    if(currentRoom)renderChat(); else if(currentTab==="hall")renderHall(); else if(currentTab==="ann")renderAnnouncement(); else if(currentTab==="me")renderMe();
+  }catch(e){$("dataBtn").classList.add("bad");}
+}
+
+function startApp(){tick();setInterval(tick,1000);refresh();setInterval(()=>unlocked&&refresh(),7000);tab("hall");window.addEventListener("focusin",()=>document.body.classList.add("kb"));window.addEventListener("focusout",()=>setTimeout(()=>document.body.classList.remove("kb"),200));}
+function tick(){const t=new Date().toTimeString().slice(0,8);$("dataBtn").innerHTML=`<span class="dot"></span>数据 ${t}${currentRoom?" 在线1":""}`;}
+function setMain(html){$("main").innerHTML=html;}
+function setActiveNav(){$("nHall").classList.toggle("on",currentTab==="hall");$("nAnn").classList.toggle("on",currentTab==="ann");$("nMe").classList.toggle("on",currentTab==="me");}
+function tab(name){currentTab=name;currentRoom=null;$("send").style.display="none";$("backBtn").classList.add("hide");$("roomTag").classList.add("hide");$("newBtn").classList.toggle("hide",name!=="hall");setActiveNav();if(name==="hall")renderHall();if(name==="ann")renderAnnouncement();if(name==="me")renderMe();}
+function visibleRooms(){try{return JSON.parse(localStorage.getItem("vx_visible_rooms")||"[]")}catch(e){return[]}}
+function saveVisibleRooms(arr){localStorage.setItem("vx_visible_rooms",json([...new Set(arr)]));}
+function addVisibleRoom(no){const arr=visibleRooms();if(!arr.includes(no)){arr.push(no);saveVisibleRooms(arr)}}
+function roomName(r){return r.name||r.no}
+function renderHall(){
+  const visible=new Set(visibleRooms());
+  const list=rooms.filter(r=>visible.has(r.no));
+  setMain(`<div class="search"><input id="searchInput" placeholder="请输入房间号" autocomplete="off" /><button class="btn primary" onclick="searchRoom()">搜索</button></div>${list.length?list.map(r=>roomCard(r,false)).join(""):`<div class="empty">暂无房间</div>`}`);
+}
+function roomCard(r,isAdmin){
+  return `<div class="card click" onclick="enterRoom('${safe(r.no)}',${isAdmin})"><div class="row"><div><div class="title">${safe(r.no)}</div><div class="muted">${safe(roomName(r))} · ${fmt(r.createdAt)}</div></div></div>${isAdmin?`<div class="actions" onclick="event.stopPropagation()"><button class="btn danger" onclick="clearRoom('${safe(r.no)}')">清空聊天记录</button><button class="btn danger" onclick="deleteRoom('${safe(r.no)}')">删除房间</button></div>`:""}</div>`;
+}
+async function searchRoom(){
+  const q=($("searchInput").value||"").trim(); if(!q)return;
+  if(q===CONFIG.ADMIN_PASSWORD){admin=true;toast("管理员模式已开启");tab("me");return;}
+  const r=rooms.find(x=>String(x.no).toUpperCase()===q.toUpperCase());
+  if(!r){toast("未找到房间");return;}
+  const pw=prompt("请输入房间密码");
+  if(pw!==r.password){toast("未找到房间");return;}
+  addVisibleRoom(r.no);enterRoom(r.no,false);
+}
+function genRoomNo(){let s="";for(let i=0;i<6;i++)s+=CONFIG.ROOM_CHARS[Math.floor(Math.random()*CONFIG.ROOM_CHARS.length)];return s}
+async function newRoom(){
+  const password=prompt("请设置房间密码"); if(!password)return;
+  let no;do{no=genRoomNo()}while(rooms.some(r=>r.no===no));
+  const room={no,password,name:no,createdAt:Date.now(),updatedAt:Date.now(),owner:deviceId};
+  await postComment(ROOM_PREFIX+json(room));addVisibleRoom(no);await refresh();enterRoom(no,false);
+}
+function renderAnnouncement(){
+  if(admin){setMain(`<div class="card"><div class="title">公告管理</div><div class="muted">管理员发布后，普通用户刷新或在线轮询后会及时看到。</div><input class="inp" id="annTitle" placeholder="公告标题" value="${safe(announcement?.title||"系统公告")}" style="margin-top:12px" /><textarea id="annContent" placeholder="公告内容">${safe(announcement?.content||"")}</textarea><div class="actions"><button class="btn primary" onclick="saveAnnouncement()">发布公告</button><button class="btn danger" onclick="clearAnnouncement()">清空公告</button></div></div>`)}
+  else{setMain(`<div class="card"><div class="title">${safe(announcement?.title||"公告")}</div><div style="line-height:1.7;margin-top:12px">${announcement?.content?safe(announcement.content).replace(/\n/g,"<br>"):"暂无公告，谢谢使用。"}</div><div class="muted">${announcement?.time?fmt(announcement.time):""}</div></div>`)}
+}
+async function saveAnnouncement(){for(const c of comments)if((c.body||"").startsWith(ANN_PREFIX))await deleteComment(c.id);await postComment(ANN_PREFIX+json({title:($("annTitle").value||"系统公告").trim(),content:($("annContent").value||"").trim(),time:Date.now()}));await refresh();toast("公告已发布")}
+async function clearAnnouncement(){if(!confirm("确认清空公告？"))return;for(const c of comments)if((c.body||"").startsWith(ANN_PREFIX))await deleteComment(c.id);await refresh()}
+function renderMe(){
+  if(!admin){setMain(`<div class="empty">谢谢使用！</div>`);return;}
+  setMain(`<div class="card"><div class="title">管理后台</div><div class="muted">当前版本：${VER}</div><div class="muted">所有房间：${rooms.length}</div><div class="muted">点击房间卡片可直接免密进入。</div></div>${rooms.length?rooms.map(r=>roomCard(r,true)).join(""):`<div class="empty">暂无房间</div>`}`);
+}
+function getMessages(no){const arr=[];const prefix=MSG_PREFIX+no+":";for(const c of comments){const b=c.body||"";if(!b.startsWith(prefix))continue;try{const m=JSON.parse(b.slice(prefix.length));m.commentId=c.id;arr.push(m)}catch(e){}}arr.sort((a,b)=>Number(a.time||0)-Number(b.time||0));return arr}
+function enterRoom(no,isAdmin){const r=rooms.find(x=>x.no===no);if(!r)return;currentRoom=r;$("backBtn").classList.remove("hide");$("roomTag").classList.remove("hide");$("roomTag").textContent=r.no;$("newBtn").classList.add("hide");$("send").style.display="flex";renderChat();setTimeout(()=>$("main").scrollTop=$("main").scrollHeight,80)}
+function renderChat(){if(!currentRoom)return;const list=getMessages(currentRoom.no);setMain(`<div id="chat">${list.map(m=>`<div class="msg ${m.sender===deviceId?"me":"other"}"><div class="meta">${m.sender===deviceId?"我":"用户"}</div><div class="bubble">${safe(m.text)}</div></div>`).join("")}</div>`);tick()}
+function back(){currentRoom=null;$("send").style.display="none";$("backBtn").classList.add("hide");$("roomTag").classList.add("hide");if(admin&&currentTab==="me"){renderMe();return}tab("hall")}
+async function sendMsg(){const text=($("msg").value||"").trim();if(!text||!currentRoom)return;$("msg").value="";await postComment(MSG_PREFIX+currentRoom.no+":"+json({sender:deviceId,text,time:Date.now()}));await refresh();setTimeout(()=>$("main").scrollTop=$("main").scrollHeight,80)}
+async function clearRoom(no){if(!confirm("确认清空该房间聊天记录？"))return;const prefix=MSG_PREFIX+no+":";for(const c of comments)if((c.body||"").startsWith(prefix))await deleteComment(c.id);await refresh();toast("已清空")}
+async function deleteRoom(no){if(!confirm("确认删除该房间？"))return;const prefix=MSG_PREFIX+no+":";for(const c of comments){const b=c.body||"";if(b.startsWith(prefix))await deleteComment(c.id);if(b.startsWith(ROOM_PREFIX)){try{if(JSON.parse(b.slice(ROOM_PREFIX.length)).no===no)await deleteComment(c.id)}catch(e){}}}saveVisibleRooms(visibleRooms().filter(x=>x!==no));currentRoom=null;await refresh();tab("me")}
+function toast(text){$("mbox").innerHTML=`<h3>${safe(text)}</h3><div class="actions"><button class="btn primary" onclick="$('modal').style.display='none'">确定</button></div>`;$("modal").style.display="flex"}
+$("modal").onclick=e=>{if(e.target.id==="modal")e.target.style.display="none"};
+</script>
+</body>
+</html>
