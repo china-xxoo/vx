@@ -1,0 +1,5 @@
+{
+  "type": "VX_REMOTE_CONFIG_V1",
+  "version": 1,
+  "note": "请用 encrypt-config.html 生成真实加密配置后覆盖本文件"
+}
