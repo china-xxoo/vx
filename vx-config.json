@@ -1,5 +1,12 @@
 {
   "type": "VX_REMOTE_CONFIG_V1",
   "version": 1,
-  "note": "请用 encrypt-config.html 生成真实加密配置后覆盖本文件"
+  "storage": "encrypted_repo_file",
+  "unlockRule": "percent_tail_suffix_numeric_1_6",
+  "updatedAt": "2026-05-14T23:45:10.234Z",
+  "encryptedConfig": {
+    "salt": "UVu/oy1Dud61jpJS5h2HWA==",
+    "iv": "SjTn2cSW4ql7xXif",
+    "data": "JGdMSjIGonncyOelIZ9Ffs+6GnjXzj9dHoC6D8FHtrmRX+jQ9jSn3w6nHI09ljL0MXK4rjim+g40/xZglbgAssDnZpgua7wx1Mwhrm0CeXfsUpoqu+hoflEHKe/ehMYc06qitg0Q/I1Ps+fgtaZfXv0a7gPRsa9Z7MSiIHTtVRil05TMV+T7ScQ8K5KYXnyMI6kkdY0BW0QkKF9zZjKhKtpQLccYq5vGEt0vs33muM3gAyb5M7TeLgb/QK8taEdOzbbcJZY+SA+MQ8/1f6XaMOr9dI/IJJ/rbgzYr9SslzUe8LHXXNicTD11J7zZH0Hy475Q0jzU/ritZKBnNqjzZNa1JuSJw6yLbzpIVClzmg/p1jDT+C6z"
+  }
 }
