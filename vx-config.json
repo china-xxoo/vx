@@ -1,12 +1,14 @@
 {
   "type": "VX_REMOTE_CONFIG_V1",
-  "version": 1,
+  "version": 2,
   "storage": "encrypted_repo_file",
   "unlockRule": "percent_tail_suffix_numeric_1_6",
-  "updatedAt": "2026-05-14T23:45:10.234Z",
+  "realtime": "mqtt",
+  "history": "gist_comments",
+  "updatedAt": "2026-05-15T00:20:10.764Z",
   "encryptedConfig": {
-    "salt": "UVu/oy1Dud61jpJS5h2HWA==",
-    "iv": "SjTn2cSW4ql7xXif",
-    "data": "JGdMSjIGonncyOelIZ9Ffs+6GnjXzj9dHoC6D8FHtrmRX+jQ9jSn3w6nHI09ljL0MXK4rjim+g40/xZglbgAssDnZpgua7wx1Mwhrm0CeXfsUpoqu+hoflEHKe/ehMYc06qitg0Q/I1Ps+fgtaZfXv0a7gPRsa9Z7MSiIHTtVRil05TMV+T7ScQ8K5KYXnyMI6kkdY0BW0QkKF9zZjKhKtpQLccYq5vGEt0vs33muM3gAyb5M7TeLgb/QK8taEdOzbbcJZY+SA+MQ8/1f6XaMOr9dI/IJJ/rbgzYr9SslzUe8LHXXNicTD11J7zZH0Hy475Q0jzU/ritZKBnNqjzZNa1JuSJw6yLbzpIVClzmg/p1jDT+C6z"
+    "salt": "2mCV8MquXrVmveMxvxMD4w==",
+    "iv": "wQmztG9K8S5Sdbfa",
+    "data": "4zJBfq0iMEg45fr61G3EVBHXif4RKN/wqG2TDOVzz7zFjrwrQ6fuSacQptwhS+Ke1vHxvanrme+Pm4gBU9nGzdu4yu70bH2SL94AQvOkwJKoJzE+XTqxqc/Y/JwQ6mF2MOTrWpQmNyuyHLLEKcC6qKUxF6Y+2A9SxY9s9kp8eNRZ49CGEkXQTPw+uXH/BZ4xsFLHo0nmDgDUp/kULDDqFVYd2oPiO4fuIWR5eMPHMsR+OunwCqczy0vj6qEPtFBA6LPChnrS1d/L4l0DjmKhoosXzfQMY3Qv/aQIkSNiObt9CMt2a911APCqCq0uNhDjdo/3Rwu5+aYgslb/Ko2564zttDh1af4g3nZKIj1GpFzwNqj9T8CbQ+E4xQr/ZxdeflTqO32sCMJ3keh/35+5+ZcsTQtnvh3mBlW7+GtltO0oskk8K5Xat7/nYW2dI3J+HbjGCFaa8/L22UJHmBd1tQ2usb1forh6qvuA99dOFZABkHDrxPzM2IobVPRx6NT+xeyDQ372J3A4LgxDaCR3DKbglokRaeG2MxpZu5MbQA2lb5ucKn+jc7S81By8lYxWT0aCtKm+"
   }
 }
