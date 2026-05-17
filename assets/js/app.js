@@ -393,7 +393,13 @@
 
   function roomBeat() {
     if (!app.currentRoom) return;
-    publish("presence/" + app.currentRoom.no, { id: app.deviceId, time: now(), admin: app.admin });
+    const nick = roomNickname(app.currentRoom.no);
+    publish("presence/" + app.currentRoom.no, {
+      id: app.deviceId,
+      time: now(),
+      admin: app.admin,
+      ...(nick ? { nick } : {})
+    });
     if (!app.admin) app.roomOnline[app.deviceId] = now();
     tick();
   }
@@ -422,6 +428,8 @@
       if (payload.type === "message" && payload.message) {
         addLocalMessage(payload.roomNo, payload.message, false);
         if (payload.roomNo === app.currentRoom.no) renderChat();
+      } else if (payload.type === "profile" && payload.id && payload.nick) {
+        if (rememberRoomProfile(app.currentRoom.no, payload.id, payload.nick)) renderChat();
       } else if (payload.type === "roomUpdate") {
         if (payload.action === "clear") localStorage.removeItem(messageKey(app.currentRoom.no));
         if (payload.action === "delete") back();
@@ -432,6 +440,7 @@
 
     if (app.currentRoom && name === topic("presence/" + app.currentRoom.no)) {
       if (payload.id && !payload.admin) app.roomOnline[payload.id] = now();
+      if (payload.id && payload.nick && rememberRoomProfile(app.currentRoom.no, payload.id, payload.nick)) renderChat();
       tick();
     }
   }
@@ -505,8 +514,38 @@
     return "vx_msgs_" + no;
   }
 
+  function nicknameKey(no) {
+    return "vx_nick_" + no;
+  }
+
+  function profileKey(no) {
+    return "vx_profiles_" + no;
+  }
+
   function pendingKey() {
     return "vx_pending_msgs";
+  }
+
+  function normalizeNickname(value) {
+    return String(value || "").trim().slice(0, 16);
+  }
+
+  function roomNickname(no) {
+    return normalizeNickname(localStorage.getItem(nicknameKey(no)) || "");
+  }
+
+  function roomProfiles(no) {
+    return localJson(profileKey(no), {});
+  }
+
+  function rememberRoomProfile(no, id, nick) {
+    const clean = normalizeNickname(nick);
+    if (!no || !id || !clean) return false;
+    const profiles = roomProfiles(no);
+    if (profiles[id] === clean) return false;
+    profiles[id] = clean;
+    saveJson(profileKey(no), profiles);
+    return true;
   }
 
   function localMessages(no) {
@@ -519,13 +558,17 @@
 
   function saveMessages(no, messages) {
     const map = {};
-    for (const message of messages) map[message.id || legacyMessageId(message)] = message;
+    for (const message of messages) {
+      if (message.sender && message.nick) rememberRoomProfile(no, message.sender, message.nick);
+      map[message.id || legacyMessageId(message)] = message;
+    }
     const sorted = Object.values(map).sort((a, b) => (+a.time) - (+b.time));
     saveJson(messageKey(no), sorted.slice(-1000));
   }
 
   function addLocalMessage(no, message, pending) {
     if (!message.id) message.id = legacyMessageId(message);
+    if (message.sender && message.nick) rememberRoomProfile(no, message.sender, message.nick);
     const messages = localMessages(no);
     if (!messages.some(item => (item.id || legacyMessageId(item)) === message.id)) {
       messages.push(message);
@@ -950,7 +993,11 @@
     fixViewport();
     $("backBtn").classList.remove("hide");
     $("roomTag").classList.remove("hide");
-    $("roomTag").textContent = room.no;
+    $("roomTag").textContent = "编辑";
+    $("roomTag").title = "编辑本房间昵称";
+    $("roomTag").style.cursor = "pointer";
+    $("roomTag").setAttribute("role", "button");
+    $("roomTag").tabIndex = 0;
     $("newBtn").classList.add("hide");
     $("send").style.display = "flex";
     subscribeRoom(no);
@@ -961,11 +1008,18 @@
     setTimeout(() => $("main").scrollTop = $("main").scrollHeight, 80);
   }
 
+  function senderName(message, profiles, ownNick) {
+    if (message.sender === app.deviceId) return ownNick || "我";
+    return profiles[message.sender] || normalizeNickname(message.nick) || "用户";
+  }
+
   function renderChat() {
     if (!app.currentRoom) return;
     const list = localMessages(app.currentRoom.no);
+    const profiles = roomProfiles(app.currentRoom.no);
+    const ownNick = roomNickname(app.currentRoom.no);
     setMain(`<div id="chat">${list.map(message => `<div class="msg ${message.sender === app.deviceId ? "me" : "other"}">
-      <div class="meta">${message.sender === app.deviceId ? "我" : "用户"}</div>
+      <div class="meta">${esc(senderName(message, profiles, ownNick))}</div>
       <div class="bubble">${esc(message.text).replace(/\n/g, "<br>")}</div>
     </div>`).join("")}</div>`);
     tick();
@@ -979,7 +1033,58 @@
     $("send").style.display = "none";
     $("backBtn").classList.add("hide");
     $("roomTag").classList.add("hide");
+    $("roomTag").textContent = "";
+    $("roomTag").removeAttribute("title");
+    $("roomTag").removeAttribute("role");
+    $("roomTag").removeAttribute("tabindex");
+    $("roomTag").style.cursor = "";
     switchTab("hall");
+  }
+
+  function editRoomNickname() {
+    if (!app.currentRoom) return;
+    const roomNo = app.currentRoom.no;
+    $("mbox").innerHTML = `<h3>编辑昵称</h3>
+      <input class="inp" id="nickInput" maxlength="16" placeholder="输入本房间昵称" value="${esc(roomNickname(roomNo))}">
+      <div class="muted" id="nickTip">只在本房间显示，最多16个字</div>
+      <div class="actions">
+        <button class="btn" type="button" id="nickCancel">取消</button>
+        <button class="btn primary" type="button" id="nickOk">保存</button>
+      </div>`;
+    $("modal").style.display = "flex";
+
+    const input = $("nickInput");
+    const tip = $("nickTip");
+    const close = () => {
+      $("modal").removeEventListener("click", onBackdrop);
+      $("modal").style.display = "none";
+    };
+    const submit = () => {
+      const nick = normalizeNickname(input.value);
+      if (!nick) {
+        tip.textContent = "请输入昵称";
+        tip.style.color = "#fecaca";
+        input.focus();
+        return;
+      }
+      localStorage.setItem(nicknameKey(roomNo), nick);
+      rememberRoomProfile(roomNo, app.deviceId, nick);
+      publish("room/" + roomNo, { type: "profile", id: app.deviceId, nick, time: now() });
+      renderChat();
+      close();
+    };
+    const onBackdrop = event => {
+      if (event.target.id === "modal") close();
+    };
+
+    $("nickCancel").addEventListener("click", close);
+    $("nickOk").addEventListener("click", submit);
+    input.addEventListener("keydown", event => {
+      if (event.key === "Enter") submit();
+      if (event.key === "Escape") close();
+    });
+    $("modal").addEventListener("click", onBackdrop);
+    setTimeout(() => input.focus(), 30);
   }
 
   async function sendMessage() {
@@ -990,11 +1095,13 @@
 
     app.sending = true;
     input.value = "";
+    const nick = roomNickname(app.currentRoom.no);
     const message = {
       id: app.deviceId + "_" + now() + "_" + Math.random().toString(36).slice(2, 6),
       sender: app.deviceId,
       text,
-      time: now()
+      time: now(),
+      ...(nick ? { nick } : {})
     };
     addLocalMessage(app.currentRoom.no, message, true);
     renderChat();
@@ -1139,6 +1246,13 @@
 
     $("backBtn").addEventListener("click", back);
     $("newBtn").addEventListener("click", newRoom);
+    $("roomTag").addEventListener("click", editRoomNickname);
+    $("roomTag").addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        editRoomNickname();
+      }
+    });
     $("panicBtn").addEventListener("click", () => location.reload());
     $("send").addEventListener("submit", event => {
       event.preventDefault();
