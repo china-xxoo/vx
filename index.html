@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Calculator">
+  <link rel="manifest" href="manifest.webmanifest?v=20260517-cf1">
+  <link rel="icon" type="image/png" sizes="512x512" href="vx-logo-512.png?v=20260517-cf1">
+  <link rel="apple-touch-icon" href="vx-logo-180.png?v=20260517-cf1">
+  <link rel="stylesheet" href="assets/css/calc.css?v=20260517-cf1">
+  <title>Calculator</title>
+</head>
+<body>
+  <div id="calc" class="calc" aria-label="Calculator">
+    <div id="disp">0</div>
+    <div class="keys" aria-label="Calculator keys">
+      <button class="k fn" type="button" data-calc="clear">C</button>
+      <button class="k fn" type="button" data-calc="backspace">⌫</button>
+      <button class="k fn" type="button" data-calc="unlock">%</button>
+      <button class="k op" type="button" data-calc="operator" data-value="/">÷</button>
+      <button class="k" type="button" data-calc="number" data-value="1">1</button>
+      <button class="k" type="button" data-calc="number" data-value="2">2</button>
+      <button class="k" type="button" data-calc="number" data-value="3">3</button>
+      <button class="k op" type="button" data-calc="operator" data-value="*">×</button>
+      <button class="k" type="button" data-calc="number" data-value="4">4</button>
+      <button class="k" type="button" data-calc="number" data-value="5">5</button>
+      <button class="k" type="button" data-calc="number" data-value="6">6</button>
+      <button class="k op" type="button" data-calc="operator" data-value="-">−</button>
+      <button class="k" type="button" data-calc="number" data-value="7">7</button>
+      <button class="k" type="button" data-calc="number" data-value="8">8</button>
+      <button class="k" type="button" data-calc="number" data-value="9">9</button>
+      <button class="k op" type="button" data-calc="operator" data-value="+">+</button>
+      <button class="k zero" type="button" data-calc="number" data-value="0">0</button>
+      <button class="k" type="button" data-calc="dot">.</button>
+      <button class="k op" type="button" data-calc="equals">=</button>
+    </div>
+  </div>
+
+  <div id="app" aria-hidden="true">
+    <header class="top">
+      <div class="left">
+        <button id="backBtn" class="btn hide" type="button">返回</button>
+      </div>
+      <button id="dataBtn" class="data" type="button"><span class="dot"></span>数据 00:00:00</button>
+      <div class="right">
+        <button id="newBtn" class="btn primary" type="button">新建房间</button>
+        <span id="roomTag" class="btn hide"></span>
+      </div>
+    </header>
+    <main id="main" class="main"></main>
+    <nav id="nav" class="nav" aria-label="Main navigation">
+      <button type="button" data-tab="hall" id="nHall" class="on">大厅</button>
+      <button type="button" data-tab="ann" id="nAnn">公告</button>
+      <button type="button" data-tab="me" id="nMe">我的</button>
+    </nav>
+    <form id="send" autocomplete="off">
+      <input id="msg" autocomplete="off" placeholder="输入消息...">
+      <button class="btn primary" type="submit">发送</button>
+    </form>
+    <button id="panicBtn" class="ghost" type="button">有内鬼<br>紧急关闭</button>
+  </div>
+
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="box" id="mbox"></div>
+  </div>
+
+  <script src="assets/js/calc.js?v=20260517-cf1"></script>
+</body>
+</html>
