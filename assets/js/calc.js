@@ -138,6 +138,7 @@
     } catch (error) {
       loadingApp = false;
       console.warn("Unable to load app shell.", error);
+      throw error;
     }
   }
 

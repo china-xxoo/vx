@@ -33,6 +33,8 @@
     uploadSoon: null,
     activeRoomSubscription: null,
     sending: false,
+    busyText: "",
+    busyToken: 0,
     deviceId: localStorage.vx_device || ("U" + Math.random().toString(36).slice(2, 10))
   };
 
@@ -263,7 +265,8 @@
     app.rooms = Object.values(roomMap).sort((a, b) => (+(b.updatedAt || b.createdAt || 0)) - (+(a.updatedAt || a.createdAt || 0)));
   }
 
-  async function refresh() {
+  async function refresh(label) {
+    const busy = label ? beginBusy(label) : null;
     try {
       await loadComments();
       parseComments();
@@ -274,6 +277,7 @@
       console.warn("Refresh failed.", error);
     }
     updateStatus();
+    if (busy) endBusy(busy);
   }
 
   function topic(name) {
@@ -449,17 +453,34 @@
     return countFresh(app.roomOnline) || (!app.admin ? 1 : 0);
   }
 
+  function beginBusy(text) {
+    const token = ++app.busyToken;
+    app.busyText = text;
+    tick();
+    return token;
+  }
+
+  function endBusy(token) {
+    if (token === app.busyToken) {
+      app.busyText = "";
+      tick();
+    }
+  }
+
   function tick() {
     const time = new Date().toTimeString().slice(0, 8);
     const online = app.currentRoom ? roomCount() : allCount();
-    $("dataBtn").innerHTML = `<span class="dot"></span>数据 ${time} 在线${online}`;
+    $("dataBtn").innerHTML = app.busyText
+      ? `<span class="dot"></span>${app.busyText}`
+      : `<span class="dot"></span>数据 ${time} 在线${online}`;
     updateStatus();
   }
 
   function updateStatus() {
     const needsMqtt = !!app.cfg?.mqttUrl;
     const good = app.gistOk && (!needsMqtt || app.mqttOk);
-    $("dataBtn").classList.toggle("bad", !good);
+    $("dataBtn").classList.toggle("busyStatus", !!app.busyText);
+    $("dataBtn").classList.toggle("bad", !app.busyText && !good);
   }
 
   function localJson(key, fallback) {
@@ -518,29 +539,34 @@
   async function uploadPending(roomNo) {
     const all = localJson(pendingKey(), []);
     if (!all.length || !app.cfg) return;
+    const busy = app.busyText ? null : beginBusy("同步中...");
 
     const groups = {};
-    for (const message of all) {
-      if (roomNo && message.roomNo !== roomNo) continue;
-      (groups[message.roomNo] || (groups[message.roomNo] = [])).push(message);
-    }
-
-    const done = new Set();
-    for (const no of Object.keys(groups)) {
-      const messages = groups[no];
-      if (!messages.length) continue;
-      try {
-        await postComment(BATCH_PREFIX + no + ":" + json({
-          time: now(),
-          messages: messages.map(({ roomNo: ignored, ...message }) => message)
-        }));
-        messages.forEach(message => done.add(message.id));
-      } catch (error) {
-        console.warn("Pending upload failed.", error);
+    try {
+      for (const message of all) {
+        if (roomNo && message.roomNo !== roomNo) continue;
+        (groups[message.roomNo] || (groups[message.roomNo] = [])).push(message);
       }
-    }
 
-    if (done.size) saveJson(pendingKey(), all.filter(message => !done.has(message.id)));
+      const done = new Set();
+      for (const no of Object.keys(groups)) {
+        const messages = groups[no];
+        if (!messages.length) continue;
+        try {
+          await postComment(BATCH_PREFIX + no + ":" + json({
+            time: now(),
+            messages: messages.map(({ roomNo: ignored, ...message }) => message)
+          }));
+          messages.forEach(message => done.add(message.id));
+        } catch (error) {
+          console.warn("Pending upload failed.", error);
+        }
+      }
+
+      if (done.size) saveJson(pendingKey(), all.filter(message => !done.has(message.id)));
+    } finally {
+      if (busy) endBusy(busy);
+    }
   }
 
   function scheduleUpload(roomNo) {
@@ -694,9 +720,14 @@
       setVerified(no);
     }
 
-    if (remember) addVisibleRoom(no);
-    await uploadPending();
-    enterRoom(no);
+    const busy = beginBusy("进入中...");
+    try {
+      if (remember) addVisibleRoom(no);
+      await uploadPending();
+      enterRoom(no);
+    } finally {
+      endBusy(busy);
+    }
   }
 
   async function searchRoom() {
@@ -731,20 +762,28 @@
   async function newRoom() {
     const password = prompt("请设置房间密码");
     if (!password) return;
-    const no = generateRoomNo();
-    const room = {
-      no,
-      name: no,
-      createdAt: now(),
-      updatedAt: now(),
-      owner: app.deviceId,
-      ...(await makeRoomAuth(password))
-    };
-    await postComment(ROOM_PREFIX + json(room));
-    addVisibleRoom(no);
-    publish("all", { type: "rooms", no, time: now() });
-    await refresh();
-    toast("房间已创建");
+    const busy = beginBusy("创建中...");
+    try {
+      const no = generateRoomNo();
+      const room = {
+        no,
+        name: no,
+        createdAt: now(),
+        updatedAt: now(),
+        owner: app.deviceId,
+        ...(await makeRoomAuth(password))
+      };
+      await postComment(ROOM_PREFIX + json(room));
+      addVisibleRoom(no);
+      publish("all", { type: "rooms", no, time: now() });
+      await refresh();
+      toast("房间已创建");
+    } catch (error) {
+      console.warn("Create room failed.", error);
+      toast("创建失败，请稍后重试");
+    } finally {
+      endBusy(busy);
+    }
   }
 
   function renderAnnouncement() {
@@ -770,26 +809,42 @@
   }
 
   async function saveAnnouncement() {
-    for (const comment of app.comments) {
-      if ((comment.body || "").startsWith(ANN_PREFIX)) await deleteComment(comment.id);
+    const busy = beginBusy("发布中...");
+    try {
+      for (const comment of app.comments) {
+        if ((comment.body || "").startsWith(ANN_PREFIX)) await deleteComment(comment.id);
+      }
+      await postComment(ANN_PREFIX + json({
+        title: ($("annTitle").value || "系统公告").trim(),
+        content: ($("annContent").value || "").trim(),
+        time: now()
+      }));
+      publish("all", { type: "announcement", time: now() });
+      await refresh();
+      toast("公告已发布");
+    } catch (error) {
+      console.warn("Save announcement failed.", error);
+      toast("发布失败，请稍后重试");
+    } finally {
+      endBusy(busy);
     }
-    await postComment(ANN_PREFIX + json({
-      title: ($("annTitle").value || "系统公告").trim(),
-      content: ($("annContent").value || "").trim(),
-      time: now()
-    }));
-    publish("all", { type: "announcement", time: now() });
-    await refresh();
-    toast("公告已发布");
   }
 
   async function clearAnnouncement() {
     if (!confirm("确认清空公告？")) return;
-    for (const comment of app.comments) {
-      if ((comment.body || "").startsWith(ANN_PREFIX)) await deleteComment(comment.id);
+    const busy = beginBusy("清空中...");
+    try {
+      for (const comment of app.comments) {
+        if ((comment.body || "").startsWith(ANN_PREFIX)) await deleteComment(comment.id);
+      }
+      publish("all", { type: "announcement", time: now() });
+      await refresh();
+    } catch (error) {
+      console.warn("Clear announcement failed.", error);
+      toast("清空失败，请稍后重试");
+    } finally {
+      endBusy(busy);
     }
-    publish("all", { type: "announcement", time: now() });
-    await refresh();
   }
 
   function renderMe() {
@@ -882,39 +937,68 @@
 
   async function clearRoom(no) {
     if (!confirm("确认清空该房间聊天记录？")) return;
-    const prefixes = [MSG_PREFIX + no + ":", BATCH_PREFIX + no + ":"];
-    for (const comment of app.comments) {
-      const body = comment.body || "";
-      if (prefixes.some(prefix => body.startsWith(prefix))) await deleteComment(comment.id);
+    const busy = beginBusy("清空中...");
+    try {
+      const prefixes = [MSG_PREFIX + no + ":", BATCH_PREFIX + no + ":"];
+      for (const comment of app.comments) {
+        const body = comment.body || "";
+        if (prefixes.some(prefix => body.startsWith(prefix))) await deleteComment(comment.id);
+      }
+      localStorage.removeItem(messageKey(no));
+      saveJson(pendingKey(), localJson(pendingKey(), []).filter(message => message.roomNo !== no));
+      publish("room/" + no, { type: "roomUpdate", action: "clear", time: now() });
+      await refresh();
+      toast("已清空");
+    } catch (error) {
+      console.warn("Clear room failed.", error);
+      toast("清空失败，请稍后重试");
+    } finally {
+      endBusy(busy);
     }
-    localStorage.removeItem(messageKey(no));
-    saveJson(pendingKey(), localJson(pendingKey(), []).filter(message => message.roomNo !== no));
-    publish("room/" + no, { type: "roomUpdate", action: "clear", time: now() });
-    await refresh();
-    toast("已清空");
   }
 
   async function deleteRoom(no) {
     if (!confirm("确认删除该房间？")) return;
-    const prefixes = [MSG_PREFIX + no + ":", BATCH_PREFIX + no + ":"];
-    for (const comment of app.comments) {
-      const body = comment.body || "";
-      if (prefixes.some(prefix => body.startsWith(prefix))) await deleteComment(comment.id);
-      if (body.startsWith(ROOM_PREFIX)) {
-        try {
-          if (JSON.parse(body.slice(ROOM_PREFIX.length)).no === no) await deleteComment(comment.id);
-        } catch (error) {
-          console.warn("Invalid room record.", error);
-        }
-      }
-    }
+    const busy = beginBusy("删除中...");
+    const oldRooms = app.rooms.slice();
+    const oldVisibleRooms = visibleRooms();
+
+    app.rooms = app.rooms.filter(room => room.no !== no);
     localStorage.removeItem(messageKey(no));
-    saveVisibleRooms(visibleRooms().filter(item => item !== no));
+    saveVisibleRooms(oldVisibleRooms.filter(item => item !== no));
+    saveJson(pendingKey(), localJson(pendingKey(), []).filter(message => message.roomNo !== no));
+    if (app.tab === "me") renderMe();
+    else if (app.tab === "hall") renderHall();
+
     publish("room/" + no, { type: "roomUpdate", action: "delete", time: now() });
     publish("all", { type: "delete", no, time: now() });
-    app.currentRoom = null;
-    await refresh();
-    switchTab("me");
+
+    const prefixes = [MSG_PREFIX + no + ":", BATCH_PREFIX + no + ":"];
+    try {
+      for (const comment of app.comments) {
+        const body = comment.body || "";
+        if (prefixes.some(prefix => body.startsWith(prefix))) await deleteComment(comment.id);
+        if (body.startsWith(ROOM_PREFIX)) {
+          try {
+            if (JSON.parse(body.slice(ROOM_PREFIX.length)).no === no) await deleteComment(comment.id);
+          } catch (error) {
+            console.warn("Invalid room record.", error);
+          }
+        }
+      }
+      app.currentRoom = null;
+      await refresh();
+      if (app.tab === "me") renderMe();
+      toast("已删除");
+    } catch (error) {
+      console.warn("Delete room failed.", error);
+      app.rooms = oldRooms;
+      saveVisibleRooms(oldVisibleRooms);
+      renderCurrentTab();
+      toast("删除失败，请稍后重试");
+    } finally {
+      endBusy(busy);
+    }
   }
 
   function toast(text) {
@@ -951,7 +1035,7 @@
     registerServiceWorker();
     tick();
     setInterval(tick, 1000);
-    refresh();
+    refresh("加载中...");
     loadMqtt();
     app.refreshTimer = setInterval(() => refresh(), 60000);
     switchTab("hall");

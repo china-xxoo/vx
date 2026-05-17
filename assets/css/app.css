@@ -209,6 +209,16 @@ button {
   box-shadow: 0 0 10px var(--bad);
 }
 
+.busyStatus {
+  border-color: rgba(245, 158, 11, .58);
+  color: #fde68a;
+}
+
+.busyStatus .dot {
+  background: #f59e0b;
+  box-shadow: 0 0 10px #f59e0b;
+}
+
 .main {
   position: fixed;
   top: calc(58px + env(safe-area-inset-top));
