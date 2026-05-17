@@ -405,6 +405,10 @@ textarea {
   margin-top: 10px;
 }
 
+.stackInput {
+  margin-top: 10px;
+}
+
 #send {
   position: fixed;
   z-index: 10;

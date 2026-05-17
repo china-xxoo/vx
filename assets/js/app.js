@@ -9,6 +9,7 @@
   const MSG_PREFIX = "VX_MSG_V1:";
   const BATCH_PREFIX = "VX_MSG_BATCH_V1:";
   const ANN_PREFIX = "VX_ANN_V1:";
+  const ACCOUNT_PREFIX = "VX_ACCOUNT_V1:";
   const DEFAULT_ROOM_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const ROOM_NO_DIGITS = 4;
   const ROOM_NO_TOTAL = 10 ** ROOM_NO_DIGITS;
@@ -24,6 +25,8 @@
     rooms: [],
     comments: [],
     announcement: null,
+    accounts: {},
+    account: null,
     mqtt: null,
     mqttOk: false,
     gistOk: false,
@@ -40,6 +43,7 @@
     busyToken: 0,
     chatSearch: "",
     adminSearch: "",
+    accountSyncSoon: null,
     deviceId: localStorage.vx_device || ("U" + Math.random().toString(36).slice(2, 10))
   };
 
@@ -245,6 +249,7 @@
 
   function parseComments() {
     const roomMap = {};
+    const accountMap = {};
     app.announcement = null;
 
     for (const comment of app.comments) {
@@ -261,6 +266,14 @@
           const announcement = JSON.parse(body.slice(ANN_PREFIX.length));
           announcement.cid = comment.id;
           if (!app.announcement || +announcement.time > +app.announcement.time) app.announcement = announcement;
+        } else if (body.startsWith(ACCOUNT_PREFIX)) {
+          const account = JSON.parse(body.slice(ACCOUNT_PREFIX.length));
+          account.username = normalizeAccountName(account.username);
+          account.cid = comment.id;
+          const old = accountMap[account.username];
+          const accountTime = +(account.updatedAt || account.createdAt || 0);
+          const oldTime = +(old?.updatedAt || old?.createdAt || 0);
+          if (account.username && (!old || accountTime > oldTime)) accountMap[account.username] = account;
         }
       } catch (error) {
         console.warn("Skipping invalid gist comment.", error);
@@ -268,6 +281,8 @@
     }
 
     app.rooms = sortRooms(Object.values(roomMap));
+    app.accounts = accountMap;
+    restoreAccountSession();
   }
 
   async function refresh(label) {
@@ -300,6 +315,14 @@
     } catch (error) {
       console.warn("MQTT publish failed.", error);
     }
+  }
+
+  function currentUserId() {
+    return app.account?.userId || app.deviceId;
+  }
+
+  function ownSender(id) {
+    return id === currentUserId() || id === app.deviceId || !!app.account?.deviceIds?.includes(id);
   }
 
   function loadMqtt() {
@@ -367,7 +390,7 @@
   }
 
   function globalBeat() {
-    publish("presence/all", { id: app.deviceId, time: now(), admin: app.admin });
+    publish("presence/all", { id: currentUserId(), time: now(), admin: app.admin });
   }
 
   function subscribeRoom(no) {
@@ -402,12 +425,12 @@
     if (!app.currentRoom) return;
     const nick = roomNickname(app.currentRoom.no);
     publish("presence/" + app.currentRoom.no, {
-      id: app.deviceId,
+      id: currentUserId(),
       time: now(),
       admin: app.admin,
       ...(nick ? { nick } : {})
     });
-    if (!app.admin) app.roomOnline[app.deviceId] = now();
+    if (!app.admin) app.roomOnline[currentUserId()] = now();
     tick();
   }
 
@@ -463,12 +486,12 @@
   }
 
   function allCount() {
-    app.globalOnline[app.deviceId] = now();
+    app.globalOnline[currentUserId()] = now();
     return countFresh(app.globalOnline);
   }
 
   function roomCount() {
-    if (!app.admin) app.roomOnline[app.deviceId] = now();
+    if (!app.admin) app.roomOnline[currentUserId()] = now();
     return countFresh(app.roomOnline) || (!app.admin ? 1 : 0);
   }
 
@@ -553,6 +576,129 @@
     profiles[id] = clean;
     saveJson(profileKey(no), profiles);
     return true;
+  }
+
+  function normalizeAccountName(value) {
+    return String(value || "").replace(/\D/g, "").slice(0, 11);
+  }
+
+  function accountPhoneOk(value) {
+    return /^1\d{10}$/.test(String(value || ""));
+  }
+
+  function accountPasswordOk(value) {
+    return String(value || "").trim().length === 6;
+  }
+
+  function accountTip(text, bad) {
+    const tip = $("accountTip");
+    if (!tip) return;
+    tip.textContent = text;
+    tip.style.color = bad ? "#fecaca" : "#bbf7d0";
+  }
+
+  function accountFields() {
+    return {
+      username: normalizeAccountName($("accountName")?.value || ""),
+      password: ($("accountPassword")?.value || "").trim()
+    };
+  }
+
+  async function makeAccountAuth(password) {
+    const salt = randomBase64(16);
+    return {
+      authVersion: 1,
+      authSalt: salt,
+      authHash: await hashRoomPassword(password, salt)
+    };
+  }
+
+  async function verifyAccountPassword(account, password) {
+    if (!account?.authSalt || !account?.authHash) return false;
+    return await hashRoomPassword(password, account.authSalt) === account.authHash;
+  }
+
+  function accountRecord(account) {
+    const copy = { ...account };
+    delete copy.cid;
+    return copy;
+  }
+
+  function accountNicknames() {
+    const rooms = new Set(visibleRooms().concat(app.rooms.map(room => room.no)));
+    const nicknames = {};
+    for (const no of rooms) {
+      const nick = roomNickname(no);
+      if (nick) nicknames[no] = nick;
+    }
+    return nicknames;
+  }
+
+  function accountSnapshot(base) {
+    return accountRecord({
+      ...base,
+      username: normalizeAccountName(base.username),
+      visibleRooms: [...new Set(visibleRooms())],
+      nicknames: { ...(base.nicknames || {}), ...accountNicknames() },
+      deviceIds: [...new Set([...(base.deviceIds || []), app.deviceId])],
+      updatedAt: now()
+    });
+  }
+
+  function applyAccountData(account) {
+    const mergedRooms = [...new Set([...(account.visibleRooms || []), ...visibleRooms()])];
+    saveVisibleRooms(mergedRooms);
+    for (const [no, nick] of Object.entries(account.nicknames || {})) {
+      const clean = normalizeNickname(nick);
+      if (clean) localStorage.setItem(nicknameKey(no), clean);
+    }
+  }
+
+  function setActiveAccount(account, applyData) {
+    app.account = accountRecord(account);
+    localStorage.vx_account = app.account.username;
+    if (applyData) applyAccountData(app.account);
+  }
+
+  function restoreAccountSession() {
+    const username = normalizeAccountName(localStorage.vx_account || app.account?.username || "");
+    if (!username || !app.accounts?.[username]) return;
+    setActiveAccount(app.accounts[username], !app.account);
+  }
+
+  async function postAccount(account) {
+    await postComment(ACCOUNT_PREFIX + json(accountRecord(account)));
+  }
+
+  async function syncAccountNow() {
+    if (!app.account) return;
+    const snapshot = accountSnapshot(app.account);
+    app.account = snapshot;
+    app.accounts[snapshot.username] = snapshot;
+    await postAccount(snapshot);
+  }
+
+  async function migrateOwnedRoomsToAccount(oldId, userId) {
+    const owned = app.rooms.filter(room => room.owner === oldId);
+    if (!owned.length) return;
+    for (const room of owned) {
+      const updated = {
+        ...roomRecord(room),
+        owner: userId,
+        updatedAt: now()
+      };
+      updateLocalRoom(updated);
+      await postComment(ROOM_PREFIX + json(roomRecord(updated)));
+      publish("all", { type: "rooms", no: updated.no, time: now() });
+    }
+  }
+
+  function scheduleAccountSync() {
+    if (!app.account) return;
+    clearTimeout(app.accountSyncSoon);
+    app.accountSyncSoon = setTimeout(() => {
+      syncAccountNow().catch(error => console.warn("Account sync failed.", error));
+    }, 1200);
   }
 
   function localMessages(no) {
@@ -729,11 +875,13 @@
     if (!rooms.includes(no)) {
       rooms.push(no);
       saveVisibleRooms(rooms);
+      scheduleAccountSync();
     }
   }
 
   function removeVisibleRoom(no) {
     saveVisibleRooms(visibleRooms().filter(item => item !== no));
+    scheduleAccountSync();
   }
 
   function roomName(room) {
@@ -745,7 +893,7 @@
   }
 
   function isRoomOwner(room) {
-    return !!room && room.owner === app.deviceId;
+    return !!room && (room.owner === currentUserId() || room.owner === app.deviceId || !!app.account?.deviceIds?.includes(room.owner));
   }
 
   function roomRecord(room) {
@@ -777,6 +925,10 @@
 
   function setVerified(room) {
     localStorage.setItem("vx_verified_" + room.no, today() + ":" + roomAuthStamp(room));
+  }
+
+  function accountCanOpenRoom(room) {
+    return !!app.account && (app.account.visibleRooms || []).includes(room.no);
   }
 
   function roomCard(room, isAdmin) {
@@ -839,7 +991,7 @@
     if (!room) return toast("未找到房间");
     if (isOwnerDeleted(room) && !isAdmin && !app.admin) return toast("未找到房间");
 
-    if (!isAdmin && !app.admin && !verified(room)) {
+    if (!isAdmin && !app.admin && !verified(room) && !accountCanOpenRoom(room)) {
       const password = prompt("请输入房间密码");
       if (!(await verifyRoomPassword(room, password || ""))) return toast("密码错误");
       setVerified(room);
@@ -957,7 +1109,7 @@
         createdAt: now(),
         updatedAt: now(),
         passUpdatedAt: now(),
-        owner: app.deviceId,
+        owner: currentUserId(),
         ...(await makeRoomAuth(roomPassword))
       };
       await postComment(ROOM_PREFIX + json(room));
@@ -1032,9 +1184,118 @@
     }
   }
 
+  function renderAccountPage() {
+    if (app.account) {
+      const rooms = visibleRooms().filter(no => app.rooms.some(room => room.no === no && !isOwnerDeleted(room)));
+      setMain(`<div class="card">
+        <div class="title">账号</div>
+        <div class="muted">当前账号：${esc(app.account.username)}</div>
+        <div class="muted">已同步房间：${rooms.length}</div>
+        <div class="actions">
+          <button class="btn primary" type="button" id="accountSyncBtn">同步账号</button>
+          <button class="btn" type="button" id="accountLogoutBtn">退出账号</button>
+        </div>
+        <div class="muted" id="accountTip">换设备时，用这个账号登录即可恢复房间和昵称。</div>
+      </div>`);
+      return;
+    }
+
+    setMain(`<div class="card">
+      <div class="title">账号</div>
+      <div class="muted">不注册也可以正常使用；如果以后需要换设备或转移账号，建议绑定手机号和6位密码。</div>
+      <input class="inp stackInput" id="accountName" maxlength="11" placeholder="手机号" inputmode="tel" autocomplete="tel">
+      <input class="inp stackInput" id="accountPassword" type="password" maxlength="6" placeholder="6位密码" autocomplete="current-password">
+      <div class="actions">
+        <button class="btn primary" type="button" id="accountLoginBtn">登录</button>
+        <button class="btn" type="button" id="accountRegisterBtn">注册</button>
+      </div>
+      <div class="muted" id="accountTip">注册后会同步当前设备的房间和昵称，换设备登录后自动恢复。</div>
+    </div>`);
+  }
+
+  async function registerAccount() {
+    const { username, password } = accountFields();
+    if (!accountPhoneOk(username)) return accountTip("请输入正确手机号", true);
+    if (!accountPasswordOk(password)) return accountTip("密码需要6位", true);
+
+    const busy = beginBusy("同步中...");
+    try {
+      await loadComments();
+      parseComments();
+      if (app.accounts[username]) {
+        accountTip("账号已存在，请登录", true);
+        return;
+      }
+      const stamp = now();
+      const account = accountSnapshot({
+        username,
+        userId: "A_" + username,
+        createdAt: stamp,
+        updatedAt: stamp,
+        ...(await makeAccountAuth(password))
+      });
+      await postAccount(account);
+      setActiveAccount(account, true);
+      await migrateOwnedRoomsToAccount(app.deviceId, account.userId);
+      await syncAccountNow();
+      publish("all", { type: "rooms", time: now() });
+      renderAccountPage();
+    } catch (error) {
+      console.warn("Register account failed.", error);
+      accountTip("注册失败，请稍后重试", true);
+    } finally {
+      endBusy(busy);
+    }
+  }
+
+  async function loginAccount() {
+    const { username, password } = accountFields();
+    if (!accountPhoneOk(username)) return accountTip("请输入正确手机号", true);
+    if (!accountPasswordOk(password)) return accountTip("密码需要6位", true);
+
+    const busy = beginBusy("加载中...");
+    try {
+      await loadComments();
+      parseComments();
+      const account = app.accounts[username];
+      if (!account || !(await verifyAccountPassword(account, password))) {
+        accountTip("账号或密码错误", true);
+        return;
+      }
+      setActiveAccount(account, true);
+      await syncAccountNow();
+      renderAccountPage();
+    } catch (error) {
+      console.warn("Login account failed.", error);
+      accountTip("登录失败，请稍后重试", true);
+    } finally {
+      endBusy(busy);
+    }
+  }
+
+  async function manualAccountSync() {
+    if (!app.account) return;
+    const busy = beginBusy("同步中...");
+    try {
+      await syncAccountNow();
+      renderAccountPage();
+    } catch (error) {
+      console.warn("Manual account sync failed.", error);
+      accountTip("同步失败，请稍后重试", true);
+    } finally {
+      endBusy(busy);
+    }
+  }
+
+  function logoutAccount() {
+    app.account = null;
+    localStorage.removeItem("vx_account");
+    renderAccountPage();
+  }
+
   function renderMe() {
     if (!app.admin) {
-      setMain(`<div class="empty">谢谢使用！</div>`);
+      renderAccountPage();
       return;
     }
     const stats = roomNoStats();
@@ -1095,7 +1356,7 @@
   }
 
   function senderName(message, profiles, ownNick) {
-    if (message.sender === app.deviceId) return ownNick || "我";
+    if (ownSender(message.sender)) return ownNick || "我";
     return profiles[message.sender] || normalizeNickname(message.nick) || "用户";
   }
 
@@ -1115,7 +1376,7 @@
       ${query ? `<button class="btn" type="button" id="chatSearchClear">清除</button>` : ""}
     </div>
     ${query ? `<div class="muted searchHint">找到 ${list.length}/${all.length} 条消息</div>` : ""}
-    <div id="chat">${list.length ? list.map(message => `<div class="msg ${message.sender === app.deviceId ? "me" : "other"}">
+    <div id="chat">${list.length ? list.map(message => `<div class="msg ${ownSender(message.sender) ? "me" : "other"}">
       <div class="meta">${esc(senderName(message, profiles, ownNick))}</div>
       <div class="bubble">${esc(message.text).replace(/\n/g, "<br>")}</div>
     </div>`).join("") : `<div class="empty">没有匹配的聊天记录</div>`}</div>`);
@@ -1175,6 +1436,14 @@
         <div class="muted">删除后普通用户看不到、搜不到；管理员后台仍可查看。</div>
       </div>`
       : "";
+    const adminTools = app.admin
+      ? `<div class="settingBlock">
+        <div class="title smallTitle">管理员</div>
+        <div class="actions">
+          <button class="btn danger" type="button" id="adminClearCurrentRoom">删除聊天记录</button>
+        </div>
+      </div>`
+      : "";
     $("mbox").innerHTML = `<h3>房间设置</h3>
       <input class="inp" id="nickInput" maxlength="16" placeholder="输入本房间昵称" value="${esc(roomNickname(roomNo))}">
       <div class="muted" id="nickTip">只在本房间显示，最多16个字</div>
@@ -1182,7 +1451,8 @@
         <button class="btn" type="button" id="nickCancel">取消</button>
         <button class="btn primary" type="button" id="nickOk">保存</button>
       </div>
-      ${ownerTools}`;
+      ${ownerTools}
+      ${adminTools}`;
     $("modal").style.display = "flex";
 
     const input = $("nickInput");
@@ -1200,8 +1470,9 @@
         return;
       }
       localStorage.setItem(nicknameKey(roomNo), nick);
-      rememberRoomProfile(roomNo, app.deviceId, nick);
-      publish("room/" + roomNo, { type: "profile", id: app.deviceId, nick, time: now() });
+      rememberRoomProfile(roomNo, currentUserId(), nick);
+      scheduleAccountSync();
+      publish("room/" + roomNo, { type: "profile", id: currentUserId(), nick, time: now() });
       renderChat();
       close();
     };
@@ -1228,6 +1499,10 @@
     if ($("ownerDeleteRoom")) $("ownerDeleteRoom").addEventListener("click", () => {
       close();
       ownerDeleteCurrentRoom();
+    });
+    if ($("adminClearCurrentRoom")) $("adminClearCurrentRoom").addEventListener("click", () => {
+      close();
+      clearRoom(roomNo);
     });
     input.addEventListener("keydown", event => {
       if (event.key === "Enter") submit();
@@ -1326,9 +1601,10 @@
     app.sending = true;
     input.value = "";
     const nick = roomNickname(app.currentRoom.no);
+    const sender = currentUserId();
     const message = {
-      id: app.deviceId + "_" + now() + "_" + Math.random().toString(36).slice(2, 6),
-      sender: app.deviceId,
+      id: sender + "_" + now() + "_" + Math.random().toString(36).slice(2, 6),
+      sender,
       text,
       time: now(),
       ...(nick ? { nick } : {})
@@ -1346,7 +1622,6 @@
   }
 
   async function clearRoom(no) {
-    if (!confirm("确认清空该房间聊天记录？")) return;
     const busy = beginBusy("清空中...");
     try {
       const prefixes = [MSG_PREFIX + no + ":", BATCH_PREFIX + no + ":"];
@@ -1356,6 +1631,7 @@
       }
       localStorage.removeItem(messageKey(no));
       saveJson(pendingKey(), localJson(pendingKey(), []).filter(message => message.roomNo !== no));
+      if (app.currentRoom?.no === no) renderChat();
       publish("room/" + no, { type: "roomUpdate", action: "clear", time: now() });
       await refresh();
     } catch (error) {
@@ -1454,9 +1730,15 @@
       visualViewport.addEventListener("scroll", fixViewport);
     }
     document.addEventListener("visibilitychange", () => {
-      if (document.hidden) uploadPending();
+      if (document.hidden) {
+        uploadPending();
+        syncAccountNow().catch(error => console.warn("Account sync failed.", error));
+      }
     });
-    addEventListener("pagehide", () => uploadPending());
+    addEventListener("pagehide", () => {
+      uploadPending();
+      syncAccountNow().catch(error => console.warn("Account sync failed.", error));
+    });
   }
 
   function bindEvents() {
@@ -1525,6 +1807,30 @@
         return;
       }
 
+      const accountLogin = event.target.closest("#accountLoginBtn");
+      if (accountLogin) {
+        loginAccount();
+        return;
+      }
+
+      const accountRegister = event.target.closest("#accountRegisterBtn");
+      if (accountRegister) {
+        registerAccount();
+        return;
+      }
+
+      const accountSync = event.target.closest("#accountSyncBtn");
+      if (accountSync) {
+        manualAccountSync();
+        return;
+      }
+
+      const accountLogout = event.target.closest("#accountLogoutBtn");
+      if (accountLogout) {
+        logoutAccount();
+        return;
+      }
+
       const saveAnn = event.target.closest("#saveAnnBtn");
       if (saveAnn) {
         saveAnnouncement();
@@ -1565,6 +1871,7 @@
       if (event.key === "Enter" && event.target.id === "searchInput") searchRoom();
       if (event.key === "Enter" && event.target.id === "chatSearchInput") applyChatSearch();
       if (event.key === "Enter" && event.target.id === "adminSearchInput") applyAdminSearch();
+      if (event.key === "Enter" && event.target.id === "accountPassword") loginAccount();
     });
 
     $("modal").addEventListener("click", event => {
