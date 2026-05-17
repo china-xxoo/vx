@@ -743,7 +743,6 @@
 
     if (app.cfg.adminPassword && query === app.cfg.adminPassword) {
       app.admin = true;
-      toast("管理员模式已开启");
       switchTab("me");
       return;
     }
@@ -845,7 +844,6 @@
       addVisibleRoom(no);
       publish("all", { type: "rooms", no, time: now() });
       await refresh();
-      toast("房间已创建");
     } catch (error) {
       console.warn("Create room failed.", error);
       toast("创建失败，请稍后重试");
@@ -889,7 +887,6 @@
       }));
       publish("all", { type: "announcement", time: now() });
       await refresh();
-      toast("公告已发布");
     } catch (error) {
       console.warn("Save announcement failed.", error);
       toast("发布失败，请稍后重试");
@@ -940,7 +937,6 @@
 
   function exitAdmin() {
     app.admin = false;
-    toast("已退出管理");
     switchTab("me");
   }
 
@@ -1025,7 +1021,6 @@
       saveJson(pendingKey(), localJson(pendingKey(), []).filter(message => message.roomNo !== no));
       publish("room/" + no, { type: "roomUpdate", action: "clear", time: now() });
       await refresh();
-      toast("已清空");
     } catch (error) {
       console.warn("Clear room failed.", error);
       toast("清空失败，请稍后重试");
