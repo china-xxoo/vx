@@ -473,9 +473,12 @@
   function tick() {
     const time = new Date().toTimeString().slice(0, 8);
     const online = app.currentRoom ? roomCount() : allCount();
-    $("dataBtn").innerHTML = app.busyText
-      ? `<span class="dot"></span>${app.busyText}`
-      : `<span class="dot"></span>数据 ${time} 在线${online}`;
+    const needsMqtt = !!app.cfg?.mqttUrl;
+    const good = app.gistOk && (!needsMqtt || app.mqttOk);
+    let statusText = `数据 ${time} 在线${online}`;
+    if (app.busyText) statusText = app.busyText;
+    else if (!good) statusText = "数据正在加载中";
+    $("dataBtn").innerHTML = `<span class="dot"></span>${statusText}`;
     updateStatus();
   }
 
@@ -777,9 +780,52 @@
     };
   }
 
+  function askRoomPassword() {
+    return new Promise(resolve => {
+      $("mbox").innerHTML = `<h3>新建房间</h3>
+        <input class="inp" id="roomPasswordInput" type="password" maxlength="6" placeholder="房间密码需要4-6位">
+        <div class="muted" id="roomPasswordTip">请输入4-6位房间密码</div>
+        <div class="actions">
+          <button class="btn" type="button" id="roomPasswordCancel">取消</button>
+          <button class="btn primary" type="button" id="roomPasswordOk">创建</button>
+        </div>`;
+      $("modal").style.display = "flex";
+
+      const input = $("roomPasswordInput");
+      const tip = $("roomPasswordTip");
+      const cleanup = value => {
+        $("modal").removeEventListener("click", onBackdrop);
+        $("modal").style.display = "none";
+        resolve(value);
+      };
+      const submit = () => {
+        const value = input.value.trim();
+        if (value.length < 4 || value.length > 6) {
+          tip.textContent = "房间密码需要4-6位";
+          tip.style.color = "#fecaca";
+          input.focus();
+          return;
+        }
+        cleanup(value);
+      };
+      const onBackdrop = event => {
+        if (event.target.id === "modal") cleanup(null);
+      };
+
+      $("roomPasswordCancel").addEventListener("click", () => cleanup(null));
+      $("roomPasswordOk").addEventListener("click", submit);
+      input.addEventListener("keydown", event => {
+        if (event.key === "Enter") submit();
+        if (event.key === "Escape") cleanup(null);
+      });
+      $("modal").addEventListener("click", onBackdrop);
+      setTimeout(() => input.focus(), 30);
+    });
+  }
+
   async function newRoom() {
-    const password = prompt("请设置房间密码");
-    if (!password) return;
+    const roomPassword = await askRoomPassword();
+    if (!roomPassword) return;
     const busy = beginBusy("创建中...");
     try {
       const no = generateRoomNo();
@@ -793,7 +839,7 @@
         createdAt: now(),
         updatedAt: now(),
         owner: app.deviceId,
-        ...(await makeRoomAuth(password))
+        ...(await makeRoomAuth(roomPassword))
       };
       await postComment(ROOM_PREFIX + json(room));
       addVisibleRoom(no);
@@ -989,7 +1035,6 @@
   }
 
   async function deleteRoom(no) {
-    if (!confirm("确认删除该房间？")) return;
     const busy = beginBusy("删除中...");
     const oldRooms = app.rooms.slice();
     const oldVisibleRooms = visibleRooms();
@@ -1020,7 +1065,6 @@
       app.currentRoom = null;
       await refresh();
       if (app.tab === "me") renderMe();
-      toast("已删除");
     } catch (error) {
       console.warn("Delete room failed.", error);
       app.rooms = oldRooms;
