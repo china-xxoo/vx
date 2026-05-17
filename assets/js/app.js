@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "2026.05.17-structured-v2";
+  const VERSION = "2026.05.17-mqtt-feedback-v1";
   const CONFIG_URL = "vx-config.json";
   const GITHUB_API = "https://api.github.com";
   const MQTT_LIB_URL = "https://unpkg.com/mqtt/dist/mqtt.min.js";
@@ -10,10 +10,13 @@
   const BATCH_PREFIX = "VX_MSG_BATCH_V1:";
   const ANN_PREFIX = "VX_ANN_V1:";
   const ACCOUNT_PREFIX = "VX_ACCOUNT_V1:";
+  const FEEDBACK_PREFIX = "VX_FEEDBACK_V1:";
   const DEFAULT_ROOM_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const ROOM_NO_DIGITS = 4;
   const ROOM_NO_TOTAL = 10 ** ROOM_NO_DIGITS;
   const ROOM_NO_LOW_RATIO = 0.15;
+  const FEEDBACK_DAILY_LIMIT = 10;
+  const FEEDBACK_MAX_LENGTH = 300;
 
   const app = {
     cfg: null,
@@ -25,6 +28,7 @@
     rooms: [],
     comments: [],
     announcement: null,
+    feedback: [],
     accounts: {},
     account: null,
     mqtt: null,
@@ -55,6 +59,14 @@
   const enc = new TextEncoder();
   const dec = new TextDecoder();
   const today = () => new Date().toISOString().slice(0, 10);
+  const localDay = value => {
+    const date = value ? new Date(value) : new Date();
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0")
+    ].join("-");
+  };
   const esc = value => String(value || "").replace(/[&<>"']/g, char => ({
     "&": "&amp;",
     "<": "&lt;",
@@ -250,6 +262,7 @@
   function parseComments() {
     const roomMap = {};
     const accountMap = {};
+    const feedback = [];
     app.announcement = null;
 
     for (const comment of app.comments) {
@@ -274,6 +287,10 @@
           const accountTime = +(account.updatedAt || account.createdAt || 0);
           const oldTime = +(old?.updatedAt || old?.createdAt || 0);
           if (account.username && (!old || accountTime > oldTime)) accountMap[account.username] = account;
+        } else if (body.startsWith(FEEDBACK_PREFIX)) {
+          const item = JSON.parse(body.slice(FEEDBACK_PREFIX.length));
+          item.cid = comment.id;
+          if (item.text && item.sender) feedback.push(item);
         }
       } catch (error) {
         console.warn("Skipping invalid gist comment.", error);
@@ -282,6 +299,7 @@
 
     app.rooms = sortRooms(Object.values(roomMap));
     app.accounts = accountMap;
+    app.feedback = feedback.sort((a, b) => (+(b.createdAt || 0)) - (+(a.createdAt || 0)));
     restoreAccountSession();
   }
 
@@ -443,7 +461,7 @@
     }
 
     if (name === topic("all")) {
-      if (["rooms", "announcement", "clear", "delete"].includes(payload.type)) refresh();
+      if (["rooms", "announcement", "feedback", "clear", "delete"].includes(payload.type)) refresh();
       if (payload.type === "delete" && app.currentRoom?.no === payload.no) back();
       return;
     }
@@ -1124,8 +1142,60 @@
     }
   }
 
+  function cleanFeedbackText(value) {
+    return String(value || "").trim().slice(0, FEEDBACK_MAX_LENGTH);
+  }
+
+  function feedbackRecord(item) {
+    const copy = { ...item };
+    delete copy.cid;
+    return copy;
+  }
+
+  function ownFeedback(item) {
+    const username = normalizeAccountName(app.account?.username || "");
+    const deviceIds = app.account?.deviceIds || [];
+    return item.sender === currentUserId()
+      || item.sender === app.deviceId
+      || item.deviceId === app.deviceId
+      || (username && normalizeAccountName(item.username) === username)
+      || deviceIds.includes(item.sender)
+      || deviceIds.includes(item.deviceId);
+  }
+
+  function visibleFeedback() {
+    return app.admin ? app.feedback : app.feedback.filter(ownFeedback);
+  }
+
+  function feedbackTodayCount() {
+    const day = localDay();
+    return app.feedback.filter(item => ownFeedback(item) && localDay(item.createdAt || 0) === day).length;
+  }
+
+  function feedbackSenderLabel(item) {
+    if (item.username) return "手机号 " + normalizeAccountName(item.username);
+    return "设备 " + String(item.deviceId || item.sender || "").slice(0, 16);
+  }
+
+  function feedbackItemHtml(item, isAdmin) {
+    return `<div class="feedbackItem">
+      <div class="feedbackMeta">
+        <span>${isAdmin ? esc(feedbackSenderLabel(item)) : "我的留言"}</span>
+        <span>${formatTime(item.createdAt)}</span>
+      </div>
+      <div class="feedbackText">${esc(item.text).replace(/\n/g, "<br>")}</div>
+    </div>`;
+  }
+
   function renderAnnouncement() {
+    const announcementCard = `<div class="card">
+      <div class="title">${esc(app.announcement?.title || "公告")}</div>
+      <div style="line-height:1.7;margin-top:12px">${app.announcement?.content ? esc(app.announcement.content).replace(/\n/g, "<br>") : "暂无公告，谢谢使用。"}</div>
+      <div class="muted">${app.announcement?.time ? formatTime(app.announcement.time) : ""}</div>
+    </div>`;
+
     if (app.admin) {
+      const list = visibleFeedback();
       setMain(`<div class="card">
         <div class="title">公告管理</div>
         <div class="muted">当前在线用户会通过 MQTT 收到刷新通知。</div>
@@ -1135,15 +1205,74 @@
           <button class="btn primary" type="button" id="saveAnnBtn">发布公告</button>
           <button class="btn danger" type="button" id="clearAnnBtn">清空公告</button>
         </div>
+      </div>
+      <div class="card">
+        <div class="title">用户留言 <span class="badge dangerBadge">仅管理员可见</span></div>
+        <div class="muted">这里显示用户在公告页给你的留言，普通用户只能看到自己的留言。</div>
+        <div class="feedbackList">
+          ${list.length ? list.map(item => feedbackItemHtml(item, true)).join("") : `<div class="empty compactEmpty">暂无留言</div>`}
+        </div>
       </div>`);
       return;
     }
 
-    setMain(`<div class="card">
-      <div class="title">${esc(app.announcement?.title || "公告")}</div>
-      <div style="line-height:1.7;margin-top:12px">${app.announcement?.content ? esc(app.announcement.content).replace(/\n/g, "<br>") : "暂无公告，谢谢使用。"}</div>
-      <div class="muted">${app.announcement?.time ? formatTime(app.announcement.time) : ""}</div>
+    const count = feedbackTodayCount();
+    const disabled = count >= FEEDBACK_DAILY_LIMIT;
+    const list = visibleFeedback();
+    setMain(`${announcementCard}
+    <div class="card">
+      <div class="title">给管理员留言 <span class="badge dangerBadge">仅你和管理员可见</span></div>
+      <textarea id="feedbackText" maxlength="${FEEDBACK_MAX_LENGTH}" placeholder="${disabled ? "今日留言次数已用完" : "写给管理员的留言"}" ${disabled ? "disabled" : ""}></textarea>
+      <div class="muted" id="feedbackTip">今天已发送 ${count}/${FEEDBACK_DAILY_LIMIT} 条。</div>
+      <div class="actions">
+        <button class="btn primary" type="button" id="sendFeedbackBtn" ${disabled ? "disabled" : ""}>发送留言</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="title">我的留言</div>
+      <div class="muted">这里只显示你自己发给管理员的留言。</div>
+      <div class="feedbackList">
+        ${list.length ? list.map(item => feedbackItemHtml(item, false)).join("") : `<div class="empty compactEmpty">暂无留言</div>`}
+      </div>
     </div>`);
+  }
+
+  async function sendFeedback() {
+    const text = cleanFeedbackText($("feedbackText")?.value || "");
+    const tip = $("feedbackTip");
+    if (!text) {
+      if (tip) tip.textContent = "留言内容不能为空。";
+      return;
+    }
+
+    const busy = beginBusy("发送中...");
+    try {
+      await loadComments();
+      parseComments();
+      if (feedbackTodayCount() >= FEEDBACK_DAILY_LIMIT) {
+        renderAnnouncement();
+        const latestTip = $("feedbackTip");
+        if (latestTip) latestTip.textContent = "今天已发送 10/10 条，明天可以继续留言。";
+        return;
+      }
+
+      await postComment(FEEDBACK_PREFIX + json(feedbackRecord({
+        id: "F_" + now() + "_" + Math.random().toString(36).slice(2, 8),
+        sender: currentUserId(),
+        deviceId: app.deviceId,
+        username: normalizeAccountName(app.account?.username || ""),
+        text,
+        day: localDay(),
+        createdAt: now()
+      })));
+      publish("all", { type: "feedback", time: now() });
+      await refresh();
+    } catch (error) {
+      console.warn("Send feedback failed.", error);
+      if (tip) tip.textContent = "发送失败，请稍后重试。";
+    } finally {
+      endBusy(busy);
+    }
   }
 
   async function saveAnnouncement() {
@@ -1840,6 +1969,12 @@
       const clearAnn = event.target.closest("#clearAnnBtn");
       if (clearAnn) {
         clearAnnouncement();
+        return;
+      }
+
+      const sendFeedbackButton = event.target.closest("#sendFeedbackBtn");
+      if (sendFeedbackButton) {
+        sendFeedback();
         return;
       }
 

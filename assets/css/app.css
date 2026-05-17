@@ -163,6 +163,12 @@ button {
   white-space: nowrap;
 }
 
+.btn:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
 .primary {
   border-color: rgba(125, 211, 252, .35);
   background: linear-gradient(135deg, #2563eb, #06b6d4);
@@ -377,6 +383,42 @@ textarea {
   color: var(--muted);
   padding: 50px 10px;
   text-align: center;
+}
+
+.compactEmpty {
+  margin-top: 10px;
+  padding: 22px 10px;
+}
+
+.feedbackList {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.feedbackItem {
+  border: 1px solid rgba(56, 189, 248, .16);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, .38);
+  padding: 10px;
+}
+
+.feedbackMeta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.feedbackText {
+  margin-top: 8px;
+  color: #f8fbff;
+  line-height: 1.65;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .actions {
