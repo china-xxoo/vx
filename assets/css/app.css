@@ -273,14 +273,22 @@ button {
 
 .search {
   display: flex;
+  align-items: center;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+.search .btn {
+  min-width: 66px;
+  padding-right: 10px;
+  padding-left: 10px;
 }
 
 .search input,
 .inp,
 textarea,
 #msg {
+  min-width: 0;
   width: 100%;
   border: 1px solid rgba(56, 189, 248, .28);
   border-radius: 12px;
@@ -314,6 +322,12 @@ textarea {
   transform: scale(.99);
 }
 
+.card.ownerDeleted {
+  border-color: rgba(248, 113, 113, .48);
+  background: linear-gradient(135deg, rgba(127, 29, 29, .64), rgba(15, 23, 42, .78));
+  box-shadow: 0 14px 30px rgba(127, 29, 29, .18), inset 0 0 22px rgba(248, 113, 113, .06);
+}
+
 .row {
   display: flex;
   align-items: center;
@@ -325,6 +339,27 @@ textarea {
   color: #f8fbff;
   font-size: 17px;
   font-weight: 950;
+}
+
+.smallTitle {
+  font-size: 14px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  border-radius: 999px;
+  padding: 3px 7px;
+  vertical-align: 2px;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.dangerBadge {
+  border: 1px solid rgba(254, 202, 202, .42);
+  background: rgba(127, 29, 29, .72);
+  color: #fee2e2;
 }
 
 .muted {
@@ -354,6 +389,20 @@ textarea {
 .actions button {
   min-width: 120px;
   flex: 1;
+}
+
+.searchHint {
+  margin: -5px 0 10px;
+}
+
+.settingBlock {
+  margin-top: 14px;
+  border-top: 1px solid rgba(56, 189, 248, .18);
+  padding-top: 14px;
+}
+
+.settingBlock .inp {
+  margin-top: 10px;
 }
 
 #send {

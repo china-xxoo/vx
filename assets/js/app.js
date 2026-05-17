@@ -38,6 +38,8 @@
     sending: false,
     busyText: "",
     busyToken: 0,
+    chatSearch: "",
+    adminSearch: "",
     deviceId: localStorage.vx_device || ("U" + Math.random().toString(36).slice(2, 10))
   };
 
@@ -265,7 +267,7 @@
       }
     }
 
-    app.rooms = Object.values(roomMap).sort((a, b) => (+(b.updatedAt || b.createdAt || 0)) - (+(a.updatedAt || a.createdAt || 0)));
+    app.rooms = sortRooms(Object.values(roomMap));
   }
 
   async function refresh(label) {
@@ -274,6 +276,11 @@
       await loadComments();
       parseComments();
       app.gistOk = true;
+      if (app.currentRoom) {
+        const updatedRoom = app.rooms.find(room => room.no === app.currentRoom.no);
+        if (!updatedRoom || (isOwnerDeleted(updatedRoom) && !app.admin)) back();
+        else app.currentRoom = updatedRoom;
+      }
       if (!app.currentRoom) renderCurrentTab();
     } catch (error) {
       app.gistOk = false;
@@ -432,7 +439,7 @@
         if (rememberRoomProfile(app.currentRoom.no, payload.id, payload.nick)) renderChat();
       } else if (payload.type === "roomUpdate") {
         if (payload.action === "clear") localStorage.removeItem(messageKey(app.currentRoom.no));
-        if (payload.action === "delete") back();
+        if (payload.action === "delete" || payload.action === "ownerDelete") back();
         else renderChat();
       }
       return;
@@ -646,6 +653,38 @@
     saveMessages(no, localMessages(no).concat(add));
   }
 
+  function gistMessages(no) {
+    const messages = [];
+    for (const comment of app.comments) {
+      const body = comment.body || "";
+      try {
+        if (body.startsWith(MSG_PREFIX + no + ":")) {
+          messages.push(JSON.parse(body.slice((MSG_PREFIX + no + ":").length)));
+        } else if (body.startsWith(BATCH_PREFIX + no + ":")) {
+          const pack = JSON.parse(body.slice((BATCH_PREFIX + no + ":").length));
+          messages.push(...(pack.messages || []));
+        }
+      } catch (error) {
+        console.warn("Skipping invalid message pack.", error);
+      }
+    }
+    return messages;
+  }
+
+  function roomSearchText(room) {
+    const messages = localMessages(room.no).concat(gistMessages(room.no));
+    return [
+      room.no,
+      roomName(room),
+      ...messages.flatMap(message => [message.text, message.nick, message.sender])
+    ].filter(Boolean).join("\n").toLowerCase();
+  }
+
+  function matchesRoomSearch(room, query) {
+    const clean = String(query || "").trim().toLowerCase();
+    return !clean || roomSearchText(room).includes(clean);
+  }
+
   function setMain(html) {
     $("main").innerHTML = html;
   }
@@ -693,20 +732,56 @@
     }
   }
 
+  function removeVisibleRoom(no) {
+    saveVisibleRooms(visibleRooms().filter(item => item !== no));
+  }
+
   function roomName(room) {
     return room.name || room.no;
   }
 
-  function verified(no) {
-    return localStorage.getItem("vx_verified_" + no) === today();
+  function isOwnerDeleted(room) {
+    return !!(room?.ownerDeletedAt || room?.ownerDeleted);
   }
 
-  function setVerified(no) {
-    localStorage.setItem("vx_verified_" + no, today());
+  function isRoomOwner(room) {
+    return !!room && room.owner === app.deviceId;
+  }
+
+  function roomRecord(room) {
+    const copy = { ...room };
+    delete copy.cid;
+    return copy;
+  }
+
+  function sortRooms(rooms) {
+    return rooms.sort((a, b) => (+(b.updatedAt || b.createdAt || 0)) - (+(a.updatedAt || a.createdAt || 0)));
+  }
+
+  function updateLocalRoom(room) {
+    const next = roomRecord(room);
+    const index = app.rooms.findIndex(item => item.no === next.no);
+    if (index >= 0) app.rooms[index] = { ...app.rooms[index], ...next };
+    else app.rooms.push(next);
+    sortRooms(app.rooms);
+    if (app.currentRoom?.no === next.no) app.currentRoom = { ...app.currentRoom, ...next };
+  }
+
+  function roomAuthStamp(room) {
+    return String(room.passUpdatedAt || room.updatedAt || room.createdAt || "");
+  }
+
+  function verified(room) {
+    return localStorage.getItem("vx_verified_" + room.no) === today() + ":" + roomAuthStamp(room);
+  }
+
+  function setVerified(room) {
+    localStorage.setItem("vx_verified_" + room.no, today() + ":" + roomAuthStamp(room));
   }
 
   function roomCard(room, isAdmin) {
-    return `<div class="card click" data-enter="${esc(room.no)}" data-admin="${isAdmin ? "1" : "0"}">
+    const ownerDeleted = isOwnerDeleted(room);
+    return `<div class="card click ${ownerDeleted ? "ownerDeleted" : ""}" data-enter="${esc(room.no)}" data-admin="${isAdmin ? "1" : "0"}">
       <div class="row">
         <div>
           <div class="title">${esc(room.no)}</div>
@@ -722,7 +797,7 @@
 
   function renderHall() {
     const visible = new Set(visibleRooms());
-    const list = app.rooms.filter(room => visible.has(room.no));
+    const list = app.rooms.filter(room => !isOwnerDeleted(room) && visible.has(room.no));
     setMain(`<div class="search">
       <input id="searchInput" placeholder="请输入房间号" autocomplete="off">
       <button class="btn primary" type="button" id="searchBtn">搜索</button>
@@ -762,11 +837,12 @@
   async function requestEnter(no, isAdmin, remember) {
     const room = app.rooms.find(item => item.no === no);
     if (!room) return toast("未找到房间");
+    if (isOwnerDeleted(room) && !isAdmin && !app.admin) return toast("未找到房间");
 
-    if (!isAdmin && !app.admin && !verified(no)) {
+    if (!isAdmin && !app.admin && !verified(room)) {
       const password = prompt("请输入房间密码");
       if (!(await verifyRoomPassword(room, password || ""))) return toast("密码错误");
-      setVerified(no);
+      setVerified(room);
     }
 
     const busy = beginBusy("进入中...");
@@ -790,7 +866,7 @@
       return;
     }
 
-    const room = app.rooms.find(item => String(item.no).toUpperCase() === query.toUpperCase());
+    const room = app.rooms.find(item => !isOwnerDeleted(item) && String(item.no).toUpperCase() === query.toUpperCase());
     if (!room) return toast("未找到房间");
     requestEnter(room.no, false, true);
   }
@@ -880,6 +956,7 @@
         name: no,
         createdAt: now(),
         updatedAt: now(),
+        passUpdatedAt: now(),
         owner: app.deviceId,
         ...(await makeRoomAuth(roomPassword))
       };
@@ -961,6 +1038,8 @@
       return;
     }
     const stats = roomNoStats();
+    const query = String(app.adminSearch || "").trim();
+    const rooms = query ? app.rooms.filter(room => matchesRoomSearch(room, query)) : app.rooms;
     const lowRoomNoTip = stats.low
       ? `<div class="card">
         <div class="title">房间号不足</div>
@@ -974,8 +1053,14 @@
       <div class="muted">4位房间号剩余：${stats.available}/${stats.total}</div>
       <div class="actions"><button class="btn danger" type="button" id="exitAdminBtn">退出管理</button></div>
     </div>
+    <div class="search">
+      <input id="adminSearchInput" placeholder="搜索房间号或聊天关键词" autocomplete="off" value="${esc(query)}">
+      <button class="btn primary" type="button" id="adminSearchBtn">搜索</button>
+      ${query ? `<button class="btn" type="button" id="adminSearchClear">清除</button>` : ""}
+    </div>
+    ${query ? `<div class="muted searchHint">找到 ${rooms.length}/${app.rooms.length} 个房间</div>` : ""}
     ${lowRoomNoTip}
-    ${app.rooms.length ? app.rooms.map(room => roomCard(room, true)).join("") : `<div class="empty">暂无房间</div>`}`);
+    ${rooms.length ? rooms.map(room => roomCard(room, true)).join("") : `<div class="empty">暂无房间</div>`}`);
   }
 
   function exitAdmin() {
@@ -989,6 +1074,7 @@
 
     app.currentRoom = room;
     app.tab = "room";
+    app.chatSearch = "";
     document.body.classList.add("room");
     fixViewport();
     $("backBtn").classList.remove("hide");
@@ -1015,19 +1101,52 @@
 
   function renderChat() {
     if (!app.currentRoom) return;
-    const list = localMessages(app.currentRoom.no);
+    const all = localMessages(app.currentRoom.no);
     const profiles = roomProfiles(app.currentRoom.no);
     const ownNick = roomNickname(app.currentRoom.no);
-    setMain(`<div id="chat">${list.map(message => `<div class="msg ${message.sender === app.deviceId ? "me" : "other"}">
+    const query = String(app.chatSearch || "").trim();
+    const queryLower = query.toLowerCase();
+    const list = query
+      ? all.filter(message => [message.text, senderName(message, profiles, ownNick), formatTime(message.time)].join("\n").toLowerCase().includes(queryLower))
+      : all;
+    setMain(`<div class="search chatSearch">
+      <input id="chatSearchInput" placeholder="搜索聊天记录" autocomplete="off" value="${esc(query)}">
+      <button class="btn primary" type="button" id="chatSearchBtn">搜索</button>
+      ${query ? `<button class="btn" type="button" id="chatSearchClear">清除</button>` : ""}
+    </div>
+    ${query ? `<div class="muted searchHint">找到 ${list.length}/${all.length} 条消息</div>` : ""}
+    <div id="chat">${list.length ? list.map(message => `<div class="msg ${message.sender === app.deviceId ? "me" : "other"}">
       <div class="meta">${esc(senderName(message, profiles, ownNick))}</div>
       <div class="bubble">${esc(message.text).replace(/\n/g, "<br>")}</div>
-    </div>`).join("")}</div>`);
+    </div>`).join("") : `<div class="empty">没有匹配的聊天记录</div>`}</div>`);
     tick();
+  }
+
+  function applyChatSearch() {
+    app.chatSearch = ($("chatSearchInput")?.value || "").trim();
+    renderChat();
+  }
+
+  function clearChatSearch() {
+    app.chatSearch = "";
+    renderChat();
+    setTimeout(() => $("main").scrollTop = $("main").scrollHeight, 30);
+  }
+
+  function applyAdminSearch() {
+    app.adminSearch = ($("adminSearchInput")?.value || "").trim();
+    renderMe();
+  }
+
+  function clearAdminSearch() {
+    app.adminSearch = "";
+    renderMe();
   }
 
   function back() {
     if (app.currentRoom) uploadPending(app.currentRoom.no);
     app.currentRoom = null;
+    app.chatSearch = "";
     leaveRoomSubscription();
     clearInterval(app.uploadTimer);
     $("send").style.display = "none";
@@ -1044,13 +1163,26 @@
   function editRoomNickname() {
     if (!app.currentRoom) return;
     const roomNo = app.currentRoom.no;
-    $("mbox").innerHTML = `<h3>编辑昵称</h3>
+    const ownerTools = isRoomOwner(app.currentRoom)
+      ? `<div class="settingBlock">
+        <div class="title smallTitle">房主设置</div>
+        <input class="inp" id="ownerPasswordInput" type="password" maxlength="6" placeholder="新房间密码需要4-6位">
+        <div class="muted" id="ownerPasswordTip">修改后，下次进入本房间需要新密码</div>
+        <div class="actions">
+          <button class="btn primary" type="button" id="ownerPasswordOk">修改密码</button>
+          <button class="btn danger" type="button" id="ownerDeleteRoom">删除本房间</button>
+        </div>
+        <div class="muted">删除后普通用户看不到、搜不到；管理员后台仍可查看。</div>
+      </div>`
+      : "";
+    $("mbox").innerHTML = `<h3>房间设置</h3>
       <input class="inp" id="nickInput" maxlength="16" placeholder="输入本房间昵称" value="${esc(roomNickname(roomNo))}">
       <div class="muted" id="nickTip">只在本房间显示，最多16个字</div>
       <div class="actions">
         <button class="btn" type="button" id="nickCancel">取消</button>
         <button class="btn primary" type="button" id="nickOk">保存</button>
-      </div>`;
+      </div>
+      ${ownerTools}`;
     $("modal").style.display = "flex";
 
     const input = $("nickInput");
@@ -1073,18 +1205,116 @@
       renderChat();
       close();
     };
+    const changePassword = async () => {
+      const passInput = $("ownerPasswordInput");
+      const passTip = $("ownerPasswordTip");
+      if (!passInput || !passTip || !app.currentRoom) return;
+      const value = passInput.value.trim();
+      if (value.length < 4 || value.length > 6) {
+        passTip.textContent = "房间密码需要4-6位";
+        passTip.style.color = "#fecaca";
+        passInput.focus();
+        return;
+      }
+      await changeCurrentRoomPassword(value, passTip, passInput);
+    };
     const onBackdrop = event => {
       if (event.target.id === "modal") close();
     };
 
     $("nickCancel").addEventListener("click", close);
     $("nickOk").addEventListener("click", submit);
+    if ($("ownerPasswordOk")) $("ownerPasswordOk").addEventListener("click", changePassword);
+    if ($("ownerDeleteRoom")) $("ownerDeleteRoom").addEventListener("click", () => {
+      close();
+      ownerDeleteCurrentRoom();
+    });
     input.addEventListener("keydown", event => {
       if (event.key === "Enter") submit();
       if (event.key === "Escape") close();
     });
+    if ($("ownerPasswordInput")) {
+      $("ownerPasswordInput").addEventListener("keydown", event => {
+        if (event.key === "Enter") changePassword();
+        if (event.key === "Escape") close();
+      });
+    }
     $("modal").addEventListener("click", onBackdrop);
     setTimeout(() => input.focus(), 30);
+  }
+
+  async function changeCurrentRoomPassword(password, tip, input) {
+    const room = app.currentRoom;
+    if (!room || !isRoomOwner(room)) return;
+    const oldRoom = { ...room };
+    const busy = beginBusy("同步中...");
+    try {
+      const stamp = now();
+      const updated = {
+        ...roomRecord(room),
+        ...(await makeRoomAuth(password)),
+        passUpdatedAt: stamp,
+        updatedAt: stamp
+      };
+      delete updated.password;
+      updateLocalRoom(updated);
+      setVerified(updated);
+      await postComment(ROOM_PREFIX + json(roomRecord(updated)));
+      publish("room/" + updated.no, { type: "roomUpdate", action: "password", time: now() });
+      publish("all", { type: "rooms", no: updated.no, time: now() });
+      if (tip) {
+        tip.textContent = "密码已更新";
+        tip.style.color = "#bbf7d0";
+      }
+      if (input) input.value = "";
+      await refresh();
+    } catch (error) {
+      console.warn("Change room password failed.", error);
+      updateLocalRoom(oldRoom);
+      if (tip) {
+        tip.textContent = "修改失败，请稍后重试";
+        tip.style.color = "#fecaca";
+      } else {
+        toast("修改失败，请稍后重试");
+      }
+    } finally {
+      endBusy(busy);
+    }
+  }
+
+  async function ownerDeleteCurrentRoom() {
+    const room = app.currentRoom;
+    if (!room || !isRoomOwner(room)) return;
+    const no = room.no;
+    const stamp = now();
+    const oldRooms = app.rooms.slice();
+    const oldVisibleRooms = visibleRooms();
+    const updated = {
+      ...roomRecord(room),
+      ownerDeleted: true,
+      ownerDeletedAt: stamp,
+      updatedAt: stamp
+    };
+    const busy = beginBusy("删除中...");
+
+    updateLocalRoom(updated);
+    removeVisibleRoom(no);
+    publish("room/" + no, { type: "roomUpdate", action: "ownerDelete", time: now() });
+    publish("all", { type: "rooms", no, time: now() });
+    back();
+
+    try {
+      await postComment(ROOM_PREFIX + json(roomRecord(updated)));
+      await refresh();
+    } catch (error) {
+      console.warn("Owner delete room failed.", error);
+      app.rooms = oldRooms;
+      saveVisibleRooms(oldVisibleRooms);
+      renderCurrentTab();
+      toast("删除失败，请稍后重试");
+    } finally {
+      endBusy(busy);
+    }
   }
 
   async function sendMessage() {
@@ -1271,6 +1501,30 @@
         return;
       }
 
+      const chatSearch = event.target.closest("#chatSearchBtn");
+      if (chatSearch) {
+        applyChatSearch();
+        return;
+      }
+
+      const chatSearchClear = event.target.closest("#chatSearchClear");
+      if (chatSearchClear) {
+        clearChatSearch();
+        return;
+      }
+
+      const adminSearch = event.target.closest("#adminSearchBtn");
+      if (adminSearch) {
+        applyAdminSearch();
+        return;
+      }
+
+      const adminSearchClear = event.target.closest("#adminSearchClear");
+      if (adminSearchClear) {
+        clearAdminSearch();
+        return;
+      }
+
       const saveAnn = event.target.closest("#saveAnnBtn");
       if (saveAnn) {
         saveAnnouncement();
@@ -1309,6 +1563,8 @@
 
     $("main").addEventListener("keydown", event => {
       if (event.key === "Enter" && event.target.id === "searchInput") searchRoom();
+      if (event.key === "Enter" && event.target.id === "chatSearchInput") applyChatSearch();
+      if (event.key === "Enter" && event.target.id === "adminSearchInput") applyAdminSearch();
     });
 
     $("modal").addEventListener("click", event => {
