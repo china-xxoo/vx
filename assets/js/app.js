@@ -10,6 +10,9 @@
   const BATCH_PREFIX = "VX_MSG_BATCH_V1:";
   const ANN_PREFIX = "VX_ANN_V1:";
   const DEFAULT_ROOM_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const ROOM_NO_DIGITS = 4;
+  const ROOM_NO_TOTAL = 10 ** ROOM_NO_DIGITS;
+  const ROOM_NO_LOW_RATIO = 0.15;
 
   const app = {
     cfg: null,
@@ -748,15 +751,30 @@
   }
 
   function generateRoomNo() {
-    const chars = (app.cfg.roomChars || DEFAULT_ROOM_CHARS).replace(/\s/g, "") || DEFAULT_ROOM_CHARS;
     const used = new Set(app.rooms.map(room => room.no));
     for (let attempt = 0; attempt < 2000; attempt += 1) {
-      const bytes = crypto.getRandomValues(new Uint8Array(6));
-      let no = "";
-      for (const byte of bytes) no += chars[byte % chars.length];
+      const value = crypto.getRandomValues(new Uint32Array(1))[0] % ROOM_NO_TOTAL;
+      const no = String(value).padStart(ROOM_NO_DIGITS, "0");
       if (!used.has(no)) return no;
     }
-    return String(now()).slice(-6);
+    for (let value = 0; value < ROOM_NO_TOTAL; value += 1) {
+      const no = String(value).padStart(ROOM_NO_DIGITS, "0");
+      if (!used.has(no)) return no;
+    }
+    return "";
+  }
+
+  function roomNoStats() {
+    const pattern = new RegExp("^\\d{" + ROOM_NO_DIGITS + "}$");
+    const used = new Set(app.rooms.map(room => String(room.no)).filter(no => pattern.test(no)));
+    const available = Math.max(0, ROOM_NO_TOTAL - used.size);
+    const percent = available / ROOM_NO_TOTAL;
+    return {
+      available,
+      total: ROOM_NO_TOTAL,
+      percent,
+      low: percent < ROOM_NO_LOW_RATIO
+    };
   }
 
   async function newRoom() {
@@ -765,6 +783,10 @@
     const busy = beginBusy("创建中...");
     try {
       const no = generateRoomNo();
+      if (!no) {
+        toast("房间号已用完，请增加房间号位数");
+        return;
+      }
       const room = {
         no,
         name: no,
@@ -852,12 +874,21 @@
       setMain(`<div class="empty">谢谢使用！</div>`);
       return;
     }
+    const stats = roomNoStats();
+    const lowRoomNoTip = stats.low
+      ? `<div class="card">
+        <div class="title">房间号不足</div>
+        <div class="muted">4位数字房间号剩余 ${stats.available}/${stats.total}，低于15%。建议增加房间号位数，例如改为5位数字。</div>
+      </div>`
+      : "";
     setMain(`<div class="card">
       <div class="title">管理后台</div>
       <div class="muted">当前版本：${VERSION}</div>
       <div class="muted">所有房间：${app.rooms.length}</div>
+      <div class="muted">4位房间号剩余：${stats.available}/${stats.total}</div>
       <div class="actions"><button class="btn danger" type="button" id="exitAdminBtn">退出管理</button></div>
     </div>
+    ${lowRoomNoTip}
     ${app.rooms.length ? app.rooms.map(room => roomCard(room, true)).join("") : `<div class="empty">暂无房间</div>`}`);
   }
 
