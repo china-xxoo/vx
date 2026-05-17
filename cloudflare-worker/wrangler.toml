@@ -1,0 +1,16 @@
+name = "vx-chat-worker"
+main = "src/index.js"
+compatibility_date = "2026-05-17"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vx_chat"
+database_id = "05c162f2-70c0-4f9c-9fc5-b45ab0eb0d8d"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "RoomDurableObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomDurableObject"]
