@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "2026.05.17-mqtt-feedback-v1";
+  const VERSION = "2026.05.18-mqtt-feedback-v5";
   const CONFIG_URL = "vx-config.json";
   const GITHUB_API = "https://api.github.com";
   const MQTT_LIB_URL = "https://unpkg.com/mqtt/dist/mqtt.min.js";
@@ -11,6 +11,8 @@
   const ANN_PREFIX = "VX_ANN_V1:";
   const ACCOUNT_PREFIX = "VX_ACCOUNT_V1:";
   const FEEDBACK_PREFIX = "VX_FEEDBACK_V1:";
+  const GIST_QUEUE_KEY = "vx_gist_queue_v1";
+  const GIST_QUEUE_LIMIT = 800;
   const DEFAULT_ROOM_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const ROOM_NO_DIGITS = 4;
   const ROOM_NO_TOTAL = 10 ** ROOM_NO_DIGITS;
@@ -29,6 +31,7 @@
     comments: [],
     announcement: null,
     feedback: [],
+    activeFeedbackId: "",
     accounts: {},
     account: null,
     mqtt: null,
@@ -41,8 +44,12 @@
     refreshTimer: null,
     uploadTimer: null,
     uploadSoon: null,
+    gistQueueBusy: false,
+    gistQueueSoon: null,
+    gistQueueTimer: null,
     activeRoomSubscription: null,
     sending: false,
+    feedbackSending: false,
     busyText: "",
     busyToken: 0,
     chatSearch: "",
@@ -75,6 +82,16 @@
     "'": "&#39;"
   }[char]));
   const formatTime = value => value ? new Date(value).toLocaleString() : "";
+
+  function stableHash(value) {
+    let hash = 2166136261;
+    const text = String(value || "");
+    for (let index = 0; index < text.length; index += 1) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+  }
 
   function showCalc() {
     $("disp").textContent = (app.calcExpr || "0").replaceAll("*", "×").replaceAll("/", "÷").slice(-18);
@@ -213,6 +230,33 @@
     boot();
   }
 
+  function panicClose() {
+    $("calc").style.display = "flex";
+    $("app").style.display = "none";
+    $("app").setAttribute("aria-hidden", "true");
+    $("modal").style.display = "none";
+    app.calcExpr = "";
+    showCalc();
+
+    document.body.classList.remove("room");
+    app.currentRoom = null;
+    app.chatSearch = "";
+    app.activeFeedbackId = "";
+    clearInterval(app.uploadTimer);
+    app.uploadTimer = null;
+    leaveRoomSubscription();
+    $("send").style.display = "none";
+    $("backBtn").classList.add("hide");
+    $("roomTag").classList.add("hide");
+    $("roomTag").textContent = "";
+    $("roomTag").removeAttribute("title");
+    $("roomTag").removeAttribute("role");
+    $("roomTag").removeAttribute("tabindex");
+    $("roomTag").style.cursor = "";
+    $("newBtn").classList.remove("hide");
+    fixViewport();
+  }
+
   function headers(extra) {
     return {
       "Accept": "application/vnd.github+json",
@@ -259,10 +303,269 @@
     });
   }
 
+  function backgroundRun(label, task, retry = true) {
+    Promise.resolve()
+      .then(task)
+      .catch(error => {
+        console.warn(label + " failed.", error);
+        if (retry) {
+          setTimeout(() => {
+            Promise.resolve().then(task).catch(retryError => console.warn(label + " retry failed.", retryError));
+          }, 3000);
+        }
+      });
+  }
+
+  function gistBodyKey(body) {
+    try {
+      if (body.startsWith(ROOM_PREFIX)) {
+        const room = JSON.parse(body.slice(ROOM_PREFIX.length));
+        return "post:room:" + String(room.no || stableHash(body));
+      }
+      if (body.startsWith(ANN_PREFIX)) return "post:announcement";
+      if (body.startsWith(ACCOUNT_PREFIX)) {
+        const account = JSON.parse(body.slice(ACCOUNT_PREFIX.length));
+        const username = normalizeAccountName(account.username || "");
+        return "post:account:" + (username || stableHash(body));
+      }
+      if (body.startsWith(FEEDBACK_PREFIX)) {
+        const item = JSON.parse(body.slice(FEEDBACK_PREFIX.length));
+        return "post:feedback:" + String(item.id || stableHash(body));
+      }
+      if (body.startsWith(BATCH_PREFIX)) {
+        const rest = body.slice(BATCH_PREFIX.length);
+        const split = rest.indexOf(":");
+        const roomNo = split >= 0 ? rest.slice(0, split) : "";
+        const pack = split >= 0 ? JSON.parse(rest.slice(split + 1)) : {};
+        const messageIds = (pack.messages || []).map(message => message.id || legacyMessageId(message)).filter(Boolean).join(",");
+        return "post:batch:" + roomNo + ":" + (messageIds || pack.time || stableHash(body));
+      }
+      if (body.startsWith(MSG_PREFIX)) {
+        const rest = body.slice(MSG_PREFIX.length);
+        const split = rest.indexOf(":");
+        const roomNo = split >= 0 ? rest.slice(0, split) : "";
+        const message = split >= 0 ? JSON.parse(rest.slice(split + 1)) : {};
+        return "post:message:" + roomNo + ":" + (message.id || legacyMessageId(message) || stableHash(body));
+      }
+    } catch (error) {
+      console.warn("Unable to key gist body.", error);
+    }
+    return "post:raw:" + stableHash(body);
+  }
+
+  function gistQueue() {
+    return localJson(GIST_QUEUE_KEY, []);
+  }
+
+  function saveGistQueue(items) {
+    saveJson(GIST_QUEUE_KEY, items.slice(-GIST_QUEUE_LIMIT));
+  }
+
+  function enqueueGistItem(item) {
+    const queue = gistQueue();
+    const index = queue.findIndex(old => old.key === item.key);
+    if (index >= 0) {
+      queue[index] = {
+        ...queue[index],
+        ...item,
+        createdAt: queue[index].createdAt || item.createdAt,
+        attempts: queue[index].attempts || 0,
+        updatedAt: now()
+      };
+    } else {
+      queue.push({
+        id: "GQ_" + now() + "_" + Math.random().toString(36).slice(2, 8),
+        createdAt: now(),
+        updatedAt: now(),
+        attempts: 0,
+        ...item
+      });
+    }
+    saveGistQueue(queue);
+    scheduleGistQueue();
+  }
+
+  function backgroundPostComment(body, label) {
+    enqueueGistItem({
+      op: "post",
+      key: gistBodyKey(body),
+      body,
+      label: label || "Background post"
+    });
+  }
+
+  function backgroundDeleteComment(id, label) {
+    if (!id) return;
+    enqueueGistItem({
+      op: "delete",
+      key: "delete:" + id,
+      cid: id,
+      label: label || "Background delete"
+    });
+  }
+
+  function backgroundDeleteComments(label, match) {
+    const comments = app.comments.slice();
+    for (const comment of comments) {
+      if (match(comment.body || "")) backgroundDeleteComment(comment.id, label || "Background delete comments");
+    }
+  }
+
+  function applyPostedComment(body, comment) {
+    if (!comment?.id) return;
+    try {
+      if (body.startsWith(ROOM_PREFIX)) {
+        updateLocalRoom({ ...JSON.parse(body.slice(ROOM_PREFIX.length)), cid: comment.id });
+      } else if (body.startsWith(ANN_PREFIX)) {
+        const announcement = JSON.parse(body.slice(ANN_PREFIX.length));
+        if (!app.announcement || +(announcement.time || 0) >= +(app.announcement.time || 0)) app.announcement = { ...announcement, cid: comment.id };
+      } else if (body.startsWith(ACCOUNT_PREFIX)) {
+        const account = JSON.parse(body.slice(ACCOUNT_PREFIX.length));
+        account.username = normalizeAccountName(account.username);
+        if (account.username) app.accounts[account.username] = { ...account, cid: comment.id };
+      } else if (body.startsWith(FEEDBACK_PREFIX)) {
+        mergeFeedback({ ...JSON.parse(body.slice(FEEDBACK_PREFIX.length)), cid: comment.id });
+      }
+    } catch (error) {
+      console.warn("Unable to apply posted gist comment.", error);
+    }
+  }
+
+  function scheduleGistQueue(delay = 300) {
+    clearTimeout(app.gistQueueSoon);
+    app.gistQueueSoon = setTimeout(() => {
+      processGistQueue().catch(error => console.warn("Gist queue sync failed.", error));
+    }, delay);
+  }
+
+  async function processGistQueue() {
+    if (app.gistQueueBusy || !app.cfg?.gistId) return;
+    let queue = gistQueue();
+    if (!queue.length) return;
+
+    app.gistQueueBusy = true;
+    const completed = new Set();
+    let shouldStop = false;
+    try {
+      for (const item of queue.slice(0, 25)) {
+        try {
+          if (item.op === "delete") {
+            await deleteComment(item.cid);
+          } else {
+            const comment = await postComment(item.body);
+            applyPostedComment(item.body, comment);
+          }
+          completed.add(item.id);
+        } catch (error) {
+          item.attempts = +(item.attempts || 0) + 1;
+          item.updatedAt = now();
+          item.lastError = String(error?.message || error).slice(0, 120);
+          shouldStop = true;
+          console.warn((item.label || "Gist queue item") + " failed.", error);
+          break;
+        }
+      }
+    } finally {
+      queue = gistQueue().map(item => {
+        const changed = queue.find(next => next.id === item.id);
+        return changed || item;
+      }).filter(item => !completed.has(item.id));
+      saveGistQueue(queue);
+      app.gistQueueBusy = false;
+      if (completed.size) backgroundRefresh();
+      if (queue.length) scheduleGistQueue(shouldStop ? 5000 : 300);
+    }
+  }
+
+  function backgroundRefresh(delay = 900) {
+    setTimeout(() => refresh().catch(error => console.warn("Background refresh failed.", error)), delay);
+  }
+
+  function normalizeFeedback(item, cid) {
+    const createdAt = +(item.createdAt || now());
+    const text = cleanFeedbackText(item.text);
+    const sender = String(item.sender || item.deviceId || "");
+    const role = item.role || (item.sender === "admin" ? "admin" : "user");
+    const deviceId = String(item.deviceId || "");
+    const username = normalizeAccountName(item.username || "");
+    const target = String(item.target || "");
+    const targetDeviceId = String(item.targetDeviceId || "");
+    const targetUsername = normalizeAccountName(item.targetUsername || "");
+    const stableId = [
+      role,
+      sender,
+      deviceId,
+      username,
+      target,
+      targetDeviceId,
+      targetUsername,
+      text,
+      createdAt
+    ].join("|");
+    if (!item.deletedAt && (!text || !sender)) return null;
+    return {
+      ...item,
+      ...(cid ? { cid } : {}),
+      id: String(item.id || ("F_LEGACY_" + stableHash(stableId))),
+      role,
+      sender,
+      deviceId,
+      username,
+      target,
+      targetDeviceId,
+      targetUsername,
+      text,
+      day: item.day || localDay(createdAt),
+      createdAt,
+      updatedAt: +(item.updatedAt || item.deletedAt || item.createdAt || createdAt),
+      deletedAt: item.deletedAt ? +item.deletedAt : 0
+    };
+  }
+
+  function feedbackFingerprint(item) {
+    if (item.id) return "id:" + item.id;
+    return [
+      item.sender || "",
+      item.deviceId || "",
+      normalizeAccountName(item.username || ""),
+      cleanFeedbackText(item.text),
+      Math.floor(+(item.createdAt || 0) / 1000)
+    ].join("|");
+  }
+
+  function mergeFeedback(item) {
+    const normalized = normalizeFeedback(item);
+    if (!normalized) return false;
+    if (normalized.deletedAt) {
+      removeFeedback(normalized.id);
+      return true;
+    }
+    const key = feedbackFingerprint(normalized);
+    const index = app.feedback.findIndex(old => old.id === normalized.id || feedbackFingerprint(old) === key);
+    if (index >= 0) app.feedback[index] = { ...app.feedback[index], ...normalized };
+    else app.feedback.unshift(normalized);
+    app.feedback.sort((a, b) => (+(b.createdAt || 0)) - (+(a.createdAt || 0)));
+    return index < 0;
+  }
+
+  function removeFeedback(id) {
+    const before = app.feedback.length;
+    app.feedback = app.feedback.filter(item => item.id !== id);
+    if (app.activeFeedbackId === id) app.activeFeedbackId = "";
+    return app.feedback.length !== before;
+  }
+
+  function latestFeedbackItem(old, item) {
+    if (!old) return item;
+    return +(item.updatedAt || item.deletedAt || item.createdAt || 0) >= +(old.updatedAt || old.deletedAt || old.createdAt || 0)
+      ? { ...old, ...item }
+      : old;
+  }
+
   function parseComments() {
     const roomMap = {};
     const accountMap = {};
-    const feedback = [];
+    const feedbackMap = {};
     app.announcement = null;
 
     for (const comment of app.comments) {
@@ -288,9 +591,11 @@
           const oldTime = +(old?.updatedAt || old?.createdAt || 0);
           if (account.username && (!old || accountTime > oldTime)) accountMap[account.username] = account;
         } else if (body.startsWith(FEEDBACK_PREFIX)) {
-          const item = JSON.parse(body.slice(FEEDBACK_PREFIX.length));
-          item.cid = comment.id;
-          if (item.text && item.sender) feedback.push(item);
+          const item = normalizeFeedback(JSON.parse(body.slice(FEEDBACK_PREFIX.length)), comment.id);
+          if (item) {
+            const key = feedbackFingerprint(item);
+            feedbackMap[key] = latestFeedbackItem(feedbackMap[key], item);
+          }
         }
       } catch (error) {
         console.warn("Skipping invalid gist comment.", error);
@@ -299,7 +604,9 @@
 
     app.rooms = sortRooms(Object.values(roomMap));
     app.accounts = accountMap;
-    app.feedback = feedback.sort((a, b) => (+(b.createdAt || 0)) - (+(a.createdAt || 0)));
+    app.feedback = Object.values(feedbackMap)
+      .filter(item => !item.deletedAt)
+      .sort((a, b) => (+(b.createdAt || 0)) - (+(a.createdAt || 0)));
     restoreAccountSession();
   }
 
@@ -461,8 +768,37 @@
     }
 
     if (name === topic("all")) {
-      if (["rooms", "announcement", "feedback", "clear", "delete"].includes(payload.type)) refresh();
-      if (payload.type === "delete" && app.currentRoom?.no === payload.no) back();
+      if (payload.type === "feedback") {
+        if (payload.removeId) removeFeedback(payload.removeId);
+        if (payload.feedback) {
+          mergeFeedback(payload.feedback);
+        }
+        if (app.tab === "ann" && !app.currentRoom) renderAnnouncement();
+        backgroundRefresh();
+        return;
+      }
+      if (payload.type === "rooms" && payload.room) {
+        updateLocalRoom(payload.room);
+        if (app.currentRoom?.no === payload.room.no && isOwnerDeleted(payload.room) && !app.admin) back();
+        else if (!app.currentRoom) renderCurrentTab();
+        backgroundRefresh();
+        return;
+      }
+      if (payload.type === "announcement") {
+        app.announcement = payload.announcement || null;
+        if (app.tab === "ann" && !app.currentRoom) renderAnnouncement();
+        backgroundRefresh();
+        return;
+      }
+      if (payload.type === "delete" && payload.no) {
+        app.rooms = app.rooms.filter(room => room.no !== payload.no);
+        removeVisibleRoom(payload.no);
+        if (app.currentRoom?.no === payload.no) back();
+        else if (!app.currentRoom) renderCurrentTab();
+        backgroundRefresh();
+        return;
+      }
+      if (["rooms", "announcement", "clear"].includes(payload.type)) backgroundRefresh(100);
       return;
     }
 
@@ -684,8 +1020,8 @@
     setActiveAccount(app.accounts[username], !app.account);
   }
 
-  async function postAccount(account) {
-    await postComment(ACCOUNT_PREFIX + json(accountRecord(account)));
+  function postAccount(account) {
+    backgroundPostComment(ACCOUNT_PREFIX + json(accountRecord(account)), "Background account sync");
   }
 
   async function syncAccountNow() {
@@ -693,7 +1029,7 @@
     const snapshot = accountSnapshot(app.account);
     app.account = snapshot;
     app.accounts[snapshot.username] = snapshot;
-    await postAccount(snapshot);
+    postAccount(snapshot);
   }
 
   async function migrateOwnedRoomsToAccount(oldId, userId) {
@@ -706,8 +1042,8 @@
         updatedAt: now()
       };
       updateLocalRoom(updated);
-      await postComment(ROOM_PREFIX + json(roomRecord(updated)));
-      publish("all", { type: "rooms", no: updated.no, time: now() });
+      publish("all", { type: "rooms", room: roomRecord(updated), no: updated.no, time: now() });
+      backgroundPostComment(ROOM_PREFIX + json(roomRecord(updated)), "Background room owner sync");
     }
   }
 
@@ -759,34 +1095,25 @@
   async function uploadPending(roomNo) {
     const all = localJson(pendingKey(), []);
     if (!all.length || !app.cfg) return;
-    const busy = app.busyText ? null : beginBusy("同步中...");
 
     const groups = {};
-    try {
-      for (const message of all) {
-        if (roomNo && message.roomNo !== roomNo) continue;
-        (groups[message.roomNo] || (groups[message.roomNo] = [])).push(message);
-      }
-
-      const done = new Set();
-      for (const no of Object.keys(groups)) {
-        const messages = groups[no];
-        if (!messages.length) continue;
-        try {
-          await postComment(BATCH_PREFIX + no + ":" + json({
-            time: now(),
-            messages: messages.map(({ roomNo: ignored, ...message }) => message)
-          }));
-          messages.forEach(message => done.add(message.id));
-        } catch (error) {
-          console.warn("Pending upload failed.", error);
-        }
-      }
-
-      if (done.size) saveJson(pendingKey(), all.filter(message => !done.has(message.id)));
-    } finally {
-      if (busy) endBusy(busy);
+    for (const message of all) {
+      if (roomNo && message.roomNo !== roomNo) continue;
+      (groups[message.roomNo] || (groups[message.roomNo] = [])).push(message);
     }
+
+    const done = new Set();
+    for (const no of Object.keys(groups)) {
+      const messages = groups[no];
+      if (!messages.length) continue;
+      backgroundPostComment(BATCH_PREFIX + no + ":" + json({
+        time: now(),
+        messages: messages.map(({ roomNo: ignored, ...message }) => message)
+      }), "Background message batch");
+      messages.forEach(message => done.add(message.id));
+    }
+
+    if (done.size) saveJson(pendingKey(), all.filter(message => !done.has(message.id)));
   }
 
   function scheduleUpload(roomNo) {
@@ -1018,7 +1345,7 @@
     const busy = beginBusy("进入中...");
     try {
       if (remember) addVisibleRoom(no);
-      await uploadPending();
+      uploadPending();
       enterRoom(no);
     } finally {
       endBusy(busy);
@@ -1114,31 +1441,32 @@
   async function newRoom() {
     const roomPassword = await askRoomPassword();
     if (!roomPassword) return;
-    const busy = beginBusy("创建中...");
     try {
       const no = generateRoomNo();
       if (!no) {
         toast("房间号已用完，请增加房间号位数");
         return;
       }
+      const stamp = now();
       const room = {
         no,
         name: no,
-        createdAt: now(),
-        updatedAt: now(),
-        passUpdatedAt: now(),
+        createdAt: stamp,
+        updatedAt: stamp,
+        passUpdatedAt: stamp,
         owner: currentUserId(),
         ...(await makeRoomAuth(roomPassword))
       };
-      await postComment(ROOM_PREFIX + json(room));
+      updateLocalRoom(room);
+      setVerified(room);
       addVisibleRoom(no);
-      publish("all", { type: "rooms", no, time: now() });
-      await refresh();
+      renderHall();
+      publish("all", { type: "rooms", room: roomRecord(room), no, time: stamp });
+      backgroundPostComment(ROOM_PREFIX + json(roomRecord(room)), "Background room create");
+      backgroundRefresh();
     } catch (error) {
       console.warn("Create room failed.", error);
       toast("创建失败，请稍后重试");
-    } finally {
-      endBusy(busy);
     }
   }
 
@@ -1163,13 +1491,26 @@
       || deviceIds.includes(item.deviceId);
   }
 
+  function targetFeedback(item) {
+    const username = normalizeAccountName(app.account?.username || "");
+    const deviceIds = app.account?.deviceIds || [];
+    return item.target === currentUserId()
+      || item.target === app.deviceId
+      || item.targetDeviceId === app.deviceId
+      || (username && normalizeAccountName(item.targetUsername) === username)
+      || deviceIds.includes(item.target)
+      || deviceIds.includes(item.targetDeviceId);
+  }
+
   function visibleFeedback() {
-    return app.admin ? app.feedback : app.feedback.filter(ownFeedback);
+    return app.admin
+      ? app.feedback.filter(item => item.role !== "admin")
+      : app.feedback.filter(item => item.role === "admin" ? targetFeedback(item) : ownFeedback(item));
   }
 
   function feedbackTodayCount() {
     const day = localDay();
-    return app.feedback.filter(item => ownFeedback(item) && localDay(item.createdAt || 0) === day).length;
+    return app.feedback.filter(item => item.role !== "admin" && ownFeedback(item) && localDay(item.createdAt || 0) === day).length;
   }
 
   function feedbackSenderLabel(item) {
@@ -1177,14 +1518,55 @@
     return "设备 " + String(item.deviceId || item.sender || "").slice(0, 16);
   }
 
+  function feedbackTitle(item, isAdmin) {
+    if (isAdmin) return feedbackSenderLabel(item);
+    return item.role === "admin" ? "系统回复" : "我的留言";
+  }
+
   function feedbackItemHtml(item, isAdmin) {
-    return `<div class="feedbackItem">
+    const active = app.activeFeedbackId === item.id;
+    const canReply = isAdmin ? item.role !== "admin" : item.role === "admin";
+    return `<div class="feedbackItem ${active ? "activeFeedback" : ""}" data-feedback-id="${esc(item.id)}">
       <div class="feedbackMeta">
-        <span>${isAdmin ? esc(feedbackSenderLabel(item)) : "我的留言"}</span>
+        <span>${esc(feedbackTitle(item, isAdmin))}</span>
         <span>${formatTime(item.createdAt)}</span>
       </div>
       <div class="feedbackText">${esc(item.text).replace(/\n/g, "<br>")}</div>
+      ${active ? `<div class="actions feedbackActions" data-actions>
+        ${canReply ? `<button class="btn primary" type="button" data-feedback-reply="${esc(item.id)}">回复</button>` : ""}
+        <button class="btn danger" type="button" data-feedback-delete="${esc(item.id)}">删除</button>
+      </div>` : ""}
     </div>`;
+  }
+
+  function backgroundPostFeedback(item) {
+    backgroundPostComment(FEEDBACK_PREFIX + json(feedbackRecord(item)), "Background feedback upload");
+  }
+
+  function backgroundHideFeedback(item) {
+    if (!item?.id) return;
+    const stamp = now();
+    const hidden = {
+      ...feedbackRecord(item),
+      deletedAt: stamp,
+      updatedAt: stamp
+    };
+    backgroundPostComment(FEEDBACK_PREFIX + json(hidden), "Background feedback hide");
+    backgroundDeleteComment(item.cid, "Background feedback delete original");
+  }
+
+  function applyFeedbackChange(item, removeItem) {
+    if (removeItem) removeFeedback(removeItem.id);
+    mergeFeedback(item);
+    if (app.tab === "ann" && !app.currentRoom) renderAnnouncement();
+    publish("all", {
+      type: "feedback",
+      feedback: item,
+      ...(removeItem ? { removeId: removeItem.id } : {}),
+      time: now()
+    });
+    backgroundPostFeedback(item);
+    if (removeItem) backgroundHideFeedback(removeItem);
   }
 
   function renderAnnouncement() {
@@ -1207,8 +1589,8 @@
         </div>
       </div>
       <div class="card">
-        <div class="title">用户留言 <span class="badge dangerBadge">仅管理员可见</span></div>
-        <div class="muted">这里显示用户在公告页给你的留言，普通用户只能看到自己的留言。</div>
+        <div class="title">用户留言 <span class="badge dangerBadge">仅后台可见</span></div>
+        <div class="muted">点击留言可以回复或删除；回复后这条留言会自动隐藏。</div>
         <div class="feedbackList">
           ${list.length ? list.map(item => feedbackItemHtml(item, true)).join("") : `<div class="empty compactEmpty">暂无留言</div>`}
         </div>
@@ -1217,27 +1599,112 @@
     }
 
     const count = feedbackTodayCount();
-    const disabled = count >= FEEDBACK_DAILY_LIMIT;
+    const disabled = count >= FEEDBACK_DAILY_LIMIT || app.feedbackSending;
+    const feedbackTip = app.feedbackSending ? "发送中..." : `今天已发送 ${count}/${FEEDBACK_DAILY_LIMIT} 条。`;
+    const feedbackPlaceholder = app.feedbackSending
+      ? "发送中..."
+      : disabled
+        ? "今日留言次数已用完"
+        : "写给后台的留言";
     const list = visibleFeedback();
     setMain(`${announcementCard}
     <div class="card">
-      <div class="title">给管理员留言 <span class="badge dangerBadge">仅你和管理员可见</span></div>
-      <textarea id="feedbackText" maxlength="${FEEDBACK_MAX_LENGTH}" placeholder="${disabled ? "今日留言次数已用完" : "写给管理员的留言"}" ${disabled ? "disabled" : ""}></textarea>
-      <div class="muted" id="feedbackTip">今天已发送 ${count}/${FEEDBACK_DAILY_LIMIT} 条。</div>
+      <div class="title">给后台留言 <span class="badge dangerBadge">仅你和后台可见</span></div>
+      <textarea id="feedbackText" maxlength="${FEEDBACK_MAX_LENGTH}" placeholder="${feedbackPlaceholder}" ${disabled ? "disabled" : ""}></textarea>
+      <div class="muted" id="feedbackTip">${feedbackTip}</div>
       <div class="actions">
-        <button class="btn primary" type="button" id="sendFeedbackBtn" ${disabled ? "disabled" : ""}>发送留言</button>
+        <button class="btn primary" type="button" id="sendFeedbackBtn" ${disabled ? "disabled" : ""}>${app.feedbackSending ? "发送中..." : "发送留言"}</button>
       </div>
     </div>
     <div class="card">
       <div class="title">我的留言</div>
-      <div class="muted">这里只显示你自己发给管理员的留言。</div>
+      <div class="muted">这里只显示你自己发给后台的留言和后台给你的系统回复；点击系统回复可以继续回复或删除。</div>
       <div class="feedbackList">
         ${list.length ? list.map(item => feedbackItemHtml(item, false)).join("") : `<div class="empty compactEmpty">暂无留言</div>`}
       </div>
     </div>`);
   }
 
+  function askFeedbackReply(title, placeholder) {
+    return new Promise(resolve => {
+      $("mbox").innerHTML = `<h3>${esc(title)}</h3>
+        <textarea id="feedbackReplyInput" maxlength="${FEEDBACK_MAX_LENGTH}" placeholder="${esc(placeholder)}"></textarea>
+        <div class="muted" id="feedbackReplyTip">最多${FEEDBACK_MAX_LENGTH}字</div>
+        <div class="actions">
+          <button class="btn" type="button" id="feedbackReplyCancel">取消</button>
+          <button class="btn primary" type="button" id="feedbackReplyOk">回复</button>
+        </div>`;
+      $("modal").style.display = "flex";
+
+      const input = $("feedbackReplyInput");
+      const tip = $("feedbackReplyTip");
+      const cleanup = value => {
+        $("modal").removeEventListener("click", onBackdrop);
+        $("modal").style.display = "none";
+        resolve(value);
+      };
+      const submit = () => {
+        const value = cleanFeedbackText(input.value);
+        if (!value) {
+          tip.textContent = "回复内容不能为空";
+          tip.style.color = "#fecaca";
+          input.focus();
+          return;
+        }
+        cleanup(value);
+      };
+      const onBackdrop = event => {
+        if (event.target.id === "modal") cleanup("");
+      };
+
+      $("feedbackReplyCancel").addEventListener("click", () => cleanup(""));
+      $("feedbackReplyOk").addEventListener("click", submit);
+      input.addEventListener("keydown", event => {
+        if (event.key === "Escape") cleanup("");
+        if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) submit();
+      });
+      $("modal").addEventListener("click", onBackdrop);
+      setTimeout(() => input.focus(), 30);
+    });
+  }
+
+  function makeUserFeedback(text, replyTo) {
+    const stamp = now();
+    return feedbackRecord({
+      id: "F_" + stamp + "_" + Math.random().toString(36).slice(2, 8),
+      threadId: replyTo?.threadId || replyTo?.id || "",
+      replyTo: replyTo?.id || "",
+      role: "user",
+      sender: currentUserId(),
+      deviceId: app.deviceId,
+      username: normalizeAccountName(app.account?.username || ""),
+      text,
+      day: localDay(stamp),
+      createdAt: stamp,
+      updatedAt: stamp
+    });
+  }
+
+  function makeAdminFeedback(text, target) {
+    const stamp = now();
+    return feedbackRecord({
+      id: "F_" + stamp + "_" + Math.random().toString(36).slice(2, 8),
+      threadId: target?.threadId || target?.id || "",
+      replyTo: target?.id || "",
+      role: "admin",
+      sender: "admin",
+      target: target.sender || "",
+      targetDeviceId: target.deviceId || "",
+      targetUsername: normalizeAccountName(target.username || ""),
+      text,
+      day: localDay(stamp),
+      createdAt: stamp,
+      updatedAt: stamp
+    });
+  }
+
   async function sendFeedback() {
+    if (app.feedbackSending) return;
     const text = cleanFeedbackText($("feedbackText")?.value || "");
     const tip = $("feedbackTip");
     if (!text) {
@@ -1245,71 +1712,90 @@
       return;
     }
 
-    const busy = beginBusy("发送中...");
-    try {
-      await loadComments();
-      parseComments();
-      if (feedbackTodayCount() >= FEEDBACK_DAILY_LIMIT) {
-        renderAnnouncement();
-        const latestTip = $("feedbackTip");
-        if (latestTip) latestTip.textContent = "今天已发送 10/10 条，明天可以继续留言。";
-        return;
-      }
+    if (feedbackTodayCount() >= FEEDBACK_DAILY_LIMIT) {
+      if (tip) tip.textContent = "今天已发送 10/10 条，明天可以继续留言。";
+      return;
+    }
 
-      await postComment(FEEDBACK_PREFIX + json(feedbackRecord({
-        id: "F_" + now() + "_" + Math.random().toString(36).slice(2, 8),
-        sender: currentUserId(),
-        deviceId: app.deviceId,
-        username: normalizeAccountName(app.account?.username || ""),
-        text,
-        day: localDay(),
-        createdAt: now()
-      })));
-      publish("all", { type: "feedback", time: now() });
-      await refresh();
+    const item = makeUserFeedback(text);
+
+    app.feedbackSending = true;
+    mergeFeedback(item);
+    renderAnnouncement();
+    publish("all", { type: "feedback", feedback: item, time: now() });
+
+    const releaseSending = () => {
+      app.feedbackSending = false;
+      if (app.tab === "ann" && !app.currentRoom) renderAnnouncement();
+    };
+
+    try {
+      backgroundPostFeedback(item);
     } catch (error) {
       console.warn("Send feedback failed.", error);
       if (tip) tip.textContent = "发送失败，请稍后重试。";
     } finally {
-      endBusy(busy);
+      setTimeout(releaseSending, 500);
     }
   }
 
+  async function replyFeedback(id) {
+    const item = app.feedback.find(entry => entry.id === id);
+    if (!item) return;
+    const isAdminReply = app.admin && item.role !== "admin";
+    const isUserReply = !app.admin && item.role === "admin" && targetFeedback(item);
+    if (!isAdminReply && !isUserReply) return;
+    if (isUserReply && feedbackTodayCount() >= FEEDBACK_DAILY_LIMIT) {
+      toast("今天已发送 10/10 条，明天可以继续留言。");
+      return;
+    }
+
+    const text = await askFeedbackReply(isAdminReply ? "回复用户留言" : "回复后台", isAdminReply ? "输入给用户的系统回复" : "输入要继续发给后台的内容");
+    if (!text) return;
+
+    const reply = isAdminReply ? makeAdminFeedback(text, item) : makeUserFeedback(text, item);
+    applyFeedbackChange(reply, item);
+  }
+
+  function deleteFeedback(id) {
+    const item = app.feedback.find(entry => entry.id === id);
+    if (!item) return;
+    removeFeedback(id);
+    if (app.tab === "ann" && !app.currentRoom) renderAnnouncement();
+    publish("all", { type: "feedback", removeId: id, time: now() });
+    backgroundHideFeedback(item);
+  }
+
   async function saveAnnouncement() {
-    const busy = beginBusy("发布中...");
     try {
-      for (const comment of app.comments) {
-        if ((comment.body || "").startsWith(ANN_PREFIX)) await deleteComment(comment.id);
-      }
-      await postComment(ANN_PREFIX + json({
+      const announcement = {
         title: ($("annTitle").value || "系统公告").trim(),
         content: ($("annContent").value || "").trim(),
         time: now()
-      }));
-      publish("all", { type: "announcement", time: now() });
-      await refresh();
+      };
+      app.announcement = announcement;
+      renderAnnouncement();
+      publish("all", { type: "announcement", announcement, time: announcement.time });
+      backgroundDeleteComments("Background announcement cleanup", body => body.startsWith(ANN_PREFIX));
+      backgroundPostComment(ANN_PREFIX + json(announcement), "Background announcement save");
+      backgroundRefresh();
     } catch (error) {
       console.warn("Save announcement failed.", error);
       toast("发布失败，请稍后重试");
-    } finally {
-      endBusy(busy);
     }
   }
 
   async function clearAnnouncement() {
     if (!confirm("确认清空公告？")) return;
-    const busy = beginBusy("清空中...");
     try {
-      for (const comment of app.comments) {
-        if ((comment.body || "").startsWith(ANN_PREFIX)) await deleteComment(comment.id);
-      }
-      publish("all", { type: "announcement", time: now() });
-      await refresh();
+      app.announcement = null;
+      renderAnnouncement();
+      publish("all", { type: "announcement", announcement: null, time: now() });
+      backgroundDeleteComments("Background announcement clear", body => body.startsWith(ANN_PREFIX));
+      backgroundRefresh();
     } catch (error) {
       console.warn("Clear announcement failed.", error);
       toast("清空失败，请稍后重试");
-    } finally {
-      endBusy(busy);
     }
   }
 
@@ -1363,10 +1849,10 @@
         updatedAt: stamp,
         ...(await makeAccountAuth(password))
       });
-      await postAccount(account);
+      postAccount(account);
       setActiveAccount(account, true);
-      await migrateOwnedRoomsToAccount(app.deviceId, account.userId);
-      await syncAccountNow();
+      migrateOwnedRoomsToAccount(app.deviceId, account.userId);
+      syncAccountNow();
       publish("all", { type: "rooms", time: now() });
       renderAccountPage();
     } catch (error) {
@@ -1392,7 +1878,7 @@
         return;
       }
       setActiveAccount(account, true);
-      await syncAccountNow();
+      syncAccountNow();
       renderAccountPage();
     } catch (error) {
       console.warn("Login account failed.", error);
@@ -1406,8 +1892,9 @@
     if (!app.account) return;
     const busy = beginBusy("同步中...");
     try {
-      await syncAccountNow();
+      syncAccountNow();
       renderAccountPage();
+      accountTip("已开始后台同步", false);
     } catch (error) {
       console.warn("Manual account sync failed.", error);
       accountTip("同步失败，请稍后重试", true);
@@ -1650,8 +2137,6 @@
   async function changeCurrentRoomPassword(password, tip, input) {
     const room = app.currentRoom;
     if (!room || !isRoomOwner(room)) return;
-    const oldRoom = { ...room };
-    const busy = beginBusy("同步中...");
     try {
       const stamp = now();
       const updated = {
@@ -1663,26 +2148,23 @@
       delete updated.password;
       updateLocalRoom(updated);
       setVerified(updated);
-      await postComment(ROOM_PREFIX + json(roomRecord(updated)));
       publish("room/" + updated.no, { type: "roomUpdate", action: "password", time: now() });
-      publish("all", { type: "rooms", no: updated.no, time: now() });
+      publish("all", { type: "rooms", room: roomRecord(updated), no: updated.no, time: stamp });
+      backgroundPostComment(ROOM_PREFIX + json(roomRecord(updated)), "Background room password");
+      backgroundRefresh();
       if (tip) {
         tip.textContent = "密码已更新";
         tip.style.color = "#bbf7d0";
       }
       if (input) input.value = "";
-      await refresh();
     } catch (error) {
       console.warn("Change room password failed.", error);
-      updateLocalRoom(oldRoom);
       if (tip) {
         tip.textContent = "修改失败，请稍后重试";
         tip.style.color = "#fecaca";
       } else {
         toast("修改失败，请稍后重试");
       }
-    } finally {
-      endBusy(busy);
     }
   }
 
@@ -1691,34 +2173,20 @@
     if (!room || !isRoomOwner(room)) return;
     const no = room.no;
     const stamp = now();
-    const oldRooms = app.rooms.slice();
-    const oldVisibleRooms = visibleRooms();
     const updated = {
       ...roomRecord(room),
       ownerDeleted: true,
       ownerDeletedAt: stamp,
       updatedAt: stamp
     };
-    const busy = beginBusy("删除中...");
 
     updateLocalRoom(updated);
     removeVisibleRoom(no);
-    publish("room/" + no, { type: "roomUpdate", action: "ownerDelete", time: now() });
-    publish("all", { type: "rooms", no, time: now() });
+    publish("room/" + no, { type: "roomUpdate", action: "ownerDelete", time: stamp });
+    publish("all", { type: "rooms", room: roomRecord(updated), no, time: stamp });
     back();
-
-    try {
-      await postComment(ROOM_PREFIX + json(roomRecord(updated)));
-      await refresh();
-    } catch (error) {
-      console.warn("Owner delete room failed.", error);
-      app.rooms = oldRooms;
-      saveVisibleRooms(oldVisibleRooms);
-      renderCurrentTab();
-      toast("删除失败，请稍后重试");
-    } finally {
-      endBusy(busy);
-    }
+    backgroundPostComment(ROOM_PREFIX + json(roomRecord(updated)), "Background owner room delete");
+    backgroundRefresh();
   }
 
   async function sendMessage() {
@@ -1751,29 +2219,21 @@
   }
 
   async function clearRoom(no) {
-    const busy = beginBusy("清空中...");
     try {
       const prefixes = [MSG_PREFIX + no + ":", BATCH_PREFIX + no + ":"];
-      for (const comment of app.comments) {
-        const body = comment.body || "";
-        if (prefixes.some(prefix => body.startsWith(prefix))) await deleteComment(comment.id);
-      }
       localStorage.removeItem(messageKey(no));
       saveJson(pendingKey(), localJson(pendingKey(), []).filter(message => message.roomNo !== no));
       if (app.currentRoom?.no === no) renderChat();
       publish("room/" + no, { type: "roomUpdate", action: "clear", time: now() });
-      await refresh();
+      backgroundDeleteComments("Background room clear", body => prefixes.some(prefix => body.startsWith(prefix)));
+      backgroundRefresh();
     } catch (error) {
       console.warn("Clear room failed.", error);
       toast("清空失败，请稍后重试");
-    } finally {
-      endBusy(busy);
     }
   }
 
   async function deleteRoom(no) {
-    const busy = beginBusy("删除中...");
-    const oldRooms = app.rooms.slice();
     const oldVisibleRooms = visibleRooms();
 
     app.rooms = app.rooms.filter(room => room.no !== no);
@@ -1787,30 +2247,19 @@
     publish("all", { type: "delete", no, time: now() });
 
     const prefixes = [MSG_PREFIX + no + ":", BATCH_PREFIX + no + ":"];
-    try {
-      for (const comment of app.comments) {
-        const body = comment.body || "";
-        if (prefixes.some(prefix => body.startsWith(prefix))) await deleteComment(comment.id);
-        if (body.startsWith(ROOM_PREFIX)) {
-          try {
-            if (JSON.parse(body.slice(ROOM_PREFIX.length)).no === no) await deleteComment(comment.id);
-          } catch (error) {
-            console.warn("Invalid room record.", error);
-          }
-        }
+    backgroundDeleteComments("Background room delete", body => {
+      if (prefixes.some(prefix => body.startsWith(prefix))) return true;
+      if (!body.startsWith(ROOM_PREFIX)) return false;
+      try {
+        return JSON.parse(body.slice(ROOM_PREFIX.length)).no === no;
+      } catch (error) {
+        console.warn("Invalid room record.", error);
+        return false;
       }
-      app.currentRoom = null;
-      await refresh();
-      if (app.tab === "me") renderMe();
-    } catch (error) {
-      console.warn("Delete room failed.", error);
-      app.rooms = oldRooms;
-      saveVisibleRooms(oldVisibleRooms);
-      renderCurrentTab();
-      toast("删除失败，请稍后重试");
-    } finally {
-      endBusy(busy);
-    }
+    });
+    backgroundRefresh();
+    app.currentRoom = null;
+    if (app.tab === "me") renderMe();
   }
 
   function toast(text) {
@@ -1849,7 +2298,11 @@
     setInterval(tick, 1000);
     refresh("加载中...");
     loadMqtt();
+    scheduleGistQueue(1200);
     app.refreshTimer = setInterval(() => refresh(), 60000);
+    app.gistQueueTimer = setInterval(() => {
+      processGistQueue().catch(error => console.warn("Gist queue timer failed.", error));
+    }, 15000);
     switchTab("hall");
 
     addEventListener("focusin", fixViewport);
@@ -1894,7 +2347,7 @@
         editRoomNickname();
       }
     });
-    $("panicBtn").addEventListener("click", () => location.reload());
+    $("panicBtn").addEventListener("click", panicClose);
     $("send").addEventListener("submit", event => {
       event.preventDefault();
       sendMessage();
@@ -1975,6 +2428,25 @@
       const sendFeedbackButton = event.target.closest("#sendFeedbackBtn");
       if (sendFeedbackButton) {
         sendFeedback();
+        return;
+      }
+
+      const feedbackReplyButton = event.target.closest("[data-feedback-reply]");
+      if (feedbackReplyButton) {
+        replyFeedback(feedbackReplyButton.dataset.feedbackReply);
+        return;
+      }
+
+      const feedbackDeleteButton = event.target.closest("[data-feedback-delete]");
+      if (feedbackDeleteButton) {
+        deleteFeedback(feedbackDeleteButton.dataset.feedbackDelete);
+        return;
+      }
+
+      const feedbackCard = event.target.closest("[data-feedback-id]");
+      if (feedbackCard && !event.target.closest("[data-actions]")) {
+        app.activeFeedbackId = app.activeFeedbackId === feedbackCard.dataset.feedbackId ? "" : feedbackCard.dataset.feedbackId;
+        renderAnnouncement();
         return;
       }
 

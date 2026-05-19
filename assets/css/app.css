@@ -401,6 +401,12 @@ textarea {
   border-radius: 8px;
   background: rgba(15, 23, 42, .38);
   padding: 10px;
+  cursor: pointer;
+}
+
+.feedbackItem.activeFeedback {
+  border-color: rgba(125, 211, 252, .48);
+  background: rgba(14, 116, 144, .24);
 }
 
 .feedbackMeta {
