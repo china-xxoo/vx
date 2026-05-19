@@ -1,4 +1,5 @@
 :root {
+  --app-height: 100vh;
   --kb: 0px;
   --vtop: 0px;
   --bg: #020617;
@@ -19,6 +20,8 @@ html,
 body {
   width: 100%;
   height: 100%;
+  height: var(--app-height);
+  min-height: 100dvh;
   margin: 0;
   overflow: hidden;
   background: var(--bg);
@@ -29,6 +32,7 @@ body {
 body {
   position: fixed;
   inset: 0;
+  min-height: var(--app-height);
 }
 
 button,
@@ -45,7 +49,12 @@ button {
 #calc,
 #app {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: auto;
+  left: 0;
+  height: var(--app-height);
+  min-height: 100dvh;
 }
 
 .calc {
@@ -135,10 +144,6 @@ button {
   background: rgba(2, 6, 23, .86);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-}
-
-.room .top {
-  transform: translateY(var(--vtop));
 }
 
 .left,
@@ -238,7 +243,7 @@ textarea:disabled {
 }
 
 .room .main {
-  top: calc(58px + env(safe-area-inset-top) + var(--vtop));
+  top: calc(58px + env(safe-area-inset-top));
   bottom: calc(74px + env(safe-area-inset-bottom) + var(--kb));
   padding-bottom: 12px;
 }
@@ -429,6 +434,31 @@ textarea {
   line-height: 1.7;
   color: var(--text);
   word-break: break-word;
+}
+
+.contactCard {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.contactLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.contactLine > div {
+  min-width: 0;
+}
+
+.contactLine .title {
+  margin-bottom: 2px;
+}
+
+.contactLine .btn {
+  flex: 0 0 auto;
+  min-width: 104px;
 }
 
 .feedbackList {
@@ -751,6 +781,44 @@ textarea {
   font-size: 18px;
 }
 
+.shareQrWrap {
+  display: grid;
+  place-items: center;
+  margin: 8px 0 12px;
+}
+
+.shareQr {
+  width: min(68vw, 260px);
+  height: min(68vw, 260px);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.shareQrFallback {
+  display: grid;
+  width: min(68vw, 260px);
+  height: min(68vw, 260px);
+  place-items: center;
+  border: 1px solid rgba(56, 189, 248, .24);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, .86);
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.shareUrl {
+  max-height: 54px;
+  overflow: auto;
+  border: 1px solid rgba(56, 189, 248, .18);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, .76);
+  color: #bfdbfe;
+  padding: 9px 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
 .ghost {
   position: fixed;
   z-index: 11;
@@ -758,14 +826,15 @@ textarea {
   left: 50%;
   width: 92px;
   height: 92px;
-  border: 1px solid rgba(255, 255, 255, .18);
+  border: 2px solid #ff1f1f;
   border-radius: 50%;
-  background: rgba(239, 68, 68, .10);
-  color: #fff;
+  background: radial-gradient(circle at 35% 25%, #ff5a5a, #dc2626 52%, #7f1d1d 100%);
+  color: #fff5f5;
   font-weight: 950;
   line-height: 1.2;
   opacity: .10;
   transform: translate(-50%, -50%);
+  box-shadow: 0 0 32px rgba(239, 68, 68, .85), inset 0 0 18px rgba(255, 255, 255, .28);
 }
 
 .hide {
@@ -773,6 +842,15 @@ textarea {
 }
 
 @media (max-width: 380px) {
+  .contactLine {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .contactLine .btn {
+    width: 100%;
+  }
+
   #disp {
     font-size: 48px;
   }

@@ -59,6 +59,7 @@
   </div>
 
   <script>
+    const CONFIG_ITERATIONS = 60000;
     const enc = new TextEncoder();
     const dec = new TextDecoder();
 
@@ -84,10 +85,10 @@
       return bytes;
     }
 
-    async function key(password, salt, usage) {
+    async function key(password, salt, usage, iterations) {
       const base = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
       return crypto.subtle.deriveKey(
-        { name: "PBKDF2", salt, iterations: 180000, hash: "SHA-256" },
+        { name: "PBKDF2", salt, iterations: iterations || CONFIG_ITERATIONS, hash: "SHA-256" },
         base,
         { name: "AES-GCM", length: 256 },
         false,
@@ -97,7 +98,7 @@
 
     async function decryptConfig(unlock, payload) {
       const encrypted = payload.encryptedConfig || payload;
-      const aes = await key(unlock, b64ToBytes(encrypted.salt), "decrypt");
+      const aes = await key(unlock, b64ToBytes(encrypted.salt), "decrypt", encrypted.iterations || payload.iterations || 180000);
       const plain = await crypto.subtle.decrypt(
         { name: "AES-GCM", iv: b64ToBytes(encrypted.iv) },
         aes,
@@ -109,7 +110,7 @@
     async function encryptConfig(unlock, cfg) {
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const iv = crypto.getRandomValues(new Uint8Array(12));
-      const aes = await key(unlock, salt, "encrypt");
+      const aes = await key(unlock, salt, "encrypt", CONFIG_ITERATIONS);
       const data = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aes, enc.encode(JSON.stringify(cfg)));
       return {
         type: "VX_REMOTE_CONFIG_V1",
@@ -120,6 +121,7 @@
         history: "gist_comments",
         updatedAt: new Date().toISOString(),
         encryptedConfig: {
+          iterations: CONFIG_ITERATIONS,
           salt: bytesToB64(salt),
           iv: bytesToB64(iv),
           data: bytesToB64(data)

@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "2026.05.19-call-menu-v1";
+  const VERSION = "2026.05.20-fast-unlock-v1";
   const CONFIG_URL = "vx-config.json";
   const GITHUB_API = "https://api.github.com";
   const MQTT_LIB_URL = "https://unpkg.com/mqtt/dist/mqtt.min.js";
@@ -27,6 +27,7 @@
 
   const app = {
     cfg: null,
+    unlockCode: "",
     calcExpr: "",
     booted: false,
     admin: false,
@@ -37,6 +38,7 @@
     announcement: null,
     announcements: [],
     activeAnnouncementId: "",
+    editingAnnouncementId: "",
     feedback: [],
     activeFeedbackId: "",
     accounts: {},
@@ -173,10 +175,10 @@
     return btoa(text);
   }
 
-  async function aesKey(password, salt, usage) {
+  async function aesKey(password, salt, usage, iterations) {
     const base = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
     return crypto.subtle.deriveKey(
-      { name: "PBKDF2", salt, iterations: 180000, hash: "SHA-256" },
+      { name: "PBKDF2", salt, iterations: iterations || 180000, hash: "SHA-256" },
       base,
       { name: "AES-GCM", length: 256 },
       false,
@@ -186,7 +188,7 @@
 
   async function decryptConfig(code, payload) {
     const encrypted = payload.encryptedConfig || payload;
-    const key = await aesKey(code, base64ToBytes(encrypted.salt), "decrypt");
+    const key = await aesKey(code, base64ToBytes(encrypted.salt), "decrypt", encrypted.iterations || payload.iterations || 180000);
     const plain = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: base64ToBytes(encrypted.iv) },
       key,
@@ -212,6 +214,10 @@
   async function unlock() {
     const candidates = unlockCandidates();
     if (!candidates.length) return;
+    if (app.cfg && app.unlockCode && candidates.includes(app.unlockCode)) {
+      openApp();
+      return;
+    }
     try {
       const response = await fetch(CONFIG_URL + "?t=" + now(), { cache: "no-store" });
       const payload = await response.json();
@@ -220,6 +226,7 @@
           const config = normalizeConfig(await decryptConfig(code, payload));
           if (config.token && config.gistId) {
             app.cfg = config;
+            app.unlockCode = code;
             openApp();
             return;
           }
@@ -254,6 +261,7 @@
     app.currentRoom = null;
     app.chatSearch = "";
     app.activeAnnouncementId = "";
+    app.editingAnnouncementId = "";
     app.activeFeedbackId = "";
     clearInterval(app.uploadTimer);
     app.uploadTimer = null;
@@ -632,6 +640,7 @@
     const before = app.announcements.length;
     app.announcements = app.announcements.filter(item => item.id !== id);
     if (app.activeAnnouncementId === id) app.activeAnnouncementId = "";
+    if (app.editingAnnouncementId === id) app.editingAnnouncementId = "";
     updateCurrentAnnouncement();
     return app.announcements.length !== before;
   }
@@ -2258,12 +2267,18 @@
 
   function announcementItemHtml(item) {
     const active = app.activeAnnouncementId === item.id;
+    const adminTools = app.admin && active
+      ? `<div class="actions announcementActions" data-actions>
+        <button class="btn primary" type="button" data-ann-edit="${esc(item.id)}">编辑</button>
+      </div>`
+      : "";
     return `<div class="announcementItem ${active ? "activeAnnouncement" : ""}" data-ann-id="${esc(item.id)}">
       <div class="announcementHead">
         <span>${esc(announcementLabel(item))}</span>
         <span>${formatTime(item.time || item.createdAt)}</span>
       </div>
       ${active ? `<div class="announcementBody">${item.content ? esc(item.content).replace(/\n/g, "<br>") : "暂无内容"}</div>` : ""}
+      ${adminTools}
     </div>`;
   }
 
@@ -2282,13 +2297,15 @@
 
     if (app.admin) {
       const list = visibleFeedback();
+      const editing = app.announcements.find(item => item.id === app.editingAnnouncementId);
       setMain(`<div class="card">
-        <div class="title">公告管理</div>
-        <div class="muted">发布后会在公告页按时间排列，用户点击标题后才会看到内容。</div>
-        <input class="inp" id="annTitle" placeholder="公告标题，例如：购买" value="" style="margin-top:12px">
-        <textarea id="annContent" placeholder="公告内容"></textarea>
+        <div class="title">${editing ? "编辑公告" : "公告管理"}</div>
+        <div class="muted">${editing ? "正在修改已发布公告，保存后用户看到的是更新后的内容。" : "发布后会在公告页按时间排列，用户点击标题后才会看到内容。"}</div>
+        <input class="inp" id="annTitle" placeholder="公告标题，例如：购买" value="${esc(editing?.title || "")}" style="margin-top:12px">
+        <textarea id="annContent" placeholder="公告内容">${esc(editing?.content || "")}</textarea>
         <div class="actions">
-          <button class="btn primary" type="button" id="saveAnnBtn">发布公告</button>
+          <button class="btn primary" type="button" id="saveAnnBtn">${editing ? "保存修改" : "发布公告"}</button>
+          ${editing ? `<button class="btn" type="button" id="cancelAnnEditBtn">取消编辑</button>` : ""}
           <button class="btn danger" type="button" id="clearAnnBtn">清空公告</button>
         </div>
       </div>
@@ -2306,19 +2323,15 @@
     const count = feedbackTodayCount();
     const disabled = count >= FEEDBACK_DAILY_LIMIT || app.feedbackSending;
     const feedbackTip = app.feedbackSending ? "发送中..." : `今天已发送 ${count}/${FEEDBACK_DAILY_LIMIT} 条。`;
-    const feedbackPlaceholder = app.feedbackSending
-      ? "发送中..."
-      : disabled
-        ? "今日留言次数已用完"
-        : "写给后台的留言";
     const list = visibleFeedback();
     setMain(`${announcementCard}
-    <div class="card">
-      <div class="title">给后台留言 <span class="badge dangerBadge">仅你和后台可见</span></div>
-      <textarea id="feedbackText" maxlength="${FEEDBACK_MAX_LENGTH}" placeholder="${feedbackPlaceholder}" ${disabled ? "disabled" : ""}></textarea>
-      <div class="muted" id="feedbackTip">${feedbackTip}</div>
-      <div class="actions">
-        <button class="btn primary" type="button" id="sendFeedbackBtn" ${disabled ? "disabled" : ""}>${app.feedbackSending ? "发送中..." : "发送留言"}</button>
+    <div class="card contactCard">
+      <div class="contactLine">
+        <div>
+          <div class="title">联系客服</div>
+          <div class="muted" id="feedbackTip">${feedbackTip} 仅你和后台可见。</div>
+        </div>
+        <button class="btn primary" type="button" id="contactSupportBtn" ${disabled ? "disabled" : ""}>${app.feedbackSending ? "发送中..." : "联系客服"}</button>
       </div>
     </div>
     <div class="card">
@@ -2373,6 +2386,50 @@
     });
   }
 
+  function askContactMessage() {
+    return new Promise(resolve => {
+      const count = feedbackTodayCount();
+      $("mbox").innerHTML = `<h3>联系客服</h3>
+        <textarea id="contactTextInput" maxlength="${FEEDBACK_MAX_LENGTH}" placeholder="输入要发给后台的内容"></textarea>
+        <div class="muted" id="contactTextTip">今天已发送 ${count}/${FEEDBACK_DAILY_LIMIT} 条，仅你和后台可见。</div>
+        <div class="actions">
+          <button class="btn" type="button" id="contactCancelBtn">取消</button>
+          <button class="btn primary" type="button" id="contactSendBtn">发送</button>
+        </div>`;
+      $("modal").style.display = "flex";
+
+      const input = $("contactTextInput");
+      const tip = $("contactTextTip");
+      const cleanup = value => {
+        $("modal").removeEventListener("click", onBackdrop);
+        $("modal").style.display = "none";
+        resolve(value);
+      };
+      const submit = () => {
+        const value = cleanFeedbackText(input.value);
+        if (!value) {
+          tip.textContent = "内容不能为空";
+          tip.style.color = "#fecaca";
+          input.focus();
+          return;
+        }
+        cleanup(value);
+      };
+      const onBackdrop = event => {
+        if (event.target.id === "modal") cleanup("");
+      };
+
+      $("contactCancelBtn").addEventListener("click", () => cleanup(""));
+      $("contactSendBtn").addEventListener("click", submit);
+      input.addEventListener("keydown", event => {
+        if (event.key === "Escape") cleanup("");
+        if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) submit();
+      });
+      $("modal").addEventListener("click", onBackdrop);
+      setTimeout(() => input.focus(), 30);
+    });
+  }
+
   function makeUserFeedback(text, replyTo) {
     const stamp = now();
     return feedbackRecord({
@@ -2408,9 +2465,10 @@
     });
   }
 
-  async function sendFeedback() {
+  async function sendFeedback(textValue) {
     if (app.feedbackSending) return;
-    const text = cleanFeedbackText($("feedbackText")?.value || "");
+    const rawText = textValue !== undefined ? textValue : ($("feedbackText")?.value || "");
+    const text = cleanFeedbackText(rawText);
     const tip = $("feedbackTip");
     if (!text) {
       if (tip) tip.textContent = "留言内容不能为空。";
@@ -2444,6 +2502,16 @@
     }
   }
 
+  async function openContactSupport() {
+    if (app.feedbackSending) return;
+    if (feedbackTodayCount() >= FEEDBACK_DAILY_LIMIT) {
+      toast("今天已发送 10/10 条，明天可以继续留言。");
+      return;
+    }
+    const text = await askContactMessage();
+    if (text) sendFeedback(text);
+  }
+
   async function replyFeedback(id) {
     const item = app.feedback.find(entry => entry.id === id);
     if (!item) return;
@@ -2471,19 +2539,36 @@
     backgroundHideFeedback(item);
   }
 
+  function editAnnouncement(id) {
+    const item = app.announcements.find(entry => entry.id === id);
+    if (!item || !app.admin) return;
+    app.editingAnnouncementId = id;
+    app.activeAnnouncementId = id;
+    renderAnnouncement();
+    setTimeout(() => $("annTitle")?.focus(), 30);
+  }
+
+  function cancelAnnouncementEdit() {
+    app.editingAnnouncementId = "";
+    renderAnnouncement();
+  }
+
   async function saveAnnouncement() {
     try {
       const stamp = now();
+      const existing = app.announcements.find(item => item.id === app.editingAnnouncementId);
       const announcement = {
-        id: "A_" + stamp + "_" + Math.random().toString(36).slice(2, 8),
+        ...(existing ? announcementRecord(existing) : {}),
+        id: existing?.id || ("A_" + stamp + "_" + Math.random().toString(36).slice(2, 8)),
         title: ($("annTitle").value || "系统公告").trim().slice(0, 40),
         content: ($("annContent").value || "").trim(),
-        time: stamp,
-        createdAt: stamp,
+        time: existing?.time || stamp,
+        createdAt: existing?.createdAt || stamp,
         updatedAt: stamp
       };
       mergeAnnouncement(announcement);
       app.activeAnnouncementId = announcement.id;
+      app.editingAnnouncementId = "";
       renderAnnouncement();
       publish("all", { type: "announcement", announcement, time: announcement.time });
       backgroundPostComment(ANN_PREFIX + json(announcementRecord(announcement)), "Background announcement save");
@@ -2499,6 +2584,7 @@
       app.announcements = [];
       app.announcement = null;
       app.activeAnnouncementId = "";
+      app.editingAnnouncementId = "";
       renderAnnouncement();
       publish("all", { type: "announcement", announcement: null, time: now() });
       backgroundDeleteComments("Background announcement clear", body => body.startsWith(ANN_PREFIX));
@@ -2984,16 +3070,72 @@
     $("modal").style.display = "none";
   }
 
+  function siteShareUrl() {
+    const url = new URL(location.href);
+    url.hash = "";
+    url.search = "";
+    url.pathname = url.pathname.replace(/index\.html$/i, "");
+    return url.toString();
+  }
+
+  function shareQrSvg(url) {
+    if (typeof qrcode !== "function") {
+      return `<div class="shareQrFallback">二维码加载中</div>`;
+    }
+    try {
+      const qr = qrcode(0, "M");
+      qr.addData(url);
+      qr.make();
+      return qr.createSvgTag({
+        cellSize: 6,
+        margin: 14,
+        scalable: true,
+        title: "网页二维码",
+        alt: "网页二维码"
+      }).replace("<svg", "<svg class=\"shareQr\"");
+    } catch (error) {
+      console.warn("QR render failed.", error);
+      return `<div class="shareQrFallback">无法生成二维码</div>`;
+    }
+  }
+
+  function showShareQr() {
+    const url = siteShareUrl();
+    $("mbox").innerHTML = `<h3>分享网页</h3>
+      <div class="shareQrWrap">${shareQrSvg(url)}</div>
+      <div class="shareUrl">${esc(url)}</div>
+      <div class="actions">
+        <button class="btn" type="button" id="copyShareBtn">复制链接</button>
+        <button class="btn primary" type="button" id="toastOkBtn">关闭</button>
+      </div>`;
+    $("modal").style.display = "flex";
+    const button = $("copyShareBtn");
+    if (button) {
+      button.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(url);
+          button.textContent = "已复制";
+          setTimeout(() => {
+            if ($("copyShareBtn")) $("copyShareBtn").textContent = "复制链接";
+          }, 1200);
+        } catch (error) {
+          console.warn("Copy share link failed.", error);
+          button.textContent = "复制失败";
+        }
+      });
+    }
+  }
+
   function fixViewport() {
+    document.documentElement.style.setProperty("--app-height", window.innerHeight + "px");
     let keyboard = 0;
-    let top = 0;
-    if (document.body.classList.contains("room") && window.visualViewport) {
+    if (document.body.classList.contains("room") && window.visualViewport && document.activeElement?.id === "msg") {
       const viewport = visualViewport;
-      keyboard = Math.max(0, innerHeight - viewport.height - viewport.offsetTop);
-      top = Math.max(0, viewport.offsetTop);
+      const gap = Math.max(0, innerHeight - viewport.height - Math.max(0, viewport.offsetTop));
+      keyboard = gap > 80 ? gap : 0;
     }
     document.documentElement.style.setProperty("--kb", keyboard + "px");
-    document.documentElement.style.setProperty("--vtop", top + "px");
+    document.documentElement.style.setProperty("--vtop", "0px");
   }
 
   function registerServiceWorker() {
@@ -3022,7 +3164,6 @@
     addEventListener("focusout", () => setTimeout(fixViewport, 120));
     if (visualViewport) {
       visualViewport.addEventListener("resize", fixViewport);
-      visualViewport.addEventListener("scroll", fixViewport);
     }
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
@@ -3053,6 +3194,7 @@
 
     $("backBtn").addEventListener("click", back);
     $("newBtn").addEventListener("click", newRoom);
+    $("shareBtn").addEventListener("click", showShareQr);
     $("roomTag").addEventListener("click", editRoomNickname);
     $("roomTag").addEventListener("keydown", event => {
       if (event.key === "Enter" || event.key === " ") {
@@ -3152,6 +3294,24 @@
         return;
       }
 
+      const cancelAnnEdit = event.target.closest("#cancelAnnEditBtn");
+      if (cancelAnnEdit) {
+        cancelAnnouncementEdit();
+        return;
+      }
+
+      const annEditButton = event.target.closest("[data-ann-edit]");
+      if (annEditButton) {
+        editAnnouncement(annEditButton.dataset.annEdit);
+        return;
+      }
+
+      const contactSupportButton = event.target.closest("#contactSupportBtn");
+      if (contactSupportButton) {
+        openContactSupport();
+        return;
+      }
+
       const sendFeedbackButton = event.target.closest("#sendFeedbackBtn");
       if (sendFeedbackButton) {
         sendFeedback();
@@ -3159,7 +3319,7 @@
       }
 
       const announcementCard = event.target.closest("[data-ann-id]");
-      if (announcementCard) {
+      if (announcementCard && !event.target.closest("[data-actions]")) {
         app.activeAnnouncementId = app.activeAnnouncementId === announcementCard.dataset.annId ? "" : announcementCard.dataset.annId;
         renderAnnouncement();
         return;
@@ -3227,7 +3387,9 @@
   function startFromBootConfig() {
     if (window.__VX_BOOT_CONFIG__) {
       app.cfg = normalizeConfig(window.__VX_BOOT_CONFIG__);
+      app.unlockCode = String(window.__VX_UNLOCK_CODE__ || "");
       delete window.__VX_BOOT_CONFIG__;
+      delete window.__VX_UNLOCK_CODE__;
       openApp();
       return;
     }

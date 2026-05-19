@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vx-split-calc-v13-20260519-callmenu1";
+const CACHE_VERSION = "vx-split-calc-v19-20260520-fastunlock1";
 const APP_CACHE = "vx-app-" + CACHE_VERSION;
 const APP_SHELL = [
   "./",
@@ -6,6 +6,7 @@ const APP_SHELL = [
   "./manifest.webmanifest",
   "./assets/css/calc.css",
   "./assets/css/app.css",
+  "./assets/js/qrcode.js",
   "./assets/js/calc.js",
   "./assets/js/app.js",
   "./vx-logo-180.png",

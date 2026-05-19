@@ -2,16 +2,33 @@
   "use strict";
 
   const CONFIG_URL = "vx-config.json";
-  const APP_CSS = "assets/css/app.css?v=20260519-callmenu1";
-  const APP_JS = "assets/js/app.js?v=20260519-callmenu1";
+  const APP_CSS = "assets/css/app.css?v=20260520-fastunlock1";
+  const QR_JS = "assets/js/qrcode.js?v=20260520-fastunlock1";
+  const APP_JS = "assets/js/app.js?v=20260520-fastunlock1";
+  const CONFIG_CACHE_KEY = "vx_fast_config_v1";
 
   let expr = "";
   let loadingApp = false;
+  let configPromise = null;
 
   const $ = id => document.getElementById(id);
   const now = () => Date.now();
   const enc = new TextEncoder();
   const dec = new TextDecoder();
+
+  function syncAppHeight() {
+    document.documentElement.style.setProperty("--app-height", window.innerHeight + "px");
+  }
+
+  function stableHash(value) {
+    let hash = 2166136261;
+    const text = String(value || "");
+    for (let index = 0; index < text.length; index += 1) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+  }
 
   function show() {
     $("disp").textContent = (expr || "0").replaceAll("*", "×").replaceAll("/", "÷").slice(-18);
@@ -77,10 +94,17 @@
     return bytes;
   }
 
-  async function aesKey(password, salt) {
+  function bytesToBase64(bytes) {
+    let text = "";
+    const data = new Uint8Array(bytes);
+    for (let index = 0; index < data.length; index += 1) text += String.fromCharCode(data[index]);
+    return btoa(text);
+  }
+
+  async function aesKey(password, salt, iterations) {
     const base = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
     return crypto.subtle.deriveKey(
-      { name: "PBKDF2", salt, iterations: 180000, hash: "SHA-256" },
+      { name: "PBKDF2", salt, iterations: iterations || 180000, hash: "SHA-256" },
       base,
       { name: "AES-GCM", length: 256 },
       false,
@@ -90,13 +114,82 @@
 
   async function decryptConfig(code, payload) {
     const encrypted = payload.encryptedConfig || payload;
-    const key = await aesKey(code, base64ToBytes(encrypted.salt));
+    const key = await aesKey(code, base64ToBytes(encrypted.salt), encrypted.iterations || payload.iterations || 180000);
     const plain = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: base64ToBytes(encrypted.iv) },
       key,
       base64ToBytes(encrypted.data)
     );
     return JSON.parse(dec.decode(plain));
+  }
+
+  function configValid(config) {
+    return !!(config && config.token && config.gistId);
+  }
+
+  function configSourceHash(payload) {
+    const encrypted = payload?.encryptedConfig || payload || {};
+    return stableHash([encrypted.salt, encrypted.iv, encrypted.data, encrypted.iterations].join("|"));
+  }
+
+  async function fastCacheKey(code, salt) {
+    const digest = await crypto.subtle.digest("SHA-256", enc.encode("vx-fast-config:" + code + ":" + bytesToBase64(salt)));
+    return crypto.subtle.importKey("raw", digest, "AES-GCM", false, ["encrypt", "decrypt"]);
+  }
+
+  async function readFastConfig(code) {
+    try {
+      const cache = JSON.parse(localStorage.getItem(CONFIG_CACHE_KEY) || "null");
+      if (!cache?.salt || !cache?.iv || !cache?.data) return null;
+      const salt = base64ToBytes(cache.salt);
+      const key = await fastCacheKey(code, salt);
+      const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: base64ToBytes(cache.iv) }, key, base64ToBytes(cache.data));
+      const saved = JSON.parse(dec.decode(plain));
+      return configValid(saved.config) ? saved.config : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async function writeFastConfig(code, config, sourceHash) {
+    try {
+      if (!configValid(config)) return;
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await fastCacheKey(code, salt);
+      const body = enc.encode(JSON.stringify({ config, sourceHash: sourceHash || "", savedAt: now() }));
+      const data = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, body);
+      localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({
+        version: 1,
+        salt: bytesToBase64(salt),
+        iv: bytesToBase64(iv),
+        data: bytesToBase64(data)
+      }));
+    } catch (error) {
+      console.warn("Unable to save fast config.", error);
+    }
+  }
+
+  function fetchConfig() {
+    if (!configPromise) {
+      configPromise = fetch(CONFIG_URL + "?t=" + now(), { cache: "no-store" })
+        .then(response => response.json())
+        .catch(error => {
+          configPromise = null;
+          throw error;
+        });
+    }
+    return configPromise;
+  }
+
+  async function refreshFastConfig(code) {
+    try {
+      const payload = await fetchConfig();
+      const config = await decryptConfig(code, payload);
+      if (configValid(config)) await writeFastConfig(code, config, configSourceHash(payload));
+    } catch (error) {
+      // Fast unlock should never wait on background cache refresh.
+    }
   }
 
   function loadStylesheet(href) {
@@ -128,13 +221,17 @@
     });
   }
 
-  async function startApp(config) {
+  async function startApp(config, code) {
     if (loadingApp) return;
     loadingApp = true;
     window.__VX_BOOT_CONFIG__ = config;
+    window.__VX_UNLOCK_CODE__ = code || "";
     try {
-      await loadStylesheet(APP_CSS);
-      await loadScript(APP_JS);
+      await Promise.all([
+        loadStylesheet(APP_CSS),
+        loadScript(QR_JS),
+        loadScript(APP_JS)
+      ]);
     } catch (error) {
       loadingApp = false;
       console.warn("Unable to load app shell.", error);
@@ -146,14 +243,24 @@
     if (loadingApp) return;
     const list = candidates();
     if (!list.length) return;
+
+    for (const code of list) {
+      const cached = await readFastConfig(code);
+      if (cached) {
+        refreshFastConfig(code);
+        await startApp(cached, code);
+        return;
+      }
+    }
+
     try {
-      const response = await fetch(CONFIG_URL + "?t=" + now(), { cache: "no-store" });
-      const payload = await response.json();
+      const payload = await fetchConfig();
       for (const code of list) {
         try {
           const config = await decryptConfig(code, payload);
-          if (config.token && config.gistId) {
-            await startApp(config);
+          if (configValid(config)) {
+            await writeFastConfig(code, config, configSourceHash(payload));
+            await startApp(config, code);
             return;
           }
         } catch (error) {
@@ -163,6 +270,14 @@
     } catch (error) {
       console.warn("Unable to load encrypted config.", error);
     }
+  }
+
+  syncAppHeight();
+  fetchConfig().catch(() => {});
+  addEventListener("resize", syncAppHeight);
+  addEventListener("orientationchange", () => setTimeout(syncAppHeight, 80));
+  if (window.visualViewport) {
+    visualViewport.addEventListener("resize", syncAppHeight);
   }
 
   document.querySelector(".keys").addEventListener("click", event => {
