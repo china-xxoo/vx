@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "2026.05.19-announcements-v1";
+  const VERSION = "2026.05.19-call-menu-v1";
   const CONFIG_URL = "vx-config.json";
   const GITHUB_API = "https://api.github.com";
   const MQTT_LIB_URL = "https://unpkg.com/mqtt/dist/mqtt.min.js";
@@ -19,6 +19,11 @@
   const ROOM_NO_LOW_RATIO = 0.15;
   const FEEDBACK_DAILY_LIMIT = 10;
   const FEEDBACK_MAX_LENGTH = 300;
+  const CALL_STUN_SERVERS = [
+    "stun:stun.cloudflare.com:3478",
+    "stun:stun.l.google.com:19302",
+    "stun:stun1.l.google.com:19302"
+  ];
 
   const app = {
     cfg: null,
@@ -52,6 +57,8 @@
     activeRoomSubscription: null,
     sending: false,
     feedbackSending: false,
+    call: null,
+    incomingCall: null,
     busyText: "",
     busyToken: 0,
     chatSearch: "",
@@ -233,6 +240,9 @@
   }
 
   function panicClose() {
+    closeMediaMenu();
+    endCall({ immediate: true });
+    app.incomingCall = null;
     $("calc").style.display = "flex";
     $("app").style.display = "none";
     $("app").setAttribute("aria-hidden", "true");
@@ -726,6 +736,509 @@
     return id === currentUserId() || id === app.deviceId || !!app.account?.deviceIds?.includes(id);
   }
 
+  function callKindLabel(kind) {
+    return kind === "video" ? "视频" : "语音";
+  }
+
+  function callPeerName(id, fallback) {
+    if (!id) return fallback || "对方";
+    if (ownSender(id)) return "我";
+    const profiles = app.currentRoom ? roomProfiles(app.currentRoom.no) : {};
+    return normalizeNickname(fallback) || profiles[id] || "对方";
+  }
+
+  function closeMediaMenu() {
+    const menu = $("mediaMenu");
+    const button = $("mediaBtn");
+    if (menu) menu.classList.add("hide");
+    if (button) button.setAttribute("aria-expanded", "false");
+  }
+
+  function toggleMediaMenu() {
+    if (!app.currentRoom) return;
+    const menu = $("mediaMenu");
+    const button = $("mediaBtn");
+    if (!menu || !button) return;
+    const open = menu.classList.toggle("hide");
+    button.setAttribute("aria-expanded", open ? "false" : "true");
+  }
+
+  function sendCallSignal(signal, extra) {
+    const data = extra || {};
+    const roomNo = data.roomNo || app.call?.roomNo || app.incomingCall?.roomNo || app.currentRoom?.no;
+    if (!roomNo) return;
+    const payload = {
+      type: "call",
+      signal,
+      roomNo,
+      callId: data.callId || app.call?.id || app.incomingCall?.callId || "",
+      kind: data.kind || app.call?.kind || app.incomingCall?.kind || "audio",
+      from: currentUserId(),
+      fromName: roomNickname(roomNo),
+      time: now(),
+      ...data
+    };
+    payload.type = "call";
+    payload.signal = signal;
+    payload.from = currentUserId();
+    publish("room/" + roomNo, payload);
+  }
+
+  function ensureCallOverlay() {
+    let overlay = $("callOverlay");
+    if (overlay) return overlay;
+    overlay = document.createElement("div");
+    overlay.id = "callOverlay";
+    overlay.className = "callOverlay";
+    overlay.addEventListener("click", event => {
+      if (event.target.closest("#callHangupBtn")) {
+        endCall();
+        return;
+      }
+      if (event.target.closest("#callMuteBtn")) {
+        toggleCallAudio();
+        return;
+      }
+      if (event.target.closest("#callCameraBtn")) {
+        toggleCallVideo();
+      }
+    });
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function bindMediaStream(id, stream) {
+    const element = $(id);
+    if (!element || !stream || element.srcObject === stream) return;
+    element.srcObject = stream;
+    element.play?.().catch(() => {});
+  }
+
+  function renderCallOverlay() {
+    const overlay = ensureCallOverlay();
+    const call = app.call;
+    if (!call) {
+      overlay.classList.remove("on");
+      overlay.innerHTML = "";
+      return;
+    }
+
+    const video = call.kind === "video";
+    const title = callKindLabel(call.kind) + "聊天";
+    const peer = callPeerName(call.peerId, call.peerName);
+    overlay.className = "callOverlay on";
+    overlay.innerHTML = `<div class="callPanel ${video ? "videoPanel" : "audioPanel"}">
+      <div class="callHead">
+        <div>
+          <div class="callTitle">${esc(title)}</div>
+          <div class="callStatus">${esc(call.status || "正在连接")}</div>
+        </div>
+        <div class="callPeer">${esc(peer)}</div>
+      </div>
+      <div class="callStage">
+        ${video ? `<video id="remoteVideo" class="remoteVideo" autoplay playsinline></video>
+          <video id="localVideo" class="localVideo" autoplay muted playsinline></video>` : `<div class="audioAvatar">${esc(peer.slice(0, 2) || "语音")}</div>
+          <audio id="remoteAudio" autoplay></audio>`}
+      </div>
+      <div class="callControls">
+        <button class="callBtn" type="button" id="callMuteBtn">${call.audioMuted ? "开麦" : "静音"}</button>
+        ${video ? `<button class="callBtn" type="button" id="callCameraBtn">${call.videoOff ? "开摄像头" : "关摄像头"}</button>` : ""}
+        <button class="callBtn dangerCall" type="button" id="callHangupBtn">挂断</button>
+      </div>
+    </div>`;
+
+    if (video) {
+      bindMediaStream("localVideo", call.localStream);
+      bindMediaStream("remoteVideo", call.remoteStream);
+    } else {
+      bindMediaStream("remoteAudio", call.remoteStream);
+    }
+  }
+
+  function cleanupCall() {
+    const call = app.call;
+    if (!call) return;
+    clearTimeout(call.timeout);
+    try {
+      call.pc?.close();
+    } catch (error) {
+      console.warn("Close call peer failed.", error);
+    }
+    for (const stream of [call.localStream, call.remoteStream]) {
+      stream?.getTracks?.().forEach(track => track.stop());
+    }
+    app.call = null;
+    renderCallOverlay();
+  }
+
+  function finishCall(message, delay = 900) {
+    const call = app.call;
+    if (!call) return;
+    clearTimeout(call.timeout);
+    call.status = message;
+    renderCallOverlay();
+    const callId = call.id;
+    setTimeout(() => {
+      if (app.call?.id === callId) cleanupCall();
+    }, delay);
+  }
+
+  function endCall(options) {
+    const opts = options || {};
+    if (app.incomingCall && !app.call) {
+      rejectIncomingCall();
+      return;
+    }
+    const call = app.call;
+    if (!call) return;
+    if (opts.notify !== false) {
+      sendCallSignal("hangup", {
+        roomNo: call.roomNo,
+        callId: call.id,
+        kind: call.kind,
+        to: call.peerId || ""
+      });
+    }
+    if (opts.immediate) cleanupCall();
+    else finishCall(opts.message || "通话已结束", opts.delay || 300);
+  }
+
+  function setCallStatus(text) {
+    if (!app.call) return;
+    app.call.status = text;
+    renderCallOverlay();
+  }
+
+  async function prepareCallMedia() {
+    if (!app.call) return null;
+    if (app.call.localStream) return app.call.localStream;
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("media devices unavailable");
+    setCallStatus(app.call.kind === "video" ? "正在打开摄像头" : "正在打开麦克风");
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: app.call.kind === "video" ? { facingMode: "user" } : false
+    });
+    if (!app.call) {
+      stream.getTracks().forEach(track => track.stop());
+      return null;
+    }
+    app.call.localStream = stream;
+    addLocalCallTracks();
+    renderCallOverlay();
+    return stream;
+  }
+
+  function addLocalCallTracks() {
+    if (!app.call?.pc || !app.call.localStream || app.call.tracksAdded) return;
+    app.call.localStream.getTracks().forEach(track => app.call.pc.addTrack(track, app.call.localStream));
+    app.call.tracksAdded = true;
+  }
+
+  function ensurePeerConnection() {
+    if (!app.call) return null;
+    if (app.call.pc) {
+      addLocalCallTracks();
+      return app.call.pc;
+    }
+    const callId = app.call.id;
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: CALL_STUN_SERVERS }] });
+    app.call.pc = pc;
+    app.call.pendingIce = app.call.pendingIce || [];
+
+    pc.onicecandidate = event => {
+      if (!event.candidate || app.call?.id !== callId) return;
+      sendCallSignal("ice", {
+        roomNo: app.call.roomNo,
+        callId: app.call.id,
+        kind: app.call.kind,
+        to: app.call.peerId || "",
+        candidate: event.candidate
+      });
+    };
+    pc.ontrack = event => {
+      if (app.call?.id !== callId) return;
+      if (event.streams?.[0]) app.call.remoteStream = event.streams[0];
+      else {
+        app.call.remoteStream = app.call.remoteStream || new MediaStream();
+        app.call.remoteStream.addTrack(event.track);
+      }
+      app.call.status = "通话中";
+      renderCallOverlay();
+    };
+    pc.onconnectionstatechange = () => updateCallConnection(pc, callId);
+    pc.oniceconnectionstatechange = () => updateCallConnection(pc, callId);
+    addLocalCallTracks();
+    return pc;
+  }
+
+  function updateCallConnection(pc, callId) {
+    if (app.call?.id !== callId) return;
+    const state = pc.connectionState || pc.iceConnectionState || "";
+    if (state === "connected" || state === "completed") setCallStatus("通话中");
+    else if (state === "checking" || state === "connecting") setCallStatus("正在连接");
+    else if (state === "disconnected") setCallStatus("网络不稳定");
+    else if (state === "failed") finishCall("连接失败", 1200);
+  }
+
+  async function flushCallIce() {
+    const call = app.call;
+    if (!call?.pc?.remoteDescription) return;
+    const pending = call.pendingIce || [];
+    call.pendingIce = [];
+    for (const candidate of pending) {
+      try {
+        await call.pc.addIceCandidate(candidate);
+      } catch (error) {
+        console.warn("Add buffered ICE failed.", error);
+      }
+    }
+  }
+
+  async function handleCallAccept(payload) {
+    if (!app.call || app.call.id !== payload.callId || app.call.direction !== "out") return;
+    if (app.call.peerId && app.call.peerId !== payload.from) {
+      sendCallSignal("reject", {
+        roomNo: payload.roomNo,
+        callId: payload.callId,
+        kind: payload.kind,
+        to: payload.from,
+        reason: "busy"
+      });
+      return;
+    }
+    clearTimeout(app.call.timeout);
+    app.call.peerId = payload.from;
+    app.call.peerName = payload.fromName || callPeerName(payload.from);
+    setCallStatus("正在连接");
+    try {
+      await prepareCallMedia();
+      const pc = ensurePeerConnection();
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      sendCallSignal("offer", {
+        roomNo: app.call.roomNo,
+        callId: app.call.id,
+        kind: app.call.kind,
+        to: payload.from,
+        description: pc.localDescription
+      });
+    } catch (error) {
+      console.warn("Create call offer failed.", error);
+      sendCallSignal("hangup", { roomNo: payload.roomNo, callId: payload.callId, kind: payload.kind, to: payload.from });
+      finishCall("无法建立通话", 1200);
+    }
+  }
+
+  async function handleCallOffer(payload) {
+    if (!app.call || app.call.id !== payload.callId || app.call.direction !== "in") return;
+    if (payload.from !== app.call.peerId) return;
+    try {
+      await prepareCallMedia();
+      const pc = ensurePeerConnection();
+      await pc.setRemoteDescription(payload.description);
+      await flushCallIce();
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      sendCallSignal("answer", {
+        roomNo: app.call.roomNo,
+        callId: app.call.id,
+        kind: app.call.kind,
+        to: payload.from,
+        description: pc.localDescription
+      });
+      setCallStatus("正在连接");
+    } catch (error) {
+      console.warn("Handle call offer failed.", error);
+      sendCallSignal("hangup", { roomNo: payload.roomNo, callId: payload.callId, kind: payload.kind, to: payload.from });
+      finishCall("无法建立通话", 1200);
+    }
+  }
+
+  async function handleCallAnswer(payload) {
+    if (!app.call || app.call.id !== payload.callId || app.call.direction !== "out") return;
+    if (payload.from !== app.call.peerId) return;
+    try {
+      const pc = ensurePeerConnection();
+      await pc.setRemoteDescription(payload.description);
+      await flushCallIce();
+      setCallStatus("正在连接");
+    } catch (error) {
+      console.warn("Handle call answer failed.", error);
+      finishCall("无法建立通话", 1200);
+    }
+  }
+
+  async function handleCallIce(payload) {
+    if (!app.call || app.call.id !== payload.callId) return;
+    if (app.call.peerId && payload.from !== app.call.peerId) return;
+    if (!payload.candidate) return;
+    try {
+      const candidate = new RTCIceCandidate(payload.candidate);
+      const pc = ensurePeerConnection();
+      if (!pc.remoteDescription) {
+        app.call.pendingIce = app.call.pendingIce || [];
+        app.call.pendingIce.push(candidate);
+        return;
+      }
+      await pc.addIceCandidate(candidate);
+    } catch (error) {
+      console.warn("Handle call ICE failed.", error);
+    }
+  }
+
+  function showIncomingCall(payload) {
+    const label = callKindLabel(payload.kind);
+    const name = callPeerName(payload.from, payload.fromName);
+    $("mbox").innerHTML = `<h3>${esc(name)}邀请${esc(label)}聊天</h3>
+      <div class="muted">接听后会使用本设备的${payload.kind === "video" ? "摄像头和麦克风" : "麦克风"}</div>
+      <div class="actions">
+        <button class="btn" type="button" id="callRejectBtn">拒绝</button>
+        <button class="btn primary" type="button" id="callAcceptBtn">接听</button>
+      </div>`;
+    $("modal").style.display = "flex";
+    $("callRejectBtn").addEventListener("click", rejectIncomingCall);
+    $("callAcceptBtn").addEventListener("click", acceptIncomingCall);
+  }
+
+  function handleCallInvite(payload) {
+    if (!app.currentRoom || payload.roomNo !== app.currentRoom.no || !payload.callId) return;
+    if (!["audio", "video"].includes(payload.kind)) return;
+    if (payload.fromName) rememberRoomProfile(payload.roomNo, payload.from, payload.fromName);
+    if (app.call || app.incomingCall) {
+      sendCallSignal("reject", {
+        roomNo: payload.roomNo,
+        callId: payload.callId,
+        kind: payload.kind,
+        to: payload.from,
+        reason: "busy"
+      });
+      return;
+    }
+    app.incomingCall = { ...payload, receivedAt: now() };
+    showIncomingCall(payload);
+  }
+
+  async function acceptIncomingCall() {
+    const invite = app.incomingCall;
+    if (!invite || app.call) return;
+    app.incomingCall = null;
+    $("modal").style.display = "none";
+    app.call = {
+      id: invite.callId,
+      kind: invite.kind,
+      roomNo: invite.roomNo,
+      peerId: invite.from,
+      peerName: invite.fromName || callPeerName(invite.from),
+      direction: "in",
+      status: "正在连接",
+      pendingIce: [],
+      audioMuted: false,
+      videoOff: false
+    };
+    renderCallOverlay();
+    try {
+      await prepareCallMedia();
+      ensurePeerConnection();
+      sendCallSignal("accept", { roomNo: invite.roomNo, callId: invite.callId, kind: invite.kind, to: invite.from });
+    } catch (error) {
+      console.warn("Accept call failed.", error);
+      sendCallSignal("reject", { roomNo: invite.roomNo, callId: invite.callId, kind: invite.kind, to: invite.from, reason: "media" });
+      finishCall("无法打开设备", 1200);
+    }
+  }
+
+  function rejectIncomingCall() {
+    const invite = app.incomingCall;
+    app.incomingCall = null;
+    $("modal").style.display = "none";
+    if (!invite) return;
+    sendCallSignal("reject", { roomNo: invite.roomNo, callId: invite.callId, kind: invite.kind, to: invite.from });
+  }
+
+  function handleCallHangup(payload) {
+    if (app.incomingCall?.callId === payload.callId) {
+      app.incomingCall = null;
+      $("modal").style.display = "none";
+      return;
+    }
+    if (!app.call || app.call.id !== payload.callId) return;
+    finishCall("对方已挂断", 900);
+  }
+
+  function handleCallReject(payload) {
+    if (!app.call || app.call.id !== payload.callId || app.call.direction !== "out") return;
+    if (app.call.peerId && app.call.peerId !== payload.from) return;
+    finishCall(payload.reason === "busy" ? "对方忙线" : "对方已拒绝", 900);
+  }
+
+  function handleCallSignal(payload) {
+    if (!payload || ownSender(payload.from)) return;
+    if (payload.to && !ownSender(payload.to)) return;
+    if (!app.currentRoom || (payload.roomNo && payload.roomNo !== app.currentRoom.no)) return;
+    if (payload.fromName) rememberRoomProfile(app.currentRoom.no, payload.from, payload.fromName);
+    if (payload.signal === "invite") handleCallInvite(payload);
+    else if (payload.signal === "accept") handleCallAccept(payload);
+    else if (payload.signal === "reject") handleCallReject(payload);
+    else if (payload.signal === "hangup") handleCallHangup(payload);
+    else if (payload.signal === "offer") handleCallOffer(payload);
+    else if (payload.signal === "answer") handleCallAnswer(payload);
+    else if (payload.signal === "ice") handleCallIce(payload);
+  }
+
+  function startCall(kind) {
+    closeMediaMenu();
+    if (!app.currentRoom) return;
+    if (!app.mqttOk) {
+      toast("实时连接还在加载中");
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia || !window.RTCPeerConnection) {
+      toast("当前浏览器不支持语音视频");
+      return;
+    }
+    if (app.call || app.incomingCall) return;
+    const roomNo = app.currentRoom.no;
+    const callId = currentUserId() + "_" + now() + "_" + Math.random().toString(36).slice(2, 6);
+    app.call = {
+      id: callId,
+      kind,
+      roomNo,
+      peerId: "",
+      peerName: "",
+      direction: "out",
+      status: "正在呼叫",
+      pendingIce: [],
+      audioMuted: false,
+      videoOff: false
+    };
+    app.call.timeout = setTimeout(() => {
+      if (app.call?.id === callId && app.call.status === "正在呼叫") {
+        sendCallSignal("hangup", { roomNo, callId, kind });
+        finishCall("无人接听", 900);
+      }
+    }, 45000);
+    renderCallOverlay();
+    sendCallSignal("invite", { roomNo, callId, kind });
+  }
+
+  function toggleCallAudio() {
+    if (!app.call?.localStream) return;
+    app.call.audioMuted = !app.call.audioMuted;
+    app.call.localStream.getAudioTracks().forEach(track => {
+      track.enabled = !app.call.audioMuted;
+    });
+    renderCallOverlay();
+  }
+
+  function toggleCallVideo() {
+    if (!app.call?.localStream || app.call.kind !== "video") return;
+    app.call.videoOff = !app.call.videoOff;
+    app.call.localStream.getVideoTracks().forEach(track => {
+      track.enabled = !app.call.videoOff;
+    });
+    renderCallOverlay();
+  }
+
   function loadMqtt() {
     if (!app.cfg.mqttUrl) {
       app.mqttOk = false;
@@ -895,6 +1408,8 @@
         if (payload.roomNo === app.currentRoom.no) renderChat();
       } else if (payload.type === "profile" && payload.id && payload.nick) {
         if (rememberRoomProfile(app.currentRoom.no, payload.id, payload.nick)) renderChat();
+      } else if (payload.type === "call") {
+        handleCallSignal(payload);
       } else if (payload.type === "roomUpdate") {
         if (payload.action === "clear") localStorage.removeItem(messageKey(app.currentRoom.no));
         if (payload.action === "delete" || payload.action === "ownerDelete") back();
@@ -1412,14 +1927,34 @@
     return password === room.password;
   }
 
+  function claimRoomOwner(room) {
+    if (!room || room.owner || app.admin) return room;
+    const stamp = now();
+    const updated = {
+      ...roomRecord(room),
+      owner: currentUserId(),
+      ownerClaimedAt: stamp,
+      updatedAt: stamp
+    };
+    updateLocalRoom(updated);
+    publish("all", { type: "rooms", room: roomRecord(updated), no: updated.no, time: stamp });
+    backgroundPostComment(ROOM_PREFIX + json(roomRecord(updated)), "Background room owner claim");
+    return updated;
+  }
+
   async function requestEnter(no, isAdmin, remember) {
-    const room = app.rooms.find(item => item.no === no);
+    let room = app.rooms.find(item => item.no === no);
     if (!room) return toast("未找到房间");
     if (isOwnerDeleted(room) && !isAdmin && !app.admin) return toast("未找到房间");
 
     if (!isAdmin && !app.admin && !verified(room) && !accountCanOpenRoom(room)) {
       const password = prompt("请输入房间密码");
       if (!(await verifyRoomPassword(room, password || ""))) return toast("密码错误");
+      setVerified(room);
+    }
+
+    if (!isAdmin && !app.admin && !room.owner) {
+      room = claimRoomOwner(room);
       setVerified(room);
     }
 
@@ -1476,6 +2011,63 @@
     };
   }
 
+  function roomNoExists(no) {
+    return app.rooms.some(room => String(room.no) === String(no));
+  }
+
+  function askAdminRoomNo() {
+    return new Promise(resolve => {
+      $("mbox").innerHTML = `<h3>指定房间号</h3>
+        <input class="inp" id="adminRoomNoInput" maxlength="${ROOM_NO_DIGITS}" inputmode="numeric" pattern="[0-9]*" placeholder="请输入新的${ROOM_NO_DIGITS}位房间号">
+        <div class="muted" id="adminRoomNoTip">房间号范围 0000-9999；房间号会作为默认密码</div>
+        <div class="actions">
+          <button class="btn" type="button" id="adminRoomNoCancel">取消</button>
+          <button class="btn primary" type="button" id="adminRoomNoOk">创建</button>
+        </div>`;
+      $("modal").style.display = "flex";
+
+      const input = $("adminRoomNoInput");
+      const tip = $("adminRoomNoTip");
+      const cleanup = value => {
+        $("modal").removeEventListener("click", onBackdrop);
+        $("modal").style.display = "none";
+        resolve(value);
+      };
+      const submit = () => {
+        const value = input.value.replace(/\D/g, "").slice(0, ROOM_NO_DIGITS);
+        input.value = value;
+        if (!new RegExp("^\\d{" + ROOM_NO_DIGITS + "}$").test(value)) {
+          tip.textContent = "房间号需要" + ROOM_NO_DIGITS + "位数字";
+          tip.style.color = "#fecaca";
+          input.focus();
+          return;
+        }
+        if (roomNoExists(value)) {
+          tip.textContent = "房间号已存在，请换一个";
+          tip.style.color = "#fecaca";
+          input.focus();
+          return;
+        }
+        cleanup(value);
+      };
+      const onBackdrop = event => {
+        if (event.target.id === "modal") cleanup(null);
+      };
+
+      input.addEventListener("input", () => {
+        input.value = input.value.replace(/\D/g, "").slice(0, ROOM_NO_DIGITS);
+      });
+      $("adminRoomNoCancel").addEventListener("click", () => cleanup(null));
+      $("adminRoomNoOk").addEventListener("click", submit);
+      input.addEventListener("keydown", event => {
+        if (event.key === "Enter") submit();
+        if (event.key === "Escape") cleanup(null);
+      });
+      $("modal").addEventListener("click", onBackdrop);
+      setTimeout(() => input.focus(), 30);
+    });
+  }
+
   function askRoomPassword() {
     return new Promise(resolve => {
       $("mbox").innerHTML = `<h3>新建房间</h3>
@@ -1520,12 +2112,18 @@
   }
 
   async function newRoom() {
-    const roomPassword = await askRoomPassword();
+    const customNo = app.admin ? await askAdminRoomNo() : "";
+    if (app.admin && !customNo) return;
+    const roomPassword = app.admin ? customNo : await askRoomPassword();
     if (!roomPassword) return;
     try {
-      const no = generateRoomNo();
+      const no = customNo || generateRoomNo();
       if (!no) {
         toast("房间号已用完，请增加房间号位数");
+        return;
+      }
+      if (roomNoExists(no)) {
+        toast("房间号已存在，请换一个");
         return;
       }
       const stamp = now();
@@ -1535,7 +2133,8 @@
         createdAt: stamp,
         updatedAt: stamp,
         passUpdatedAt: stamp,
-        owner: currentUserId(),
+        owner: app.admin ? "" : currentUserId(),
+        ...(app.admin ? { adminPreset: true, autoPassword: true } : {}),
         ...(await makeRoomAuth(roomPassword))
       };
       updateLocalRoom(room);
@@ -2132,6 +2731,9 @@
 
   function back() {
     if (app.currentRoom) uploadPending(app.currentRoom.no);
+    closeMediaMenu();
+    endCall({ immediate: true });
+    app.incomingCall = null;
     app.currentRoom = null;
     app.chatSearch = "";
     leaveRoomSubscription();
@@ -2256,6 +2858,7 @@
         updatedAt: stamp
       };
       delete updated.password;
+      delete updated.autoPassword;
       updateLocalRoom(updated);
       setVerified(updated);
       publish("room/" + updated.no, { type: "roomUpdate", action: "password", time: now() });
@@ -2462,6 +3065,20 @@
       event.preventDefault();
       sendMessage();
     });
+    $("mediaBtn").addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleMediaMenu();
+    });
+    $("mediaMenu").addEventListener("click", event => {
+      const button = event.target.closest("[data-call-kind]");
+      if (!button) return;
+      event.preventDefault();
+      startCall(button.dataset.callKind);
+    });
+    document.addEventListener("click", event => {
+      if (!event.target.closest("#send")) closeMediaMenu();
+    });
 
     $("nav").addEventListener("click", event => {
       const button = event.target.closest("button[data-tab]");
@@ -2599,6 +3216,10 @@
     });
 
     $("modal").addEventListener("click", event => {
+      if (app.incomingCall && event.target.id === "modal") {
+        rejectIncomingCall();
+        return;
+      }
       if (event.target.id === "modal" || event.target.id === "toastOkBtn") closeToast();
     });
   }

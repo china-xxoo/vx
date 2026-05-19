@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vx-split-calc-v9-20260519-announcements1";
+const CACHE_VERSION = "vx-split-calc-v13-20260519-callmenu1";
 const APP_CACHE = "vx-app-" + CACHE_VERSION;
 const APP_SHELL = [
   "./",
