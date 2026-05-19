@@ -2,8 +2,8 @@
   "use strict";
 
   const CONFIG_URL = "vx-config.json";
-  const APP_CSS = "assets/css/app.css?v=20260518-feedback5";
-  const APP_JS = "assets/js/app.js?v=20260518-feedback5";
+  const APP_CSS = "assets/css/app.css?v=20260519-announcements1";
+  const APP_JS = "assets/js/app.js?v=20260519-announcements1";
 
   let expr = "";
   let loadingApp = false;

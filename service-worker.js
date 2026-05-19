@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vx-split-calc-v8-20260518-feedback5";
+const CACHE_VERSION = "vx-split-calc-v9-20260519-announcements1";
 const APP_CACHE = "vx-app-" + CACHE_VERSION;
 const APP_SHELL = [
   "./",

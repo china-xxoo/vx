@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "2026.05.18-mqtt-feedback-v5";
+  const VERSION = "2026.05.19-announcements-v1";
   const CONFIG_URL = "vx-config.json";
   const GITHUB_API = "https://api.github.com";
   const MQTT_LIB_URL = "https://unpkg.com/mqtt/dist/mqtt.min.js";
@@ -30,6 +30,8 @@
     rooms: [],
     comments: [],
     announcement: null,
+    announcements: [],
+    activeAnnouncementId: "",
     feedback: [],
     activeFeedbackId: "",
     accounts: {},
@@ -241,6 +243,7 @@
     document.body.classList.remove("room");
     app.currentRoom = null;
     app.chatSearch = "";
+    app.activeAnnouncementId = "";
     app.activeFeedbackId = "";
     clearInterval(app.uploadTimer);
     app.uploadTimer = null;
@@ -322,7 +325,10 @@
         const room = JSON.parse(body.slice(ROOM_PREFIX.length));
         return "post:room:" + String(room.no || stableHash(body));
       }
-      if (body.startsWith(ANN_PREFIX)) return "post:announcement";
+      if (body.startsWith(ANN_PREFIX)) {
+        const announcement = JSON.parse(body.slice(ANN_PREFIX.length));
+        return "post:announcement:" + String(announcement.id || stableHash(body));
+      }
       if (body.startsWith(ACCOUNT_PREFIX)) {
         const account = JSON.parse(body.slice(ACCOUNT_PREFIX.length));
         const username = normalizeAccountName(account.username || "");
@@ -417,8 +423,7 @@
       if (body.startsWith(ROOM_PREFIX)) {
         updateLocalRoom({ ...JSON.parse(body.slice(ROOM_PREFIX.length)), cid: comment.id });
       } else if (body.startsWith(ANN_PREFIX)) {
-        const announcement = JSON.parse(body.slice(ANN_PREFIX.length));
-        if (!app.announcement || +(announcement.time || 0) >= +(app.announcement.time || 0)) app.announcement = { ...announcement, cid: comment.id };
+        mergeAnnouncement({ ...JSON.parse(body.slice(ANN_PREFIX.length)), cid: comment.id });
       } else if (body.startsWith(ACCOUNT_PREFIX)) {
         const account = JSON.parse(body.slice(ACCOUNT_PREFIX.length));
         account.username = normalizeAccountName(account.username);
@@ -562,11 +567,79 @@
       : old;
   }
 
+  function normalizeAnnouncement(item, cid) {
+    const createdAt = +(item.createdAt || item.time || now());
+    const title = String(item.title || "系统公告").trim().slice(0, 40) || "系统公告";
+    const content = String(item.content || "").trim().slice(0, 2000);
+    const id = String(item.id || ("A_LEGACY_" + stableHash([title, content, createdAt].join("|"))));
+    if (!item.deletedAt && !title && !content) return null;
+    return {
+      ...item,
+      ...(cid ? { cid } : {}),
+      id,
+      title,
+      content,
+      time: +(item.time || createdAt),
+      createdAt,
+      updatedAt: +(item.updatedAt || item.deletedAt || item.time || createdAt),
+      deletedAt: item.deletedAt ? +item.deletedAt : 0
+    };
+  }
+
+  function announcementRecord(item) {
+    const copy = { ...item };
+    delete copy.cid;
+    return copy;
+  }
+
+  function sortAnnouncements(items) {
+    return items.sort((a, b) => (+(b.time || b.createdAt || 0)) - (+(a.time || a.createdAt || 0)));
+  }
+
+  function updateCurrentAnnouncement() {
+    sortAnnouncements(app.announcements);
+    app.announcement = app.announcements[0] || null;
+    if (app.activeAnnouncementId && !app.announcements.some(item => item.id === app.activeAnnouncementId)) {
+      app.activeAnnouncementId = "";
+    }
+  }
+
+  function mergeAnnouncement(item) {
+    const normalized = normalizeAnnouncement(item);
+    if (!normalized) return false;
+    if (normalized.deletedAt) {
+      removeAnnouncement(normalized.id);
+      return true;
+    }
+    const index = app.announcements.findIndex(old => old.id === normalized.id);
+    if (index >= 0) app.announcements[index] = { ...app.announcements[index], ...normalized };
+    else app.announcements.unshift(normalized);
+    updateCurrentAnnouncement();
+    return index < 0;
+  }
+
+  function removeAnnouncement(id) {
+    const before = app.announcements.length;
+    app.announcements = app.announcements.filter(item => item.id !== id);
+    if (app.activeAnnouncementId === id) app.activeAnnouncementId = "";
+    updateCurrentAnnouncement();
+    return app.announcements.length !== before;
+  }
+
+  function latestAnnouncementItem(old, item) {
+    if (!old) return item;
+    return +(item.updatedAt || item.deletedAt || item.time || 0) >= +(old.updatedAt || old.deletedAt || old.time || 0)
+      ? { ...old, ...item }
+      : old;
+  }
+
   function parseComments() {
     const roomMap = {};
     const accountMap = {};
     const feedbackMap = {};
+    const announcementMap = {};
     app.announcement = null;
+    app.announcements = [];
 
     for (const comment of app.comments) {
       const body = comment.body || "";
@@ -579,9 +652,10 @@
           const oldTime = +(old?.updatedAt || old?.createdAt || 0);
           if (!old || roomTime > oldTime) roomMap[room.no] = room;
         } else if (body.startsWith(ANN_PREFIX)) {
-          const announcement = JSON.parse(body.slice(ANN_PREFIX.length));
-          announcement.cid = comment.id;
-          if (!app.announcement || +announcement.time > +app.announcement.time) app.announcement = announcement;
+          const announcement = normalizeAnnouncement(JSON.parse(body.slice(ANN_PREFIX.length)), comment.id);
+          if (announcement) {
+            announcementMap[announcement.id] = latestAnnouncementItem(announcementMap[announcement.id], announcement);
+          }
         } else if (body.startsWith(ACCOUNT_PREFIX)) {
           const account = JSON.parse(body.slice(ACCOUNT_PREFIX.length));
           account.username = normalizeAccountName(account.username);
@@ -604,6 +678,8 @@
 
     app.rooms = sortRooms(Object.values(roomMap));
     app.accounts = accountMap;
+    app.announcements = sortAnnouncements(Object.values(announcementMap).filter(item => !item.deletedAt));
+    updateCurrentAnnouncement();
     app.feedback = Object.values(feedbackMap)
       .filter(item => !item.deletedAt)
       .sort((a, b) => (+(b.createdAt || 0)) - (+(a.createdAt || 0)));
@@ -785,7 +861,12 @@
         return;
       }
       if (payload.type === "announcement") {
-        app.announcement = payload.announcement || null;
+        if (payload.announcement) mergeAnnouncement(payload.announcement);
+        else {
+          app.announcements = [];
+          app.announcement = null;
+          app.activeAnnouncementId = "";
+        }
         if (app.tab === "ann" && !app.currentRoom) renderAnnouncement();
         backgroundRefresh();
         return;
@@ -1569,25 +1650,50 @@
     if (removeItem) backgroundHideFeedback(removeItem);
   }
 
-  function renderAnnouncement() {
-    const announcementCard = `<div class="card">
-      <div class="title">${esc(app.announcement?.title || "公告")}</div>
-      <div style="line-height:1.7;margin-top:12px">${app.announcement?.content ? esc(app.announcement.content).replace(/\n/g, "<br>") : "暂无公告，谢谢使用。"}</div>
-      <div class="muted">${app.announcement?.time ? formatTime(app.announcement.time) : ""}</div>
+  function announcementLabel(item) {
+    const title = item?.title || "系统公告";
+    if (/公告【.+】/.test(title)) return title;
+    const date = new Date(item?.time || item?.createdAt || now());
+    return (date.getMonth() + 1) + "." + date.getDate() + "公告【" + title + "】";
+  }
+
+  function announcementItemHtml(item) {
+    const active = app.activeAnnouncementId === item.id;
+    return `<div class="announcementItem ${active ? "activeAnnouncement" : ""}" data-ann-id="${esc(item.id)}">
+      <div class="announcementHead">
+        <span>${esc(announcementLabel(item))}</span>
+        <span>${formatTime(item.time || item.createdAt)}</span>
+      </div>
+      ${active ? `<div class="announcementBody">${item.content ? esc(item.content).replace(/\n/g, "<br>") : "暂无内容"}</div>` : ""}
     </div>`;
+  }
+
+  function announcementListHtml() {
+    const list = app.announcements;
+    return `<div class="card">
+      <div class="title">公告</div>
+      <div class="announcementList">
+        ${list.length ? list.map(announcementItemHtml).join("") : `<div class="empty compactEmpty">暂无公告</div>`}
+      </div>
+    </div>`;
+  }
+
+  function renderAnnouncement() {
+    const announcementCard = announcementListHtml();
 
     if (app.admin) {
       const list = visibleFeedback();
       setMain(`<div class="card">
         <div class="title">公告管理</div>
-        <div class="muted">当前在线用户会通过 MQTT 收到刷新通知。</div>
-        <input class="inp" id="annTitle" placeholder="公告标题" value="${esc(app.announcement?.title || "系统公告")}" style="margin-top:12px">
-        <textarea id="annContent" placeholder="公告内容">${esc(app.announcement?.content || "")}</textarea>
+        <div class="muted">发布后会在公告页按时间排列，用户点击标题后才会看到内容。</div>
+        <input class="inp" id="annTitle" placeholder="公告标题，例如：购买" value="" style="margin-top:12px">
+        <textarea id="annContent" placeholder="公告内容"></textarea>
         <div class="actions">
           <button class="btn primary" type="button" id="saveAnnBtn">发布公告</button>
           <button class="btn danger" type="button" id="clearAnnBtn">清空公告</button>
         </div>
       </div>
+      ${announcementCard}
       <div class="card">
         <div class="title">用户留言 <span class="badge dangerBadge">仅后台可见</span></div>
         <div class="muted">点击留言可以回复或删除；回复后这条留言会自动隐藏。</div>
@@ -1768,17 +1874,20 @@
 
   async function saveAnnouncement() {
     try {
+      const stamp = now();
       const announcement = {
-        title: ($("annTitle").value || "系统公告").trim(),
+        id: "A_" + stamp + "_" + Math.random().toString(36).slice(2, 8),
+        title: ($("annTitle").value || "系统公告").trim().slice(0, 40),
         content: ($("annContent").value || "").trim(),
-        time: now()
+        time: stamp,
+        createdAt: stamp,
+        updatedAt: stamp
       };
-      app.announcement = announcement;
+      mergeAnnouncement(announcement);
+      app.activeAnnouncementId = announcement.id;
       renderAnnouncement();
       publish("all", { type: "announcement", announcement, time: announcement.time });
-      backgroundDeleteComments("Background announcement cleanup", body => body.startsWith(ANN_PREFIX));
-      backgroundPostComment(ANN_PREFIX + json(announcement), "Background announcement save");
-      backgroundRefresh();
+      backgroundPostComment(ANN_PREFIX + json(announcementRecord(announcement)), "Background announcement save");
     } catch (error) {
       console.warn("Save announcement failed.", error);
       toast("发布失败，请稍后重试");
@@ -1788,11 +1897,12 @@
   async function clearAnnouncement() {
     if (!confirm("确认清空公告？")) return;
     try {
+      app.announcements = [];
       app.announcement = null;
+      app.activeAnnouncementId = "";
       renderAnnouncement();
       publish("all", { type: "announcement", announcement: null, time: now() });
       backgroundDeleteComments("Background announcement clear", body => body.startsWith(ANN_PREFIX));
-      backgroundRefresh();
     } catch (error) {
       console.warn("Clear announcement failed.", error);
       toast("清空失败，请稍后重试");
@@ -2428,6 +2538,13 @@
       const sendFeedbackButton = event.target.closest("#sendFeedbackBtn");
       if (sendFeedbackButton) {
         sendFeedback();
+        return;
+      }
+
+      const announcementCard = event.target.closest("[data-ann-id]");
+      if (announcementCard) {
+        app.activeAnnouncementId = app.activeAnnouncementId === announcementCard.dataset.annId ? "" : announcementCard.dataset.annId;
+        renderAnnouncement();
         return;
       }
 

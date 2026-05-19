@@ -390,6 +390,47 @@ textarea {
   padding: 22px 10px;
 }
 
+.announcementList {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.announcementItem {
+  border: 1px solid rgba(56, 189, 248, .16);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, .38);
+  padding: 10px;
+  cursor: pointer;
+}
+
+.announcementItem.activeAnnouncement {
+  border-color: rgba(125, 211, 252, .48);
+  background: rgba(14, 116, 144, .24);
+}
+
+.announcementHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.announcementHead span:first-child {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.announcementBody {
+  margin-top: 10px;
+  line-height: 1.7;
+  color: var(--text);
+  word-break: break-word;
+}
+
 .feedbackList {
   display: grid;
   gap: 8px;
