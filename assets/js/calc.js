@@ -2,9 +2,9 @@
   "use strict";
 
   const CONFIG_URL = "vx-config.json";
-  const APP_CSS = "assets/css/app.css?v=20260520-fastunlock1";
-  const QR_JS = "assets/js/qrcode.js?v=20260520-fastunlock1";
-  const APP_JS = "assets/js/app.js?v=20260520-fastunlock1";
+  const APP_CSS = "assets/css/app.css?v=20260520-wechatstyle1";
+  const QR_JS = "assets/js/qrcode.js?v=20260520-wechatstyle1";
+  const APP_JS = "assets/js/app.js?v=20260520-wechatstyle1";
   const CONFIG_CACHE_KEY = "vx_fast_config_v1";
 
   let expr = "";

@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "2026.05.20-fast-unlock-v1";
+  const VERSION = "2026.05.20-wechat-style-v1";
   const CONFIG_URL = "vx-config.json";
   const GITHUB_API = "https://api.github.com";
   const MQTT_LIB_URL = "https://unpkg.com/mqtt/dist/mqtt.min.js";
@@ -259,6 +259,7 @@
 
     document.body.classList.remove("room");
     app.currentRoom = null;
+    app.tab = "hall";
     app.chatSearch = "";
     app.activeAnnouncementId = "";
     app.editingAnnouncementId = "";
@@ -275,6 +276,7 @@
     $("roomTag").removeAttribute("tabindex");
     $("roomTag").style.cursor = "";
     $("newBtn").classList.remove("hide");
+    updateTopControls();
     fixViewport();
   }
 
@@ -1469,14 +1471,13 @@
   }
 
   function tick() {
-    const time = new Date().toTimeString().slice(0, 8);
+    const time = new Date().toTimeString().slice(0, 5);
     const online = app.currentRoom ? roomCount() : allCount();
     const needsMqtt = !!app.cfg?.mqttUrl;
     const good = app.gistOk && (!needsMqtt || app.mqttOk);
-    let statusText = `数据 ${time} 在线${online}`;
-    if (app.busyText) statusText = app.busyText;
-    else if (!good) statusText = "数据正在加载中";
-    $("dataBtn").innerHTML = `<span class="dot"></span>${statusText}`;
+    const ok = good && !app.busyText;
+    const label = ok ? "数据正常" : "数据连接中";
+    $("dataBtn").innerHTML = `<span class="dataState">${label}</span><span class="dataMeta">${time} 在线${online}</span>`;
     updateStatus();
   }
 
@@ -1484,7 +1485,8 @@
     const needsMqtt = !!app.cfg?.mqttUrl;
     const good = app.gistOk && (!needsMqtt || app.mqttOk);
     $("dataBtn").classList.toggle("busyStatus", !!app.busyText);
-    $("dataBtn").classList.toggle("bad", !app.busyText && !good);
+    $("dataBtn").classList.toggle("bad", !!app.busyText || !good);
+    $("dataBtn").classList.toggle("goodStatus", !app.busyText && good);
   }
 
   function localJson(key, fallback) {
@@ -1791,6 +1793,15 @@
     $("nMe").classList.toggle("on", app.tab === "me");
   }
 
+  function updateTopControls() {
+    const inRoom = !!app.currentRoom;
+    $("backBtn").classList.toggle("hide", !inRoom);
+    $("shareBtn").classList.toggle("hide", inRoom || !["hall", "me"].includes(app.tab));
+    $("systemMsgBtn").classList.toggle("hide", inRoom || app.tab !== "ann");
+    $("newBtn").classList.toggle("hide", inRoom || app.tab !== "hall");
+    $("roomTag").classList.toggle("hide", !inRoom);
+  }
+
   function renderCurrentTab() {
     if (app.tab === "hall") renderHall();
     else if (app.tab === "ann") renderAnnouncement();
@@ -1805,9 +1816,7 @@
     leaveRoomSubscription();
     clearInterval(app.uploadTimer);
     $("send").style.display = "none";
-    $("backBtn").classList.add("hide");
-    $("roomTag").classList.add("hide");
-    $("newBtn").classList.toggle("hide", name !== "hall");
+    updateTopControls();
     updateNav();
     renderCurrentTab();
   }
@@ -1836,6 +1845,38 @@
 
   function roomName(room) {
     return room.name || room.no;
+  }
+
+  function shortTime(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    const todayText = localDay();
+    const dayText = localDay(value);
+    if (dayText === todayText) {
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (dayText === localDay(yesterday.getTime())) return "昨天";
+    return (date.getMonth() + 1) + "." + date.getDate();
+  }
+
+  function latestRoomMessage(room) {
+    const messages = localMessages(room.no)
+      .concat(gistMessages(room.no))
+      .filter(message => message && !message.deletedAt)
+      .sort((a, b) => (+(b.time || 0)) - (+(a.time || 0)));
+    const latest = messages[0];
+    if (!latest) {
+      return {
+        text: roomName(room) === room.no ? "暂无消息" : roomName(room),
+        time: room.updatedAt || room.createdAt
+      };
+    }
+    return {
+      text: latest.text || "[消息]",
+      time: latest.time || room.updatedAt || room.createdAt
+    };
   }
 
   function isOwnerDeleted(room) {
@@ -1883,12 +1924,14 @@
 
   function roomCard(room, isAdmin) {
     const ownerDeleted = isOwnerDeleted(room);
-    return `<div class="card click ${ownerDeleted ? "ownerDeleted" : ""}" data-enter="${esc(room.no)}" data-admin="${isAdmin ? "1" : "0"}">
-      <div class="row">
-        <div>
-          <div class="title">${esc(room.no)}</div>
-          <div class="muted">${esc(roomName(room))} · ${formatTime(room.createdAt)}</div>
+    const latest = latestRoomMessage(room);
+    return `<div class="card roomItem click ${ownerDeleted ? "ownerDeleted" : ""}" data-enter="${esc(room.no)}" data-admin="${isAdmin ? "1" : "0"}">
+      <div class="roomInfo">
+        <div class="roomTitleLine">
+          <div class="title roomNo">${esc(room.no)}</div>
+          <div class="roomTime">${esc(shortTime(latest.time))}</div>
         </div>
+        <div class="muted roomPreview">${esc(latest.text)}</div>
       </div>
       ${isAdmin ? `<div class="actions" data-actions>
         <button class="btn danger" type="button" data-clear-room="${esc(room.no)}">清空聊天记录</button>
@@ -1901,7 +1944,7 @@
     const visible = new Set(visibleRooms());
     const list = app.rooms.filter(room => !isOwnerDeleted(room) && visible.has(room.no));
     setMain(`<div class="search">
-      <input id="searchInput" placeholder="请输入房间号" autocomplete="off">
+      <input id="searchInput" placeholder="搜索" autocomplete="off">
       <button class="btn primary" type="button" id="searchBtn">搜索</button>
     </div>
     ${list.length ? list.map(room => roomCard(room, false)).join("") : `<div class="empty">暂无房间</div>`}`);
@@ -2325,15 +2368,7 @@
     const feedbackTip = app.feedbackSending ? "发送中..." : `今天已发送 ${count}/${FEEDBACK_DAILY_LIMIT} 条。`;
     const list = visibleFeedback();
     setMain(`${announcementCard}
-    <div class="card contactCard">
-      <div class="contactLine">
-        <div>
-          <div class="title">联系客服</div>
-          <div class="muted" id="feedbackTip">${feedbackTip} 仅你和后台可见。</div>
-        </div>
-        <button class="btn primary" type="button" id="contactSupportBtn" ${disabled ? "disabled" : ""}>${app.feedbackSending ? "发送中..." : "联系客服"}</button>
-      </div>
-    </div>
+    <div class="muted contactHint" id="feedbackTip">${feedbackTip} 左上角系统留言仅你和后台可见。</div>
     <div class="card">
       <div class="title">我的留言</div>
       <div class="muted">这里只显示你自己发给后台的留言和后台给你的系统回复；点击系统回复可以继续回复或删除。</div>
@@ -2749,14 +2784,12 @@
     app.chatSearch = "";
     document.body.classList.add("room");
     fixViewport();
-    $("backBtn").classList.remove("hide");
-    $("roomTag").classList.remove("hide");
     $("roomTag").textContent = "编辑";
     $("roomTag").title = "编辑本房间昵称";
     $("roomTag").style.cursor = "pointer";
     $("roomTag").setAttribute("role", "button");
     $("roomTag").tabIndex = 0;
-    $("newBtn").classList.add("hide");
+    updateTopControls();
     $("send").style.display = "flex";
     subscribeRoom(no);
     mergeGistMessages(no);
@@ -2832,6 +2865,7 @@
     $("roomTag").removeAttribute("role");
     $("roomTag").removeAttribute("tabindex");
     $("roomTag").style.cursor = "";
+    updateTopControls();
     switchTab("hall");
   }
 
@@ -3195,6 +3229,7 @@
     $("backBtn").addEventListener("click", back);
     $("newBtn").addEventListener("click", newRoom);
     $("shareBtn").addEventListener("click", showShareQr);
+    $("systemMsgBtn").addEventListener("click", openContactSupport);
     $("roomTag").addEventListener("click", editRoomNickname);
     $("roomTag").addEventListener("keydown", event => {
       if (event.key === "Enter" || event.key === " ") {
