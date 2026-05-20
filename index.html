@@ -9,9 +9,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Calculator">
-  <link rel="manifest" href="manifest.webmanifest?v=20260520-roomsettings1">
-  <link rel="icon" type="image/png" sizes="512x512" href="vx-logo-512.png?v=20260520-roomsettings1">
-  <link rel="apple-touch-icon" href="vx-logo-180.png?v=20260520-roomsettings1">
+  <link rel="manifest" href="manifest.webmanifest?v=20260520-unreadcalc1">
+  <link rel="icon" type="image/png" sizes="512x512" href="vx-logo-512.png?v=20260520-unreadcalc1">
+  <link rel="apple-touch-icon" href="vx-logo-180.png?v=20260520-unreadcalc1">
   <style>
     :root{--app-height:100vh;--bg:#020617;--text:#eaf7ff}
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -64,7 +64,10 @@
       var calc=document.getElementById("calc");
       var disp=document.getElementById("disp");
       if(!calc||!disp)return;
-      function show(){disp.textContent=(expr||"0").replaceAll("*","×").replaceAll("/","÷").slice(-18)}
+      var hint="",hintCount=0;
+      function unreadTotal(){try{var data=JSON.parse(localStorage.getItem("vx_unread_rooms_v1")||"{}");var total=0;Object.keys(data).forEach(function(key){total+=Math.max(0,+data[key]||0)});return Math.min(999,total)}catch(error){return 0}}
+      function unreadHint(total){if(!total)return"0";if(total!==hintCount||!hint){var left=total>1?Math.floor(Math.random()*total):0;var right=total-left;if(total>1&&left===0){left=1;right=total-1}hintCount=total;hint=left+"+"+right+"="+total}return hint}
+      function show(){disp.textContent=(expr?expr:unreadHint(unreadTotal())).replaceAll("*","×").replaceAll("/","÷").slice(-18)}
       function number(value){if(expr==="0"||expr==="Error")expr="";expr+=value;show()}
       function operator(value){if(expr==="Error")expr="";if(!expr&&value!=="-")return;if("+-*/%".includes(expr.slice(-1)))expr=expr.slice(0,-1);expr+=value;show()}
       function dot(){var part=expr.split(/[+\-*/%]/).pop();if(!part.includes(".")){expr+=part?".":"0.";show()}}
@@ -113,6 +116,6 @@
     <div class="box" id="mbox"></div>
   </div>
 
-  <script defer src="assets/js/calc.js?v=20260520-roomsettings1"></script>
+  <script defer src="assets/js/calc.js?v=20260520-unreadcalc1"></script>
 </body>
 </html>

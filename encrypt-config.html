@@ -47,6 +47,12 @@
       <input id="mqttPass" type="password" placeholder="MQTT password">
       <label>MQTT Topic 前缀</label>
       <input id="mqttPrefix" value="vx/app/calcchat/v1">
+      <label>系统通知 Worker 地址</label>
+      <input id="pushUrl" placeholder="https://vx-chat-worker.xxx.workers.dev">
+      <label>系统通知 VAPID 公钥</label>
+      <input id="pushVapidPublicKey" placeholder="VAPID_PUBLIC_KEY">
+      <label>系统通知密钥</label>
+      <input id="pushSecret" type="password" placeholder="PUSH_SECRET">
       <label>房间号字符集</label>
       <input id="roomChars" value="ABCDEFGHJKLMNPQRSTUVWXYZ23456789">
       <div id="tip" class="ok"></div>
@@ -149,6 +155,9 @@
         setValue("mqttUser", cfg.mqttUser);
         setValue("mqttPass", cfg.mqttPass);
         setValue("mqttPrefix", cfg.mqttPrefix || "vx/app/calcchat/v1");
+        setValue("pushUrl", cfg.pushUrl);
+        setValue("pushVapidPublicKey", cfg.pushVapidPublicKey);
+        setValue("pushSecret", cfg.pushSecret);
         setValue("roomChars", cfg.roomChars || "ABCDEFGHJKLMNPQRSTUVWXYZ23456789");
         tip("已读取现有加密配置。", false);
       } catch (error) {
@@ -172,6 +181,9 @@
           mqttUser: value("mqttUser"),
           mqttPass: value("mqttPass"),
           mqttPrefix: value("mqttPrefix") || "vx/app/calcchat/v1",
+          pushUrl: value("pushUrl"),
+          pushVapidPublicKey: value("pushVapidPublicKey"),
+          pushSecret: value("pushSecret"),
           savedAt: new Date().toISOString()
         };
         const payload = await encryptConfig(unlock, cfg);

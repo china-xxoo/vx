@@ -130,12 +130,13 @@ button:focus {
     linear-gradient(90deg, rgba(56, 189, 248, .035) 1px, transparent 1px),
     linear-gradient(180deg, #07101f 0%, #020617 78%);
   background-size: 34px 34px, 34px 34px, auto;
+  overflow: hidden;
 }
 
 .top {
   position: fixed;
   z-index: 9;
-  top: 0;
+  top: var(--vtop);
   right: 0;
   left: 0;
   display: grid;
@@ -236,7 +237,7 @@ textarea:disabled {
 
 .main {
   position: fixed;
-  top: calc(58px + env(safe-area-inset-top));
+  top: calc(var(--vtop) + 58px + env(safe-area-inset-top));
   right: 0;
   bottom: calc(58px + env(safe-area-inset-bottom));
   left: 0;
@@ -247,7 +248,7 @@ textarea:disabled {
 }
 
 .room .main {
-  top: calc(58px + env(safe-area-inset-top));
+  top: calc(var(--vtop) + 58px + env(safe-area-inset-top));
   bottom: calc(74px + env(safe-area-inset-bottom) + var(--kb));
   padding-bottom: 12px;
 }
@@ -932,16 +933,17 @@ textarea {
 }
 
 .main {
-  top: calc(54px + env(safe-area-inset-top));
+  top: calc(var(--vtop) + 54px + env(safe-area-inset-top));
   bottom: calc(56px + env(safe-area-inset-bottom));
   background: #ededed;
   padding: 0;
 }
 
 .room .main {
-  top: calc(54px + env(safe-area-inset-top));
+  top: calc(var(--vtop) + 54px + env(safe-area-inset-top));
   bottom: calc(58px + env(safe-area-inset-bottom) + var(--kb));
   padding: 0 0 12px;
+  scroll-padding-bottom: calc(78px + env(safe-area-inset-bottom) + var(--kb));
 }
 
 .nav {
@@ -1044,12 +1046,49 @@ textarea,
 }
 
 .roomNo {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
   overflow: hidden;
   color: #111;
   font-size: 18px;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.roomNo span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roomMuteMark {
+  flex: none;
+  color: #aaa;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.roomRight {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+}
+
+.roomUnread {
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fa5151;
+  color: #fff;
+  padding: 0 5px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  text-align: center;
 }
 
 .roomTime {
@@ -1067,6 +1106,11 @@ textarea,
   text-overflow: ellipsis;
   white-space: nowrap;
   word-break: normal;
+}
+
+.roomMuteBtn.active {
+  background: #e8e8e8;
+  color: #777;
 }
 
 .title {

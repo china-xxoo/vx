@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vx-split-calc-v24-20260520-roomsettings1";
+const CACHE_VERSION = "vx-split-calc-v29-20260520-unreadcalc1";
 const APP_CACHE = "vx-app-" + CACHE_VERSION;
 const APP_SHELL = [
   "./",
@@ -55,5 +55,34 @@ self.addEventListener("fetch", event => {
           .catch(() => cached);
         return cached || fresh;
       })
+  );
+});
+
+self.addEventListener("push", event => {
+  const title = "Calculator";
+  const options = {
+    body: "有个笑话",
+    icon: "./vx-logo-180.png",
+    badge: "./vx-logo-180.png",
+    tag: "vx-new-message",
+    renotify: false,
+    silent: false,
+    data: { url: "./" }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || "./", self.registration.scope).href;
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if ("focus" in client) {
+          return "navigate" in client ? client.navigate(targetUrl) : client.focus();
+        }
+      }
+      if (clients.openWindow) return clients.openWindow(targetUrl);
+    })
   );
 });

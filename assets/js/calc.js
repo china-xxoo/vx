@@ -2,15 +2,17 @@
   "use strict";
 
   const CONFIG_URL = "vx-config.json";
-  const APP_CSS = "assets/css/app.css?v=20260520-roomsettings1";
-  const QR_JS = "assets/js/qrcode.js?v=20260520-roomsettings1";
-  const APP_JS = "assets/js/app.js?v=20260520-roomsettings1";
+  const APP_CSS = "assets/css/app.css?v=20260520-unreadcalc1";
+  const QR_JS = "assets/js/qrcode.js?v=20260520-unreadcalc1";
+  const APP_JS = "assets/js/app.js?v=20260520-unreadcalc1";
   const CONFIG_CACHE_KEY = "vx_fast_config_v1";
 
   const bootCalc = window.__VX_CALC_BOOT__;
   let expr = bootCalc?.getExpr?.() || "";
   let loadingApp = false;
   let configPromise = null;
+  let unreadHintText = "";
+  let unreadHintCount = 0;
 
   const $ = id => document.getElementById(id);
   const now = () => Date.now();
@@ -18,7 +20,15 @@
   const dec = new TextDecoder();
 
   function syncAppHeight() {
-    document.documentElement.style.setProperty("--app-height", window.innerHeight + "px");
+    const visual = window.visualViewport;
+    const current = Math.round(window.innerHeight || visual?.height || 0);
+    const previous = Math.round(window.__VX_STABLE_APP_HEIGHT__ || current);
+    const visualBottom = visual ? Math.round(visual.height + Math.max(0, visual.offsetTop || 0)) : current;
+    const keyboardLikely = document.body.classList.contains("room")
+      && previous - visualBottom > 80;
+    const height = keyboardLikely ? previous : current;
+    window.__VX_STABLE_APP_HEIGHT__ = height;
+    document.documentElement.style.setProperty("--app-height", height + "px");
   }
 
   function stableHash(value) {
@@ -31,8 +41,32 @@
     return (hash >>> 0).toString(36);
   }
 
+  function unreadTotal() {
+    try {
+      const data = JSON.parse(localStorage.getItem("vx_unread_rooms_v1") || "{}");
+      return Math.min(999, Object.values(data).reduce((sum, value) => sum + Math.max(0, +value || 0), 0));
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  function unreadFormula(total) {
+    if (!total) return "0";
+    if (total !== unreadHintCount || !unreadHintText) {
+      let left = total > 1 ? Math.floor(Math.random() * total) : 0;
+      let right = total - left;
+      if (total > 1 && left === 0) {
+        left = 1;
+        right = total - 1;
+      }
+      unreadHintCount = total;
+      unreadHintText = left + "+" + right + "=" + total;
+    }
+    return unreadHintText;
+  }
+
   function show() {
-    $("disp").textContent = (expr || "0").replaceAll("*", "×").replaceAll("/", "÷").slice(-18);
+    $("disp").textContent = (expr || unreadFormula(unreadTotal())).replaceAll("*", "×").replaceAll("/", "÷").slice(-18);
   }
 
   function number(value) {

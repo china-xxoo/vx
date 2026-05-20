@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "2026.05.20-room-settings-v1";
+  const VERSION = "2026.05.20-unreadcalc-v1";
   const CONFIG_URL = "vx-config.json";
   const GITHUB_API = "https://api.github.com";
   const MQTT_LIB_URL = "https://unpkg.com/mqtt/dist/mqtt.min.js";
@@ -57,8 +57,13 @@
     gistQueueSoon: null,
     gistQueueTimer: null,
     activeRoomSubscription: null,
+    roomSubscriptions: new Set(),
     sending: false,
     feedbackSending: false,
+    pushBusy: false,
+    audioCtx: null,
+    calcUnreadHint: "",
+    calcUnreadCount: 0,
     call: null,
     incomingCall: null,
     busyText: "",
@@ -104,8 +109,40 @@
     return (hash >>> 0).toString(36);
   }
 
+  function unreadTotalForCalc() {
+    try {
+      const data = JSON.parse(localStorage.getItem("vx_unread_rooms_v1") || "{}");
+      return Math.min(999, Object.values(data).reduce((sum, value) => sum + Math.max(0, +value || 0), 0));
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  function unreadCalcText(total) {
+    if (!total) return "0";
+    if (total !== app.calcUnreadCount || !app.calcUnreadHint) {
+      let left = total > 1 ? Math.floor(Math.random() * total) : 0;
+      let right = total - left;
+      if (total > 1 && left === 0) {
+        left = 1;
+        right = total - 1;
+      }
+      app.calcUnreadCount = total;
+      app.calcUnreadHint = left + "+" + right + "=" + total;
+    }
+    return app.calcUnreadHint;
+  }
+
+  function calcVisible() {
+    return $("calc") && $("calc").style.display !== "none";
+  }
+
+  function refreshCalcUnreadDisplay() {
+    if (!app.calcExpr && calcVisible()) showCalc();
+  }
+
   function showCalc() {
-    $("disp").textContent = (app.calcExpr || "0").replaceAll("*", "×").replaceAll("/", "÷").slice(-18);
+    $("disp").textContent = (app.calcExpr || unreadCalcText(unreadTotalForCalc())).replaceAll("*", "×").replaceAll("/", "÷").slice(-18);
   }
 
   function addNumber(value) {
@@ -207,7 +244,10 @@
       mqttUser: config.mqttUser || "",
       mqttPass: config.mqttPass || "",
       mqttPrefix: (config.mqttPrefix || "vx/app/calcchat/v1").replace(/\/+$/, ""),
-      mqttLibUrl: config.mqttLibUrl || MQTT_LIB_URL
+      mqttLibUrl: config.mqttLibUrl || MQTT_LIB_URL,
+      pushUrl: (config.pushUrl || "").replace(/\/+$/, ""),
+      pushVapidPublicKey: config.pushVapidPublicKey || "",
+      pushSecret: config.pushSecret || ""
     };
   }
 
@@ -300,6 +340,137 @@
     });
     if (!response.ok) throw new Error("GitHub API " + response.status);
     return response.status === 204 ? null : response.json();
+  }
+
+  function pushConfigured() {
+    return !!(app.cfg?.pushUrl && app.cfg?.pushVapidPublicKey && app.cfg?.pushSecret);
+  }
+
+  function pushSupported() {
+    return location.protocol !== "file:" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  }
+
+  function pushEnabled() {
+    return localStorage.getItem("vx_push_enabled") === "1";
+  }
+
+  function pushStatusText() {
+    if (!pushSupported()) return "当前浏览器不支持系统通知";
+    if (!pushConfigured()) return "未配置系统通知";
+    if (Notification.permission === "denied") return "系统通知已被浏览器禁止";
+    return pushEnabled() ? "系统通知已开启" : "系统通知未开启";
+  }
+
+  function urlBase64ToBytes(value) {
+    const text = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+    const raw = atob(text + "=".repeat((4 - (text.length % 4)) % 4));
+    const bytes = new Uint8Array(raw.length);
+    for (let index = 0; index < raw.length; index += 1) bytes[index] = raw.charCodeAt(index);
+    return bytes;
+  }
+
+  async function pushApi(path, body) {
+    if (!pushConfigured()) return null;
+    const response = await fetch(app.cfg.pushUrl + path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Push-Secret": app.cfg.pushSecret
+      },
+      body: json(body || {})
+    });
+    if (!response.ok) throw new Error("Push API " + response.status);
+    return response.json();
+  }
+
+  function pushRoomList() {
+    const valid = new Set(app.rooms.filter(room => !isOwnerDeleted(room)).map(room => room.no));
+    return visibleRooms().filter(no => valid.has(no) && !isRoomMuted(no));
+  }
+
+  async function serviceWorkerReady() {
+    registerServiceWorker();
+    return navigator.serviceWorker.ready;
+  }
+
+  async function syncPushSubscription(forceSubscribe = false) {
+    if (!pushEnabled() || !pushConfigured() || !pushSupported()) return;
+    if (Notification.permission === "denied") return;
+    const registration = await serviceWorkerReady();
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription && forceSubscribe) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToBytes(app.cfg.pushVapidPublicKey)
+      });
+    }
+    if (!subscription) return;
+    await pushApi("/push/subscribe", {
+      subscription,
+      rooms: pushRoomList(),
+      userId: currentUserId(),
+      deviceId: app.deviceId
+    });
+  }
+
+  async function enablePushNotifications() {
+    if (app.pushBusy) return;
+    if (!pushSupported()) return toast("当前浏览器不支持系统通知");
+    if (!pushConfigured()) return toast("系统通知未配置");
+    app.pushBusy = true;
+    try {
+      const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+      if (permission !== "granted") {
+        localStorage.removeItem("vx_push_enabled");
+        renderAccountPage();
+        return;
+      }
+      localStorage.setItem("vx_push_enabled", "1");
+      await syncPushSubscription(true);
+      renderAccountPage();
+    } catch (error) {
+      console.warn("Enable push failed.", error);
+      toast("开启失败，请稍后重试");
+    } finally {
+      app.pushBusy = false;
+    }
+  }
+
+  async function disablePushNotifications() {
+    if (app.pushBusy) return;
+    app.pushBusy = true;
+    try {
+      if (pushSupported()) {
+        const registration = await serviceWorkerReady();
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await pushApi("/push/unsubscribe", { endpoint: subscription.endpoint, subscription }).catch(() => {});
+          await subscription.unsubscribe();
+        }
+      }
+      localStorage.removeItem("vx_push_enabled");
+      renderAccountPage();
+    } catch (error) {
+      console.warn("Disable push failed.", error);
+      localStorage.removeItem("vx_push_enabled");
+      renderAccountPage();
+    } finally {
+      app.pushBusy = false;
+    }
+  }
+
+  function togglePushNotifications() {
+    if (pushEnabled()) disablePushNotifications();
+    else enablePushNotifications();
+  }
+
+  function notifyPush(roomNo, message) {
+    if (!pushEnabled() || !pushConfigured()) return;
+    pushApi("/push/notify", {
+      roomNo,
+      sender: message?.sender || currentUserId(),
+      messageId: message?.id || ""
+    }).catch(error => console.warn("Push notify failed.", error));
   }
 
   async function loadComments() {
@@ -716,6 +887,7 @@
       await loadComments();
       parseComments();
       app.gistOk = true;
+      syncRoomMessageSubscriptions();
       if (app.currentRoom) {
         const updatedRoom = app.rooms.find(room => room.no === app.currentRoom.no);
         if (!updatedRoom || (isOwnerDeleted(updatedRoom) && !app.admin)) back();
@@ -748,6 +920,50 @@
 
   function ownSender(id) {
     return id === currentUserId() || id === app.deviceId || !!app.account?.deviceIds?.includes(id);
+  }
+
+  function noticeAudioContext() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return null;
+    if (!app.audioCtx) app.audioCtx = new AudioContext();
+    return app.audioCtx;
+  }
+
+  function warmNoticeSound() {
+    const ctx = noticeAudioContext();
+    if (ctx?.state === "suspended") ctx.resume().catch(() => {});
+  }
+
+  function playNoticeSound() {
+    if (document.hidden) return;
+    const ctx = noticeAudioContext();
+    if (!ctx) return;
+    if (ctx.state === "suspended") {
+      ctx.resume().then(playNoticeSound).catch(() => {});
+      return;
+    }
+
+    const start = ctx.currentTime;
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.0001, start);
+    master.gain.exponentialRampToValueAtTime(0.06, start + 0.015);
+    master.gain.exponentialRampToValueAtTime(0.0001, start + 0.28);
+    master.connect(ctx.destination);
+
+    [[880, 0], [1175, 0.075]].forEach(([freq, offset]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const at = start + offset;
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, at);
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.exponentialRampToValueAtTime(0.85, at + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.16);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(at);
+      osc.stop(at + 0.18);
+    });
   }
 
   function callKindLabel(kind) {
@@ -1298,6 +1514,7 @@
       app.mqtt.subscribe(topic("all"));
       app.mqtt.subscribe(topic("presence/all"));
       startGlobalHeartbeat();
+      syncRoomMessageSubscriptions();
       if (app.currentRoom) subscribeRoom(app.currentRoom.no);
     });
     app.mqtt.on("close", () => {
@@ -1321,13 +1538,35 @@
     publish("presence/all", { id: currentUserId(), time: now(), admin: app.admin });
   }
 
+  function visibleMessageRooms() {
+    const rooms = new Set(visibleRooms());
+    if (app.currentRoom?.no) rooms.add(app.currentRoom.no);
+    return [...rooms].filter(no => app.rooms.some(room => room.no === no && !isOwnerDeleted(room)));
+  }
+
+  function syncRoomMessageSubscriptions() {
+    if (!app.mqtt || !app.mqttOk) return;
+    const wanted = new Set(visibleMessageRooms());
+    for (const no of wanted) {
+      if (!app.roomSubscriptions.has(no)) {
+        app.mqtt.subscribe(topic("room/" + no));
+        app.roomSubscriptions.add(no);
+      }
+    }
+    for (const no of [...app.roomSubscriptions]) {
+      if (!wanted.has(no)) {
+        app.mqtt.unsubscribe(topic("room/" + no));
+        app.roomSubscriptions.delete(no);
+      }
+    }
+  }
+
   function subscribeRoom(no) {
+    syncRoomMessageSubscriptions();
     if (app.mqtt && app.mqttOk) {
       if (app.activeRoomSubscription && app.activeRoomSubscription !== no) {
-        app.mqtt.unsubscribe(topic("room/" + app.activeRoomSubscription));
         app.mqtt.unsubscribe(topic("presence/" + app.activeRoomSubscription));
       }
-      app.mqtt.subscribe(topic("room/" + no));
       app.mqtt.subscribe(topic("presence/" + no));
       app.activeRoomSubscription = no;
     }
@@ -1342,11 +1581,11 @@
     clearInterval(app.roomHeartbeat);
     app.roomHeartbeat = null;
     if (app.mqtt && app.mqttOk && app.activeRoomSubscription) {
-      app.mqtt.unsubscribe(topic("room/" + app.activeRoomSubscription));
       app.mqtt.unsubscribe(topic("presence/" + app.activeRoomSubscription));
     }
     app.activeRoomSubscription = null;
     app.roomOnline = {};
+    syncRoomMessageSubscriptions();
   }
 
   function roomBeat() {
@@ -1360,6 +1599,55 @@
     });
     if (!app.admin) app.roomOnline[currentUserId()] = now();
     tick();
+  }
+
+  function roomTopicNo(name) {
+    const prefix = topic("room/");
+    return name.startsWith(prefix) ? name.slice(prefix.length) : "";
+  }
+
+  function handleRoomTopic(roomNo, payload) {
+    const current = app.currentRoom?.no === roomNo;
+    if (!current && !visibleRooms().includes(roomNo) && !app.admin) return;
+
+    if (payload.type === "message" && payload.message) {
+      const message = payload.message;
+      const added = addLocalMessage(roomNo, message, false);
+      touchRoom(roomNo, message.time);
+      if (added && !ownSender(message.sender)) {
+        if (current) clearRoomUnread(roomNo);
+        else {
+          addRoomUnread(roomNo);
+          if (!isRoomMuted(roomNo)) playNoticeSound();
+        }
+      }
+      if (current) renderChat();
+      else if (!app.currentRoom && app.tab === "hall") renderHall();
+      else if (!app.currentRoom && app.admin && app.tab === "me") renderMe();
+      return;
+    }
+
+    if (payload.type === "profile" && payload.id && payload.nick) {
+      if (rememberRoomProfile(roomNo, payload.id, payload.nick) && current) renderChat();
+      return;
+    }
+
+    if (payload.type === "call") {
+      if (current) handleCallSignal(payload);
+      return;
+    }
+
+    if (payload.type === "roomUpdate") {
+      if (payload.action === "clear") {
+        localStorage.removeItem(messageKey(roomNo));
+        clearRoomUnread(roomNo);
+      }
+      if (payload.action === "delete" || payload.action === "ownerDelete") {
+        if (current) back();
+        else if (!app.currentRoom && app.tab === "hall") renderHall();
+      } else if (current) renderChat();
+      else if (!app.currentRoom && app.tab === "hall") renderHall();
+    }
   }
 
   function onMqtt(name, text) {
@@ -1416,19 +1704,9 @@
       return;
     }
 
-    if (app.currentRoom && name === topic("room/" + app.currentRoom.no)) {
-      if (payload.type === "message" && payload.message) {
-        addLocalMessage(payload.roomNo, payload.message, false);
-        if (payload.roomNo === app.currentRoom.no) renderChat();
-      } else if (payload.type === "profile" && payload.id && payload.nick) {
-        if (rememberRoomProfile(app.currentRoom.no, payload.id, payload.nick)) renderChat();
-      } else if (payload.type === "call") {
-        handleCallSignal(payload);
-      } else if (payload.type === "roomUpdate") {
-        if (payload.action === "clear") localStorage.removeItem(messageKey(app.currentRoom.no));
-        if (payload.action === "delete" || payload.action === "ownerDelete") back();
-        else renderChat();
-      }
+    const roomNo = roomTopicNo(name);
+    if (roomNo) {
+      handleRoomTopic(roomNo, payload);
       return;
     }
 
@@ -1502,6 +1780,57 @@
 
   function saveJson(key, value) {
     localStorage.setItem(key, json(value));
+  }
+
+  function mutedKey() {
+    return "vx_muted_rooms_v1";
+  }
+
+  function mutedRooms() {
+    return localJson(mutedKey(), []);
+  }
+
+  function isRoomMuted(no) {
+    return mutedRooms().includes(String(no));
+  }
+
+  function setRoomMuted(no, muted) {
+    const roomNo = String(no);
+    const rooms = new Set(mutedRooms());
+    if (muted) rooms.add(roomNo);
+    else rooms.delete(roomNo);
+    saveJson(mutedKey(), [...rooms]);
+    syncPushSubscription().catch(error => console.warn("Push sync failed.", error));
+    if (!app.currentRoom && app.tab === "hall") renderHall();
+  }
+
+  function unreadKey() {
+    return "vx_unread_rooms_v1";
+  }
+
+  function unreadRooms() {
+    return localJson(unreadKey(), {});
+  }
+
+  function roomUnread(no) {
+    return Math.max(0, +(unreadRooms()[String(no)] || 0));
+  }
+
+  function addRoomUnread(no) {
+    const roomNo = String(no);
+    const map = unreadRooms();
+    map[roomNo] = Math.min(999, Math.max(0, +(map[roomNo] || 0)) + 1);
+    saveJson(unreadKey(), map);
+    refreshCalcUnreadDisplay();
+  }
+
+  function clearRoomUnread(no) {
+    const roomNo = String(no);
+    const map = unreadRooms();
+    if (!(roomNo in map)) return;
+    delete map[roomNo];
+    saveJson(unreadKey(), map);
+    refreshCalcUnreadDisplay();
   }
 
   function messageKey(no) {
@@ -1691,9 +2020,11 @@
     if (!message.id) message.id = legacyMessageId(message);
     if (message.sender && message.nick) rememberRoomProfile(no, message.sender, message.nick);
     const messages = localMessages(no);
+    let added = false;
     if (!messages.some(item => (item.id || legacyMessageId(item)) === message.id)) {
       messages.push(message);
       saveMessages(no, messages);
+      added = true;
     }
 
     if (pending) {
@@ -1704,6 +2035,7 @@
       }
       scheduleUpload(no);
     }
+    return added;
   }
 
   async function uploadPending(roomNo) {
@@ -1841,13 +2173,17 @@
     if (!rooms.includes(no)) {
       rooms.push(no);
       saveVisibleRooms(rooms);
+      syncRoomMessageSubscriptions();
       scheduleAccountSync();
+      syncPushSubscription().catch(error => console.warn("Push sync failed.", error));
     }
   }
 
   function removeVisibleRoom(no) {
     saveVisibleRooms(visibleRooms().filter(item => item !== no));
+    syncRoomMessageSubscriptions();
     scheduleAccountSync();
+    syncPushSubscription().catch(error => console.warn("Push sync failed.", error));
   }
 
   function roomName(room) {
@@ -1913,6 +2249,14 @@
     if (app.currentRoom?.no === next.no) app.currentRoom = { ...app.currentRoom, ...next };
   }
 
+  function touchRoom(no, time) {
+    const room = app.rooms.find(item => item.no === no);
+    if (!room) return;
+    room.updatedAt = Math.max(+(room.updatedAt || 0), +(time || now()));
+    sortRooms(app.rooms);
+    if (app.currentRoom?.no === no) app.currentRoom = { ...app.currentRoom, ...room };
+  }
+
   function roomAuthStamp(room) {
     return String(room.passUpdatedAt || room.updatedAt || room.createdAt || "");
   }
@@ -1932,11 +2276,13 @@
   function roomCard(room, isAdmin) {
     const ownerDeleted = isOwnerDeleted(room);
     const latest = latestRoomMessage(room);
+    const unread = roomUnread(room.no);
+    const muted = isRoomMuted(room.no);
     return `<div class="card roomItem click ${ownerDeleted ? "ownerDeleted" : ""}" data-enter="${esc(room.no)}" data-admin="${isAdmin ? "1" : "0"}">
       <div class="roomInfo">
         <div class="roomTitleLine">
-          <div class="title roomNo">${esc(room.no)}</div>
-          <div class="roomTime">${esc(shortTime(latest.time))}</div>
+          <div class="title roomNo"><span>${esc(room.no)}</span>${muted ? `<span class="roomMuteMark">静音</span>` : ""}</div>
+          <div class="roomRight">${unread ? `<span class="roomUnread">${unread > 99 ? "99+" : unread}</span>` : ""}<div class="roomTime">${esc(shortTime(latest.time))}</div></div>
         </div>
         <div class="muted roomPreview">${esc(latest.text)}</div>
       </div>
@@ -2595,6 +2941,20 @@
     renderAnnouncement();
   }
 
+  function pushSettingsHtml() {
+    if (!pushConfigured() && !pushEnabled()) return "";
+    const enabled = pushEnabled();
+    const disabled = app.pushBusy || !pushConfigured() || !pushSupported() || Notification.permission === "denied";
+    return `<div class="card">
+      <div class="title">系统通知</div>
+      <div class="muted">${esc(pushStatusText())}</div>
+      <div class="muted">开启后只显示“有个笑话”，不显示房间号和消息内容。</div>
+      <div class="actions">
+        <button class="btn ${enabled ? "" : "primary"}" type="button" id="pushToggleBtn" ${disabled ? "disabled" : ""}>${enabled ? "关闭通知" : "开启通知"}</button>
+      </div>
+    </div>`;
+  }
+
   async function saveAnnouncement() {
     try {
       const stamp = now();
@@ -2637,6 +2997,7 @@
   }
 
   function renderAccountPage() {
+    const pushSettings = pushSettingsHtml();
     if (app.account) {
       const rooms = visibleRooms().filter(no => app.rooms.some(room => room.no === no && !isOwnerDeleted(room)));
       setMain(`<div class="card">
@@ -2648,7 +3009,7 @@
           <button class="btn" type="button" id="accountLogoutBtn">退出账号</button>
         </div>
         <div class="muted" id="accountTip">换设备时，用这个账号登录即可恢复房间和昵称。</div>
-      </div>`);
+      </div>${pushSettings}`);
       return;
     }
 
@@ -2662,7 +3023,7 @@
         <button class="btn" type="button" id="accountRegisterBtn">注册</button>
       </div>
       <div class="muted" id="accountTip">注册后会同步当前设备的房间和昵称，换设备登录后自动恢复。</div>
-    </div>`);
+    </div>${pushSettings}`);
   }
 
   async function registerAccount() {
@@ -2800,6 +3161,7 @@
     $("send").style.display = "flex";
     subscribeRoom(no);
     mergeGistMessages(no);
+    clearRoomUnread(no);
     renderChat();
     clearInterval(app.uploadTimer);
     app.uploadTimer = setInterval(() => uploadPending(no), 60000);
@@ -2816,6 +3178,7 @@
     const all = localMessages(app.currentRoom.no);
     const profiles = roomProfiles(app.currentRoom.no);
     const ownNick = roomNickname(app.currentRoom.no);
+    const muted = isRoomMuted(app.currentRoom.no);
     const query = String(app.chatSearch || "").trim();
     const queryLower = query.toLowerCase();
     const list = query
@@ -2824,6 +3187,7 @@
     setMain(`<div class="search chatSearch">
       <input id="chatSearchInput" placeholder="搜索聊天记录" autocomplete="off" value="${esc(query)}">
       <button class="btn primary" type="button" id="chatSearchBtn">搜索</button>
+      <button class="btn roomMuteBtn ${muted ? "active" : ""}" type="button" id="chatMuteBtn">${muted ? "已静音" : "静音"}</button>
       ${query ? `<button class="btn" type="button" id="chatSearchClear">清除</button>` : ""}
     </div>
     ${query ? `<div class="muted searchHint">找到 ${list.length}/${all.length} 条消息</div>` : ""}
@@ -2843,6 +3207,14 @@
     app.chatSearch = "";
     renderChat();
     setTimeout(() => $("main").scrollTop = $("main").scrollHeight, 30);
+  }
+
+  function toggleCurrentRoomMute() {
+    if (!app.currentRoom) return false;
+    const muted = !isRoomMuted(app.currentRoom.no);
+    setRoomMuted(app.currentRoom.no, muted);
+    renderChat();
+    return muted;
   }
 
   function applyAdminSearch() {
@@ -2880,6 +3252,7 @@
     if (!app.currentRoom) return;
     const roomNo = app.currentRoom.no;
     const owner = isRoomOwner(app.currentRoom);
+    const muted = isRoomMuted(roomNo);
     const roomNameTools = owner
       ? `<div class="settingBlock">
         <div class="title smallTitle">房间名</div>
@@ -2922,6 +3295,12 @@
       <div class="actions">
         <button class="btn" type="button" id="nickCancel">取消</button>
         <button class="btn primary" type="button" id="nickOk">保存昵称</button>
+      </div>
+      <div class="settingBlock">
+        <div class="title smallTitle">消息提醒</div>
+        <div class="actions">
+          <button class="btn ${muted ? "" : "primary"}" type="button" id="roomMuteToggle">${muted ? "取消静音" : "本房间静音"}</button>
+        </div>
       </div>
       ${roomNameTools}
       ${roomPasswordTools}
@@ -2982,6 +3361,13 @@
 
     $("nickCancel").addEventListener("click", close);
     $("nickOk").addEventListener("click", submit);
+    $("roomMuteToggle").addEventListener("click", () => {
+      const mutedNow = !isRoomMuted(roomNo);
+      setRoomMuted(roomNo, mutedNow);
+      $("roomMuteToggle").textContent = mutedNow ? "取消静音" : "本房间静音";
+      $("roomMuteToggle").classList.toggle("primary", !mutedNow);
+      renderChat();
+    });
     if ($("ownerRoomNameOk")) $("ownerRoomNameOk").addEventListener("click", changeRoomName);
     if ($("ownerPasswordOk")) $("ownerPasswordOk").addEventListener("click", changePassword);
     if ($("ownerDeleteRoom")) $("ownerDeleteRoom").addEventListener("click", () => {
@@ -3118,6 +3504,8 @@
       ...(nick ? { nick } : {})
     };
     addLocalMessage(app.currentRoom.no, message, true);
+    touchRoom(app.currentRoom.no, message.time);
+    clearRoomUnread(app.currentRoom.no);
     renderChat();
     publish("room/" + app.currentRoom.no, {
       type: "message",
@@ -3125,6 +3513,7 @@
       message,
       time: now()
     });
+    notifyPush(app.currentRoom.no, message);
     setTimeout(() => $("main").scrollTop = $("main").scrollHeight, 60);
     app.sending = false;
   }
@@ -3239,20 +3628,39 @@
   }
 
   function fixViewport() {
-    document.documentElement.style.setProperty("--app-height", window.innerHeight + "px");
-    let keyboard = 0;
-    if (document.body.classList.contains("room") && window.visualViewport && document.activeElement?.id === "msg") {
-      const viewport = visualViewport;
-      const gap = Math.max(0, innerHeight - viewport.height - Math.max(0, viewport.offsetTop));
-      keyboard = gap > 80 ? gap : 0;
-    }
-    document.documentElement.style.setProperty("--kb", keyboard + "px");
-    document.documentElement.style.setProperty("--vtop", "0px");
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+    const rawHeight = Math.round(window.innerHeight || viewport?.height || 0);
+    const previousHeight = Math.round(window.__VX_STABLE_APP_HEIGHT__ || rawHeight);
+    const inRoom = document.body.classList.contains("room");
+    const viewportTop = viewport ? Math.max(0, viewport.offsetTop || 0) : 0;
+    const viewportBottom = viewport ? Math.round(viewport.height + viewportTop) : rawHeight;
+    let keyboard = inRoom && viewport ? Math.max(0, previousHeight - viewportBottom) : 0;
+    if (keyboard < 80) keyboard = 0;
+
+    const shrinkingDuringKeyboard = inRoom && viewport && rawHeight < previousHeight - 80;
+    const stableHeight = keyboard || shrinkingDuringKeyboard ? previousHeight : rawHeight;
+    window.__VX_STABLE_APP_HEIGHT__ = stableHeight;
+    root.style.setProperty("--app-height", stableHeight + "px");
+    root.style.setProperty("--kb", keyboard + "px");
+    root.style.setProperty("--vtop", keyboard ? viewportTop + "px" : "0px");
+
+    if (scrollX || scrollY) scrollTo(0, 0);
+  }
+
+  function settleViewport() {
+    [0, 80, 220, 520].forEach(delay => setTimeout(fixViewport, delay));
+  }
+
+  function resetViewportHeight() {
+    const viewport = window.visualViewport;
+    window.__VX_STABLE_APP_HEIGHT__ = Math.round(window.innerHeight || viewport?.height || 0);
+    settleViewport();
   }
 
   function registerServiceWorker() {
     if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
-    navigator.serviceWorker.register("service-worker.js", { scope: "./" }).catch(error => {
+    return navigator.serviceWorker.register("service-worker.js", { scope: "./" }).catch(error => {
       console.warn("Service worker registration failed.", error);
     });
   }
@@ -3265,6 +3673,7 @@
     setInterval(tick, 1000);
     refresh("加载中...");
     loadMqtt();
+    syncPushSubscription().catch(error => console.warn("Push sync failed.", error));
     scheduleGistQueue(1200);
     app.refreshTimer = setInterval(() => refresh(), 60000);
     app.gistQueueTimer = setInterval(() => {
@@ -3272,10 +3681,13 @@
     }, 15000);
     switchTab("hall");
 
-    addEventListener("focusin", fixViewport);
-    addEventListener("focusout", () => setTimeout(fixViewport, 120));
+    addEventListener("focusin", settleViewport);
+    addEventListener("focusout", settleViewport);
+    addEventListener("resize", settleViewport);
+    addEventListener("orientationchange", () => setTimeout(resetViewportHeight, 260));
     if (visualViewport) {
-      visualViewport.addEventListener("resize", fixViewport);
+      visualViewport.addEventListener("resize", settleViewport);
+      visualViewport.addEventListener("scroll", settleViewport);
     }
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
@@ -3290,9 +3702,12 @@
   }
 
   function bindEvents() {
+    document.addEventListener("pointerdown", warmNoticeSound, { once: true, passive: true });
+
     document.querySelector(".keys").addEventListener("click", event => {
       const button = event.target.closest("button[data-calc]");
       if (!button) return;
+      warmNoticeSound();
       const action = button.dataset.calc;
       const value = button.dataset.value;
       if (action === "number") addNumber(value);
@@ -3359,6 +3774,12 @@
         return;
       }
 
+      const chatMute = event.target.closest("#chatMuteBtn");
+      if (chatMute) {
+        toggleCurrentRoomMute();
+        return;
+      }
+
       const adminSearch = event.target.closest("#adminSearchBtn");
       if (adminSearch) {
         applyAdminSearch();
@@ -3392,6 +3813,12 @@
       const accountLogout = event.target.closest("#accountLogoutBtn");
       if (accountLogout) {
         logoutAccount();
+        return;
+      }
+
+      const pushToggle = event.target.closest("#pushToggleBtn");
+      if (pushToggle) {
+        togglePushNotifications();
         return;
       }
 
