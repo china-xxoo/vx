@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vx-split-calc-v21-20260520-instant1";
+const CACHE_VERSION = "vx-split-calc-v24-20260520-roomsettings1";
 const APP_CACHE = "vx-app-" + CACHE_VERSION;
 const APP_SHELL = [
   "./",
@@ -42,14 +42,18 @@ self.addEventListener("fetch", event => {
   }
 
   event.respondWith(
-    fetch(request)
-      .then(response => {
-        if (response && response.ok) {
-          const copy = response.clone();
-          caches.open(APP_CACHE).then(cache => cache.put(request, copy));
-        }
-        return response;
+    caches.match(request, { ignoreSearch: true })
+      .then(cached => {
+        const fresh = fetch(request)
+          .then(response => {
+            if (response && response.ok) {
+              const copy = response.clone();
+              caches.open(APP_CACHE).then(cache => cache.put(request, copy));
+            }
+            return response;
+          })
+          .catch(() => cached);
+        return cached || fresh;
       })
-      .catch(() => caches.match(request, { ignoreSearch: true }))
   );
 });

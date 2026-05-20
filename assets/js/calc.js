@@ -2,12 +2,13 @@
   "use strict";
 
   const CONFIG_URL = "vx-config.json";
-  const APP_CSS = "assets/css/app.css?v=20260520-instant1";
-  const QR_JS = "assets/js/qrcode.js?v=20260520-instant1";
-  const APP_JS = "assets/js/app.js?v=20260520-instant1";
+  const APP_CSS = "assets/css/app.css?v=20260520-roomsettings1";
+  const QR_JS = "assets/js/qrcode.js?v=20260520-roomsettings1";
+  const APP_JS = "assets/js/app.js?v=20260520-roomsettings1";
   const CONFIG_CACHE_KEY = "vx_fast_config_v1";
 
-  let expr = "";
+  const bootCalc = window.__VX_CALC_BOOT__;
+  let expr = bootCalc?.getExpr?.() || "";
   let loadingApp = false;
   let configPromise = null;
 
@@ -353,6 +354,8 @@
     visualViewport.addEventListener("resize", syncAppHeight);
   }
 
+  bootCalc?.stop?.();
+  window.__VX_UNLOCK_NOW__ = unlock;
   document.querySelector(".keys").addEventListener("click", event => {
     const button = event.target.closest("button[data-calc]");
     if (!button) return;
@@ -371,4 +374,8 @@
   });
 
   show();
+  if (window.__VX_PENDING_UNLOCK__) {
+    window.__VX_PENDING_UNLOCK__ = false;
+    unlock();
+  }
 })();

@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "2026.05.20-instant-v1";
+  const VERSION = "2026.05.20-room-settings-v1";
   const CONFIG_URL = "vx-config.json";
   const GITHUB_API = "https://api.github.com";
   const MQTT_LIB_URL = "https://unpkg.com/mqtt/dist/mqtt.min.js";
@@ -1524,6 +1524,10 @@
     return String(value || "").trim().slice(0, 16);
   }
 
+  function normalizeRoomName(value) {
+    return String(value || "").trim().slice(0, 24);
+  }
+
   function roomNickname(no) {
     return normalizeNickname(localStorage.getItem(nicknameKey(no)) || "");
   }
@@ -2875,16 +2879,32 @@
   function editRoomNickname() {
     if (!app.currentRoom) return;
     const roomNo = app.currentRoom.no;
-    const ownerTools = isRoomOwner(app.currentRoom)
+    const owner = isRoomOwner(app.currentRoom);
+    const roomNameTools = owner
       ? `<div class="settingBlock">
-        <div class="title smallTitle">房主设置</div>
-        <input class="inp" id="ownerPasswordInput" type="password" maxlength="6" placeholder="新房间密码需要4-6位">
-        <div class="muted" id="ownerPasswordTip">修改后，下次进入本房间需要新密码</div>
+        <div class="title smallTitle">房间名</div>
+        <input class="inp" id="ownerRoomNameInput" maxlength="24" placeholder="输入房间名" value="${esc(roomName(app.currentRoom))}">
+        <div class="muted" id="ownerRoomNameTip"></div>
         <div class="actions">
-          <button class="btn primary" type="button" id="ownerPasswordOk">修改密码</button>
+          <button class="btn primary" type="button" id="ownerRoomNameOk">保存房间名</button>
+        </div>
+      </div>`
+      : "";
+    const roomPasswordTools = owner
+      ? `<div class="settingBlock">
+        <div class="title smallTitle">房间密码</div>
+        <input class="inp" id="ownerPasswordInput" type="password" maxlength="6" placeholder="新房间密码需要4-6位">
+        <div class="muted" id="ownerPasswordTip"></div>
+        <div class="actions">
+          <button class="btn primary" type="button" id="ownerPasswordOk">保存密码</button>
+        </div>
+      </div>`
+      : "";
+    const roomDeleteTools = owner
+      ? `<div class="settingBlock">
+        <div class="actions">
           <button class="btn danger" type="button" id="ownerDeleteRoom">删除本房间</button>
         </div>
-        <div class="muted">删除后普通用户看不到、搜不到；管理员后台仍可查看。</div>
       </div>`
       : "";
     const adminTools = app.admin
@@ -2896,14 +2916,17 @@
       </div>`
       : "";
     $("mbox").innerHTML = `<h3>房间设置</h3>
+      <div class="title smallTitle">我的昵称</div>
       <input class="inp" id="nickInput" maxlength="16" placeholder="输入本房间昵称" value="${esc(roomNickname(roomNo))}">
-      <div class="muted" id="nickTip">只在本房间显示，最多16个字</div>
+      <div class="muted" id="nickTip"></div>
       <div class="actions">
         <button class="btn" type="button" id="nickCancel">取消</button>
-        <button class="btn primary" type="button" id="nickOk">保存</button>
+        <button class="btn primary" type="button" id="nickOk">保存昵称</button>
       </div>
-      ${ownerTools}
-      ${adminTools}`;
+      ${roomNameTools}
+      ${roomPasswordTools}
+      ${adminTools}
+      ${roomDeleteTools}`;
     $("modal").style.display = "flex";
 
     const input = $("nickInput");
@@ -2940,12 +2963,26 @@
       }
       await changeCurrentRoomPassword(value, passTip, passInput);
     };
+    const changeRoomName = async () => {
+      const nameInput = $("ownerRoomNameInput");
+      const nameTip = $("ownerRoomNameTip");
+      if (!nameInput || !nameTip || !app.currentRoom) return;
+      const value = normalizeRoomName(nameInput.value);
+      if (!value) {
+        nameTip.textContent = "请输入房间名";
+        nameTip.style.color = "#fecaca";
+        nameInput.focus();
+        return;
+      }
+      await changeCurrentRoomName(value, nameTip, nameInput);
+    };
     const onBackdrop = event => {
       if (event.target.id === "modal") close();
     };
 
     $("nickCancel").addEventListener("click", close);
     $("nickOk").addEventListener("click", submit);
+    if ($("ownerRoomNameOk")) $("ownerRoomNameOk").addEventListener("click", changeRoomName);
     if ($("ownerPasswordOk")) $("ownerPasswordOk").addEventListener("click", changePassword);
     if ($("ownerDeleteRoom")) $("ownerDeleteRoom").addEventListener("click", () => {
       close();
@@ -2965,8 +3002,46 @@
         if (event.key === "Escape") close();
       });
     }
+    if ($("ownerRoomNameInput")) {
+      $("ownerRoomNameInput").addEventListener("keydown", event => {
+        if (event.key === "Enter") changeRoomName();
+        if (event.key === "Escape") close();
+      });
+    }
     $("modal").addEventListener("click", onBackdrop);
     setTimeout(() => input.focus(), 30);
+  }
+
+  async function changeCurrentRoomName(name, tip, input) {
+    const room = app.currentRoom;
+    if (!room || !isRoomOwner(room)) return;
+    try {
+      const clean = normalizeRoomName(name);
+      const stamp = now();
+      const updated = {
+        ...roomRecord(room),
+        name: clean,
+        updatedAt: stamp
+      };
+      updateLocalRoom(updated);
+      publish("room/" + updated.no, { type: "roomUpdate", action: "name", time: stamp });
+      publish("all", { type: "rooms", room: roomRecord(updated), no: updated.no, time: stamp });
+      backgroundPostComment(ROOM_PREFIX + json(roomRecord(updated)), "Background room name");
+      backgroundRefresh();
+      if (tip) {
+        tip.textContent = "房间名已保存";
+        tip.style.color = "#bbf7d0";
+      }
+      if (input) input.value = clean;
+    } catch (error) {
+      console.warn("Change room name failed.", error);
+      if (tip) {
+        tip.textContent = "保存失败，请稍后重试";
+        tip.style.color = "#fecaca";
+      } else {
+        toast("保存失败，请稍后重试");
+      }
+    }
   }
 
   async function changeCurrentRoomPassword(password, tip, input) {
