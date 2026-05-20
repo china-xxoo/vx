@@ -1,4 +1,4 @@
-const CACHE_VERSION = "vx-split-calc-v20-20260520-wechatstyle1";
+const CACHE_VERSION = "vx-split-calc-v21-20260520-instant1";
 const APP_CACHE = "vx-app-" + CACHE_VERSION;
 const APP_SHELL = [
   "./",

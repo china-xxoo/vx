@@ -2,9 +2,9 @@
   "use strict";
 
   const CONFIG_URL = "vx-config.json";
-  const APP_CSS = "assets/css/app.css?v=20260520-wechatstyle1";
-  const QR_JS = "assets/js/qrcode.js?v=20260520-wechatstyle1";
-  const APP_JS = "assets/js/app.js?v=20260520-wechatstyle1";
+  const APP_CSS = "assets/css/app.css?v=20260520-instant1";
+  const QR_JS = "assets/js/qrcode.js?v=20260520-instant1";
+  const APP_JS = "assets/js/app.js?v=20260520-instant1";
   const CONFIG_CACHE_KEY = "vx_fast_config_v1";
 
   let expr = "";
@@ -221,11 +221,82 @@
     });
   }
 
+  function preloadAsset(href, as) {
+    if (document.querySelector(`link[data-vx-preload="${href}"]`)) return;
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = as;
+    link.href = href;
+    link.dataset.vxPreload = href;
+    document.head.appendChild(link);
+  }
+
+  function preloadAppShell() {
+    preloadAsset(APP_CSS, "style");
+    preloadAsset(QR_JS, "script");
+    preloadAsset(APP_JS, "script");
+  }
+
+  function ensureInstantShellStyle() {
+    if (document.getElementById("vxInstantStyle")) return;
+    const style = document.createElement("style");
+    style.id = "vxInstantStyle";
+    style.textContent = `
+      #app.vxInstant{display:block;background:#ededed;color:#111;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+      #app.vxInstant .top{position:fixed;top:0;right:0;left:0;display:grid;grid-template-columns:78px minmax(0,1fr) 78px;align-items:center;height:calc(54px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 12px 0;border-bottom:1px solid #d9d9d9;background:#ededed}
+      #app.vxInstant .left,#app.vxInstant .right{display:flex;min-width:0;align-items:center}
+      #app.vxInstant .right{justify-content:flex-end}
+      #app.vxInstant .btn{border:0;background:transparent;color:#111;padding:7px 4px;font-size:15px;font-weight:500}
+      #app.vxInstant .data{display:flex;min-width:0;align-items:center;justify-content:center;overflow:hidden;border:0;background:transparent;color:#111;padding:0 2px;font-size:14px;font-weight:500;white-space:nowrap}
+      #app.vxInstant .dataState{flex:0 0 auto;margin-right:6px;color:#fa5151;font-weight:600}
+      #app.vxInstant .dataMeta{min-width:0;overflow:hidden;color:#333;text-overflow:ellipsis;white-space:nowrap}
+      #app.vxInstant .main{position:fixed;top:calc(54px + env(safe-area-inset-top));right:0;bottom:calc(58px + env(safe-area-inset-bottom));left:0;overflow:auto;background:#ededed;padding:0}
+      #app.vxInstant .search{display:flex;align-items:center;gap:8px;margin:10px 12px}
+      #app.vxInstant .search input{width:100%;height:38px;border:0;border-radius:8px;background:#fff;color:#111;padding:0 14px;font-size:16px;text-align:center}
+      #app.vxInstant .search .btn{min-width:52px;border-radius:8px;background:#07c160;color:#fff;padding:9px 10px}
+      #app.vxInstant .empty{color:#999;padding:56px 10px;text-align:center}
+      #app.vxInstant .nav{position:fixed;right:0;bottom:0;left:0;display:grid;grid-template-columns:repeat(3,1fr);height:calc(58px + env(safe-area-inset-bottom));padding:5px 0 env(safe-area-inset-bottom);border-top:1px solid #d8d8d8;background:#f7f7f7}
+      #app.vxInstant .nav button{border:0;background:transparent;color:#111;font-size:13px}
+      #app.vxInstant .nav button.on{color:#07c160;font-weight:600}
+      #app.vxInstant .hide,#app.vxInstant #send{display:none!important}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function showUnlockShell() {
+    const appEl = $("app");
+    if (!appEl) return;
+    ensureInstantShellStyle();
+    $("calc").style.display = "none";
+    appEl.classList.add("vxInstant");
+    appEl.style.display = "block";
+    appEl.setAttribute("aria-hidden", "false");
+    const time = new Date().toTimeString().slice(0, 5);
+    $("dataBtn").innerHTML = `<span class="dataState">数据连接中</span><span class="dataMeta">${time} 在线1</span>`;
+    if (!$("main").textContent.trim()) {
+      $("main").innerHTML = `<div class="search">
+        <input placeholder="搜索" autocomplete="off">
+        <button class="btn primary" type="button">搜索</button>
+      </div>
+      <div class="empty">暂无房间</div>`;
+    }
+  }
+
+  function hideUnlockShell() {
+    const appEl = $("app");
+    if (!appEl) return;
+    appEl.classList.remove("vxInstant");
+    appEl.style.display = "none";
+    appEl.setAttribute("aria-hidden", "true");
+    $("calc").style.display = "flex";
+  }
+
   async function startApp(config, code) {
     if (loadingApp) return;
     loadingApp = true;
     window.__VX_BOOT_CONFIG__ = config;
     window.__VX_UNLOCK_CODE__ = code || "";
+    showUnlockShell();
     try {
       await Promise.all([
         loadStylesheet(APP_CSS),
@@ -234,6 +305,7 @@
       ]);
     } catch (error) {
       loadingApp = false;
+      hideUnlockShell();
       console.warn("Unable to load app shell.", error);
       throw error;
     }
@@ -274,6 +346,7 @@
 
   syncAppHeight();
   fetchConfig().catch(() => {});
+  (window.requestIdleCallback || (callback => setTimeout(callback, 300)))(preloadAppShell);
   addEventListener("resize", syncAppHeight);
   addEventListener("orientationchange", () => setTimeout(syncAppHeight, 80));
   if (window.visualViewport) {
@@ -286,6 +359,7 @@
 
     const action = button.dataset.calc;
     const value = button.dataset.value;
+    preloadAppShell();
 
     if (action === "number") number(value);
     else if (action === "operator") operator(value);

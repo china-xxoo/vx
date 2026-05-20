@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "2026.05.20-wechat-style-v1";
+  const VERSION = "2026.05.20-instant-v1";
   const CONFIG_URL = "vx-config.json";
   const GITHUB_API = "https://api.github.com";
   const MQTT_LIB_URL = "https://unpkg.com/mqtt/dist/mqtt.min.js";
@@ -242,14 +242,12 @@
   function openApp() {
     $("calc").style.display = "none";
     $("app").style.display = "block";
+    $("app").classList.remove("vxInstant");
     $("app").setAttribute("aria-hidden", "false");
     boot();
   }
 
   function panicClose() {
-    closeMediaMenu();
-    endCall({ immediate: true });
-    app.incomingCall = null;
     $("calc").style.display = "flex";
     $("app").style.display = "none";
     $("app").setAttribute("aria-hidden", "true");
@@ -257,27 +255,32 @@
     app.calcExpr = "";
     showCalc();
 
-    document.body.classList.remove("room");
-    app.currentRoom = null;
-    app.tab = "hall";
-    app.chatSearch = "";
-    app.activeAnnouncementId = "";
-    app.editingAnnouncementId = "";
-    app.activeFeedbackId = "";
-    clearInterval(app.uploadTimer);
-    app.uploadTimer = null;
-    leaveRoomSubscription();
-    $("send").style.display = "none";
-    $("backBtn").classList.add("hide");
-    $("roomTag").classList.add("hide");
-    $("roomTag").textContent = "";
-    $("roomTag").removeAttribute("title");
-    $("roomTag").removeAttribute("role");
-    $("roomTag").removeAttribute("tabindex");
-    $("roomTag").style.cursor = "";
-    $("newBtn").classList.remove("hide");
-    updateTopControls();
-    fixViewport();
+    setTimeout(() => {
+      closeMediaMenu();
+      endCall({ immediate: true });
+      app.incomingCall = null;
+      document.body.classList.remove("room");
+      app.currentRoom = null;
+      app.tab = "hall";
+      app.chatSearch = "";
+      app.activeAnnouncementId = "";
+      app.editingAnnouncementId = "";
+      app.activeFeedbackId = "";
+      clearInterval(app.uploadTimer);
+      app.uploadTimer = null;
+      leaveRoomSubscription();
+      $("send").style.display = "none";
+      $("backBtn").classList.add("hide");
+      $("roomTag").classList.add("hide");
+      $("roomTag").textContent = "";
+      $("roomTag").removeAttribute("title");
+      $("roomTag").removeAttribute("role");
+      $("roomTag").removeAttribute("tabindex");
+      $("roomTag").style.cursor = "";
+      $("newBtn").classList.remove("hide");
+      updateTopControls();
+      fixViewport();
+    }, 0);
   }
 
   function headers(extra) {
